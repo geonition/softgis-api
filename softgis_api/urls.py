@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
 from django.conf.urls.defaults import patterns
 from django.conf.urls.defaults import url
 
-urlpatterns = patterns('api.views',
+import sys, os
+
+urlpatterns = patterns('softgis_api.views',
             url(r'^register/$',
                 'register',
                 name="api_register"),
