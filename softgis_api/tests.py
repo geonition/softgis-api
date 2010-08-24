@@ -10,9 +10,9 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 from django.contrib.gis.geos import GEOSGeometry
 from django.core import mail
-from api.models import Feature
-from api.models import Property
-from api.models import ProfileValue
+from softgis_api.models import Feature
+from softgis_api.models import Property
+from softgis_api.models import ProfileValue
 
 import unittest
 import sys

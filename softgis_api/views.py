@@ -14,10 +14,10 @@ from django.contrib.auth import authenticate as django_authenticate
 from django.contrib.auth.models import User
 from django.db import IntegrityError
 from django.core.exceptions import ObjectDoesNotExist
-from api.models import ProfileValue
-from api.models import Feature
-from api.models import Property
-from api.models import get_profile
+from softgis_api.models import ProfileValue
+from softgis_api.models import Feature
+from softgis_api.models import Property
+from softgis_api.models import get_profile
 from emailconfirmation.models import EmailAddress
 from django.core.mail import send_mail 
 from django.core.mail import BadHeaderError
