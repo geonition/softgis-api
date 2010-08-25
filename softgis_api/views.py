@@ -24,6 +24,7 @@ from django.core.mail import BadHeaderError
 from django.contrib.gis.geos import GEOSGeometry
 from random import Random
 from django.utils import translation
+from django.views.decorators.cache import cache_page
 import values
 
 import sys
@@ -405,10 +406,12 @@ def feature(request):
     elif request.method == "POST":
     
         request_json = None
+        
         try:
             request_json = eval(request.POST.keys()[0])
         except Exception:
             return HttpResponseBadRequest("mime type should be application/json")
+
         
         identifier = None
         geometry = []
@@ -459,12 +462,12 @@ def feature(request):
         
         ret_json = json.dumps(request_json)
         return HttpResponse(ret_json)
-        
+
+
+#cache for one week
+@cache_page(7 * 24 * 60 * 60)
 def javascript_api(request):
     context_dict = {}
-    
-    if(request.user.is_authenticated()):
-        context_dict.update({"profile_values": json.dumps([get_profile(request.user)])})
     
     template = loader.get_template('javascript/softgis.js')
     context = RequestContext(request, context_dict)
