@@ -464,8 +464,6 @@ def feature(request):
         return HttpResponse(ret_json)
 
 
-#cache for one week
-@cache_page(7 * 24 * 60 * 60)
 def javascript_api(request):
     context_dict = {}
     
