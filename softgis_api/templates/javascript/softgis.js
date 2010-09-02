@@ -282,7 +282,6 @@ function save_graphic(graphic) {
         params += "&id=" + geojson_feature.id;
     }
     
-    
 	dojo.xhrPost({
 		"url": "{% url api_feature %}" + params,
 		"handleAs": "json",
