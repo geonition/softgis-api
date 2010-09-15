@@ -11,12 +11,12 @@ function register(username, password, email, notifications) {
     dojo.xhrPost({
 	    "url": '{% url api_register %}', 
 	    "handleAs": "json",
-	    "postData": dojo.toJson({
+	    "postData": encodeURIComponent(dojo.toJson({
 	        'username': username, 
 	        'password': password,
 	        'email': email,
 	        'notifications': notifications
-            }),
+            })),
         "failOk": true,
 	    "sync": false,
 		"headers": {"Content-Type":"application/json"},
@@ -48,10 +48,10 @@ function login(username, password) {
     dojo.xhrPost({
 	    "url": '{% url api_login %}', 
 	    "handleAs": "json",
-	    "postData": dojo.toJson({
+	    "postData": encodeURIComponent(dojo.toJson({
 	        'username': username, 
 	        'password': password
-            }),
+            })),
 	    "sync": false,
 		"headers": {"Content-Type":"application/json"},
 	    
@@ -105,10 +105,10 @@ function new_password(username, email) {
     dojo.xhrPost({
 	    "url": '{% url api_new_password %}', 
 	    "handleAs": "json",
-	    "postData": dojo.toJson({
+	    "postData": encodeURIComponent(dojo.toJson({
 	        'username': username,
 	        'email': email
-            }),
+            })),
 	    "sync": false,
 		"headers": {"Content-Type":"application/json"},
 	    
@@ -135,9 +135,9 @@ function change_password(new_password) {
     dojo.xhrPost({
 	    "url": '{% url api_change_password %}', 
 	    "handleAs": "json",
-	    "postData": dojo.toJson({
+	    "postData": encodeURIComponent(dojo.toJson({
 	        'new_password': new_password
-            }),
+            })),
 	    "sync": false,
 		"headers": {"Content-Type":"application/json"},
 	    
@@ -173,7 +173,7 @@ function save_profile_values(profile_value_pairs) {
 	dojo.xhrPost({
 		"url": "{% url api_profile %}" + params,
 		"handleAs": "json",
-		"postData": dojo.toJson(profile_value_pairs),
+		"postData": encodeURIComponent(dojo.toJson(profile_value_pairs)),
 	    "headers": {"Content-Type":"application/json"},
 		"load": function(response, ioArgs) {
 		            return;
@@ -286,7 +286,7 @@ function save_graphic(graphic) {
 	dojo.xhrPost({
 		"url": "{% url api_feature %}" + params,
 		"handleAs": "json",
-		"postData": dojo.toJson(geojson_feature),
+		"postData": encodeURIComponent(dojo.toJson(geojson_feature)),
 	    "headers": {"Content-Type":"application/json"},
 		"load": function(response, ioArgs) {
 					if(djConfig.isDebug) {
