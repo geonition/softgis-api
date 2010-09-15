@@ -1,6 +1,7 @@
 {% load i18n %}
+{% load cache %}
 
-/*global dojo, djConfig, console, esri  */
+/* global dojo, djConfig, console, esri  */
 
 /* login, logout, register, changepassword */
 
@@ -328,6 +329,21 @@ function remove_graphic(feature_id) {
 }
 
 /*
+Semaphore set with the layer as key
+
+The problem is that there should only be one GET request
+for each layer otherwise it adds the graphics twice.
+*/
+var LAYER_ADD_SEMAPHORES = {};
+
+/*
+The graphics queried from the server will be cached in the layer
+but this helper variable tells if the layer graphics has already
+been queried.
+*/
+var QUERIED_PARAM = {};
+
+/*
 This function gets graphics from the server
 
 and adds them to the map_layer given
@@ -341,58 +357,69 @@ function get_graphics(limiter_param, map_layer, infotemplate) {
         limiter_param === null) {
         limiter_param = '';
     }
-        
+
+    //do not query twice with the same parameters
+    if(QUERIED_PARAM[limiter_param]) {
+        return;
+    } else {
+        QUERIED_PARAM[limiter_param] = true;
+    }
+    
     dojo.xhrGet({
-	    "url": '{% url api_feature %}' + limiter_param, 
-	    "handleAs": "json",
-	    "sync": false,
-		"headers": {"Content-Type":"application/json"},
-	    
-	    // The LOAD function will be called on a successful response.
-	    "load": function(response, ioArgs) {
-	                var return_graphics = [];
-	                
-			        for(var i = 0; i < response.features.length; i++) {
-			            var geometry = response.features[i].geometry;
-			            var properties = response.features[i].properties;
-			            var id = response.features[i].id;
-		                var graphic = new esri.Graphic({});
-		                
-		                //graphicID and id should be the same
-		                //properties.graphicID = id;
-		                
-		                if(geometry.type === "Point") {
-		                    graphic.setGeometry(new esri.geometry.Point(geometry.coordinates));
-		                } else if (geometry.type === "LineString") {
-		                    graphic.setGeometry(new esri.geometry.Polyline({"paths": [geometry.coordinates]}));
-		                } else if(geometry.type === "Polygon") {
+        "url": '{% url api_feature %}' + limiter_param,
+        "handleAs": "json",
+        "sync": false,
+        "headers": {"Content-Type":"application/json"},
+
+        // The LOAD function will be called on a successful response.
+        "load": function(response, ioArgs) {
+                    var return_graphics = [];
+
+                    LAYER_ADD_SEMAPHORES[limiter_param] = true;
+
+                    for(var i = 0; i < response.features.length; i++) {
+                        var geometry = response.features[i].geometry;
+                        var properties = response.features[i].properties;
+                        var id = response.features[i].id;
+                        var graphic = new esri.Graphic({});
+
+                        //graphicID and id should be the same
+                        //properties.graphicID = id;
+
+                        if(geometry.type === "Point") {
+                            graphic.setGeometry(new esri.geometry.Point(geometry.coordinates));
+                        } else if (geometry.type === "LineString") {
+                            graphic.setGeometry(new esri.geometry.Polyline({"paths": [geometry.coordinates]}));
+                        } else if(geometry.type === "Polygon") {
                             graphic.setGeometry(new esri.geometry.Polygon({"rings": geometry.coordinates}));
                         }
-
                         graphic.setAttributes(properties);
-
-		                graphic.id = id;
-
+                        
+                        graphic["id"] = id;
+                        
                         if(infotemplate !== undefined) {
                             graphic.setInfoTemplate(infotemplate);
                         }
-
+                        
                         if(map_layer !== undefined) {
                             map_layer.add(graphic);
                         }
-		                return_graphics.push(graphic);
-			        }
+                        return_graphics.push(graphic);
+                        
+                    }
                     
-			        return return_graphics;
-		        },
+                    LAYER_ADD_SEMAPHORES[limiter_param] = false;
+                    
+                    return return_graphics;
+                },
 
-	    // The ERROR function will be called in an error case.
-	    "error": function(response, ioArgs) {
-		    if (djConfig.debug) {
-			    console.error("HTTP status code: ", ioArgs.xhr.status);
-		    }
-		    return response;
-	    }
+        // The ERROR function will be called in an error case.
+        "error": function(response, ioArgs) {
+            if (djConfig.debug) {
+                console.error("HTTP status code: ", ioArgs.xhr.status);
+            }
+            return response;
+        }
     });
     {% endif %}
 }
