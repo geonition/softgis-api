@@ -379,8 +379,9 @@ def feature(request):
         
         #filter the features with wrong properties
         feature_id_list = property_queryset.values_list('feature_id', flat=True)
-        
-        features_queryset = feature_queryset.filter(id__in = list(feature_id_list))
+
+        # Not in use and gives database error in sqlite3
+        #feature_queryset = feature_queryset.filter(id__in = list(feature_id_list))
         
         for feature in feature_queryset:
             feature_collection['features'].append(feature.geojson())
