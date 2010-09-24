@@ -282,13 +282,26 @@ def profile(request):
             if(key == "user_id"):
                 profile_queryset = profile_queryset.filter(user__exact = value)
             else:
-                user_ids &= user_ids.filter(value_name = key, value = value)
+                #user_ids &= user_ids.filter(value_name = key, value = value)
+                try:
+                    query_type = key.split("__")[1]
+                except IndexError:
+                    query_type = None
 
+
+                #value = eval(value)
+
+                if(query_type == "range"):
+                    min = value.split("-")[0]
+                    max = value.split("-")[1]
+                    user_ids &= user_ids.filter(value_name = key.split("__")[0], value__range =(min,max))
+                else:
+                    user_ids &= user_ids.filter(value_name = key, value = value)
         user_ids = user_ids.values_list('user', flat=True)
         profile_queryset = profile_queryset.filter(user__in = user_ids)
         
         profile_list = []
-           
+            
         profile_dict = {}
         cur_user = -1
         
