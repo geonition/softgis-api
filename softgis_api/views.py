@@ -365,10 +365,10 @@ def feature(request):
         feature_queryset = None
 
         #filter according to permissions
-        if(request.user.has_perm('can_view_all')):
+        if(request.user.has_perm('softgis_api.can_view_all')):
             feature_queryset = Feature.objects.all()
 
-        elif(request.user.has_perm('can_view_non_confidential')):
+        elif(request.user.has_perm('softgis_api.can_view_non_confidential')):
             #this has to be made better at some point
             feature_queryset = Feature.objects.exclude(category__exact = 'home')
         else:
