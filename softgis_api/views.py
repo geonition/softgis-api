@@ -17,7 +17,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from softgis_api.models import ProfileValue
 from softgis_api.models import Feature
 from softgis_api.models import Property
-from softgis_api.models import get_profile
+from softgis_api.models import get_profiles
 from emailconfirmation.models import EmailAddress
 from django.core.mail import send_mail 
 from django.core.mail import BadHeaderError
@@ -274,55 +274,7 @@ def profile(request):
         else:
             profile_queryset = ProfileValue.objects.filter(user__exact = request.user)
 
-
-        #user id set of user with profiles that match the query
-        user_ids = ProfileValue.objects.all()
-
-        for key, value in limiting_param:
-            if(key == "user_id"):
-                profile_queryset = profile_queryset.filter(user__exact = value)
-            else:
-                #user_ids &= user_ids.filter(value_name = key, value = value)
-                try:
-                    query_type = key.split("__")[1]
-                except IndexError:
-                    query_type = None
-
-
-                #value = eval(value)
-
-                if(query_type == "range"):
-                    min = value.split("-")[0]
-                    max = value.split("-")[1]
-                    user_ids &= user_ids.filter(value_name = key.split("__")[0], value__range =(min,max))
-                else:
-                    user_ids &= user_ids.filter(value_name = key, value = value)
-        user_ids = user_ids.values_list('user', flat=True)
-        profile_queryset = profile_queryset.filter(user__in = user_ids)
-        
-        profile_list = []
-            
-        profile_dict = {}
-        cur_user = -1
-        
-        for profile_value in profile_queryset:
-            value_name = profile_value.value_name
-            value = profile_value.value
-            
-            if cur_user == profile_value.user or \
-                cur_user == -1:
-                try:
-                    profile_dict[value_name] = eval(value)
-                except:
-                    profile_dict[value_name] = value
-                    
-                cur_user = profile_value.user
-            else:
-                cur_user = profile_value.user
-                profile_list.append(profile_dict)
-                profile_dict = {}
-        
-        profile_list.append(profile_dict)
+        profile_list = get_profiles(limiting_param, profile_queryset)
         
         return HttpResponse(json.dumps(profile_list))
     
@@ -331,22 +283,22 @@ def profile(request):
         values = None
         
         try:
-            values = eval(request.POST.keys()[0])
+            values = json.loads(request.POST.keys()[0])
         except Exception:
             return HttpResponseBadRequest("mime type should be application/json")
+
+        try:
+            email = values['email']
+            email_addr = EmailAddress.objects.add_email(request.user, email)
+        except KeyError:
+            pass
+
+        new_profile_value = ProfileValue(user = request.user,
+                                        json_string = request.POST.keys()[0])
+
+        new_profile_value.save()
         
-        for value_name, value in values.items():
-            
-            if value_name == 'email':
-                email = value
-                email_addr = EmailAddress.objects.add_email(request.user, email)
-            else:
-                
-                new_profile_value = ProfileValue(user=request.user,
-                                                         value_name=value_name,
-                                                         value=str(value))
-                new_profile_value.save()            
-                
+        
     return HttpResponse("")
         
 #Views for the geometry API
@@ -419,10 +371,10 @@ def feature(request):
         
     elif request.method == "POST":
     
-        request_json = None
+        feature_json = None
         
         try:
-            request_json = eval(request.POST.keys()[0])
+            feature_json = json.loads(request.POST.keys()[0])
         except Exception:
             return HttpResponseBadRequest("mime type should be application/json")
 
@@ -433,49 +385,49 @@ def feature(request):
         category = None
         
         try:
-            geometry = request_json['geometry']
-            properties = request_json['properties']
-            category = request_json['properties']['category']
+            geometry = feature_json['geometry']
+            properties = feature_json['properties']
+            category = feature_json['properties']['category']
         except KeyError:
             return HttpResponseBadRequest("json requires properties and geometry, \
                                             and the properties a category value")
           
         try:
-            identifier = request_json['id']
+            identifier = feature_json['id']
         except KeyError:
             pass
             
-        if identifier == None:     
-        
-            geos = GEOSGeometry(str(geometry))
-        
+        if identifier == None:
+            #save a new feature if id is None
+            
+            geos = GEOSGeometry(json.dumps(geometry))
+            
             new_feature = None
             new_feature = Feature(geometry=geos, user=request.user, category=category)
             new_feature.save()
-            
+
             #add the id to the feature json
             identifier = new_feature.id
-            request_json['id'] = identifier
+            feature_json['id'] = identifier
+
+            #save the properties of the new feature
+            new_property = None
+            new_property = Property(feature=new_feature,
+                                    json_string=json.dumps(properties))
+            new_property.save()
             
         else:
+            #update old feature if id is given
+            #only the feature properties is updated otherwise a completely new feature should be added
             try:
                 new_feature = Feature.objects.get(id__exact = identifier)
+                new_property = Property(feature = new_feature, json_string = json.dumps(properties))
+                new_property.save()
+                
             except ObjectDoesNotExist:
                 return HttpResponseBadRequest("no feature with the given id found")
-        
-        value_names = properties.keys()
-        saved_properties = Property.objects.filter(value_name__in = value_names)
 
-        #TODO check for saved properties, to update and not to insert new records
-        for key in properties.keys():
-            new_property = Property(feature=new_feature,
-                                     value_name=key,
-                                     value=properties[key])
-
-            new_property.save()
-        
-        ret_json = json.dumps(request_json)
-        return HttpResponse(ret_json)
+        return HttpResponse(json.dumps(feature_json))
 
 
 def javascript_api(request):

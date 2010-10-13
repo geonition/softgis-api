@@ -232,7 +232,9 @@ function get_profiles(limiter_param, callback_function) {
             });
             
     } else {
-        callback_function(profile_values[limiter_param]);
+        if(callback_function !== undefined) {
+            callback_function(profile_values[limiter_param]);
+        }
     }
 
     {% else %}

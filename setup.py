@@ -15,7 +15,8 @@ setup(
     install_requires = [
         'Django >= 1.2',
         'django-email-confirmation >= 0.1.4',
-        'django-openid-consumer >= 0.1.1'
+        'django-openid-consumer >= 0.1.1',
+	'pymongo >= 1.9'
         ],
     packages = find_packages(),
     include_package_data = True,
