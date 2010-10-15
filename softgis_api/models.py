@@ -7,8 +7,6 @@ from django.utils import translation
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models as gis_models
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import connection
-from django.utils.encoding import smart_unicode
 
 import settings
 import datetime
@@ -104,7 +102,8 @@ def get_user_profile(user):
 
     profile_dict = {}
     try:
-        profile = ProfileValue.objects.filter(user__exact = user).latest('create_time')
+        profile = ProfileValue.objects.filter(user__exact = user)\
+                                      .latest('create_time')
 
         profile_dict = json.loads(profile.json_string)
     except ObjectDoesNotExist:
@@ -152,7 +151,9 @@ def get_profiles(limit_param, profile_queryset):
 
                 profile_ids = []
                 for profile in profiles.find({key: value,
-                                            "profile_id": {"$in": profile_id_list}}):
+                                            "profile_id":
+                                            {"$in": profile_id_list}}):
+                                                
                     profile_ids.append(profile['profile_id'])
 
                 profile_queryset = profile_queryset.filter(id__in = profile_ids)
@@ -163,8 +164,11 @@ def get_profiles(limit_param, profile_queryset):
 
                 profile_ids = []
                 
-                for profile in profiles.find({value_name: {"$lte": max, "$gte": min},
-                                            "profile_id": {"$in": profile_id_list}}):
+                for profile in profiles.find({value_name: {"$lte": max,
+                                                           "$gte": min},
+                                            "profile_id": {"$in":
+                                                           profile_id_list}}):
+                                                               
                     profile_ids.append(profile['profile_id'])
                     
                 profile_queryset = profile_queryset.filter(id__in = profile_ids)
@@ -210,7 +214,8 @@ class Feature(gis_models.Model):
         
         try:
             # this should be changed to support different time queries
-            properties = Property.objects.filter(feature__exact=self).latest('create_time')
+            properties = Property.objects.filter(feature__exact=self)\
+                                            .latest('create_time')
             properties_dict = json.loads(properties.json_string)
         except ObjectDoesNotExist:
             properties_dict = {}
@@ -218,7 +223,7 @@ class Feature(gis_models.Model):
         feature_json = {}
         
         #set the default property values
-        properties_dict['id'] = self.id;
+        properties_dict['id'] = self.id
         properties_dict['user_id'] = self.user.id
         
         feature_json = {"id": self.id,
@@ -236,7 +241,9 @@ class Feature(gis_models.Model):
     class Meta:
         permissions = (
             ("can_view_all", "Can view all features"),
-            ("can_view_non_confidential", "Can view the non confidential features"),)
+
+            ("can_view_non_confidential",
+            "Can view the non confidential features"),)
 
 
 def get_user_features(user):
@@ -246,13 +253,14 @@ def get_user_features(user):
     if not user.is_authenticated():
         return feature_collection
         
-    feature_queryset = Feature.objects.filter(user__exact = user, expire_time__isnull = True)
+    feature_queryset = Feature.objects.filter(user__exact = user,
+                                              expire_time__isnull = True)
 
     for feature in feature_queryset:
         feature_collection['features'].append(feature.geojson())
 
-    # According to GeoJSON specification crs member should be on the top-level GeoJSON object
-    # get srid from the first feature in the collection
+    # According to GeoJSON specification crs member should be on the
+    # top-level GeoJSON object get srid from the first feature in the collection
     if feature_queryset.exists():
         srid = feature_queryset[0].geometry.srid
     else:
@@ -296,7 +304,12 @@ def get_features(limit_param, feature_queryset):
 
                 feature_ids = []
                 
-                for feature_property in feature_properties.find({key:value, "feature_id": {"$in": feature_id_list}}):
+                for feature_property in feature_properties.find({key:value,
+                                                                "feature_id":
+                                                                {"$in":
+                                                                feature_id_list
+                                                                }}):
+                                                                    
                     feature_ids.append(feature_property['feature_id'])
 
                 feature_queryset = feature_queryset.filter(id__in = feature_ids)
