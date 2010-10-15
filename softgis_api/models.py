@@ -7,8 +7,6 @@ from django.utils import translation
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models as gis_models
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import connection
-from django.utils.encoding import smart_unicode
 
 import settings
 import datetime
@@ -261,8 +259,8 @@ def get_user_features(user):
     for feature in feature_queryset:
         feature_collection['features'].append(feature.geojson())
 
-    # According to GeoJSON specification crs member should be on the top-level GeoJSON object
-    # get srid from the first feature in the collection
+    # According to GeoJSON specification crs member should be on the
+    # top-level GeoJSON object get srid from the first feature in the collection
     if feature_queryset.exists():
         srid = feature_queryset[0].geometry.srid
     else:
