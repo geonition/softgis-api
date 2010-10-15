@@ -14,6 +14,7 @@ from django.contrib.auth import authenticate as django_authenticate
 from django.contrib.auth.models import User
 from django.db import IntegrityError
 from django.core.exceptions import ObjectDoesNotExist
+#from pehmogis.api.softgis_api.models import geometry
 from softgis_api.models import ProfileValue
 from softgis_api.models import Feature
 from softgis_api.models import Property
@@ -25,6 +26,8 @@ from django.contrib.gis.geos import GEOSGeometry
 from random import Random
 from django.utils import translation
 from django.views.decorators.cache import cache_page
+#from django.contrib.gis.gdal.geometries import srid
+from django.contrib.gis.gdal import OGRGeometry
 import values
 
 import sys
@@ -327,6 +330,9 @@ def feature(request):
             #else the user can only view his/her own features
             feature_queryset = Feature.objects.filter(user__exact = request.user)
 
+        # transform geometries to the correct SpatialReferenceSystem
+        #feature_queryset.transform(3067)
+
         #filter according to limiting_params
         property_queryset = Property.objects.all()
 
@@ -351,6 +357,16 @@ def feature(request):
         for feature in feature_queryset:
             feature_collection['features'].append(feature.geojson())
 
+        # According to GeoJSON specification crs member should be on the top-level GeoJSON object
+        # get srid from the first feature in the collection
+        if feature_queryset.exists():
+            srid = feature_queryset[0].geometry.srid
+        else:
+            srid = 3067
+
+        crs_object =  {"type": "EPSG", "properties": {"code": srid}}
+        feature_collection['crs'] = crs_object
+        
         return HttpResponse(json.dumps(feature_collection))
         
             
@@ -400,8 +416,9 @@ def feature(request):
         if identifier == None:
             #save a new feature if id is None
             
-            geos = GEOSGeometry(json.dumps(geometry))
-            
+            #geos = GEOSGeometry(json.dumps(geometry))
+            # Have to make OGRGeometry as GEOSGeometry does not support spatial reference systems
+            geos = OGRGeometry(json.dumps(geometry)).geos
             new_feature = None
             new_feature = Feature(geometry=geos, user=request.user, category=category)
             new_feature.save()
