@@ -189,7 +189,7 @@ class Feature(gis_models.Model):
     containing a geometry object and has properties in
     the Property model.
     """
-    geometry = gis_models.GeometryField(srid=3067)
+    geometry = gis_models.GeometryField(srid=settings.SPATIAL_REFERENCE_SYSTEM_ID)
     user = models.ForeignKey(User)
     category = models.CharField(max_length=100)
     
