@@ -277,6 +277,10 @@ function save_graphic(graphic) {
         geojson_feature.id = graphic.id;
     }
 
+    // add crs to the geometry
+    geojson_feature.geometry.crs = {"type": "EPSG",
+                                    "properties": {"code": graphic.geometry.spatialReference.wkid}};
+
     //add the parameters from the properties
     var params = "?category=" + geojson_feature.properties.category;
     if(geojson_feature.id !== undefined &&
@@ -379,6 +383,7 @@ function get_graphics(limiter_param, map_layer, infotemplate) {
 
                     LAYER_ADD_SEMAPHORES[limiter_param] = true;
 
+                    var spatialReference = new esri.SpatialReference({"wkid": response.crs.properties.code});
                     for(var i = 0; i < response.features.length; i++) {
                         var geometry = response.features[i].geometry;
                         var properties = response.features[i].properties;
@@ -387,13 +392,12 @@ function get_graphics(limiter_param, map_layer, infotemplate) {
 
                         //graphicID and id should be the same
                         //properties.graphicID = id;
-
                         if(geometry.type === "Point") {
-                            graphic.setGeometry(new esri.geometry.Point(geometry.coordinates));
+                            graphic.setGeometry(new esri.geometry.Point(geometry.coordinates).setSpatialReference(spatialReference));
                         } else if (geometry.type === "LineString") {
-                            graphic.setGeometry(new esri.geometry.Polyline({"paths": [geometry.coordinates]}));
+                            graphic.setGeometry(new esri.geometry.Polyline({"paths": [geometry.coordinates]}).setSpatialReference(spatialReference));
                         } else if(geometry.type === "Polygon") {
-                            graphic.setGeometry(new esri.geometry.Polygon({"rings": geometry.coordinates}));
+                            graphic.setGeometry(new esri.geometry.Polygon({"rings": geometry.coordinates}).setSpatialReference(spatialReference));
                         }
                         graphic.setAttributes(properties);
                         

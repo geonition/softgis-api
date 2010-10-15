@@ -9,7 +9,6 @@ from django.contrib.gis.db import models as gis_models
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection
 from django.utils.encoding import smart_unicode
-from pymongo import Connection
 
 import settings
 import datetime
@@ -20,6 +19,9 @@ if sys.version_info >= (2, 6):
     import json
 else:
     import simplejson as json
+
+if settings.USE_MONGODB:
+    from pymongo import Connection
 
 _ = translation.ugettext
     
@@ -187,7 +189,7 @@ class Feature(gis_models.Model):
     containing a geometry object and has properties in
     the Property model.
     """
-    geometry = gis_models.GeometryField()
+    geometry = gis_models.GeometryField(srid=3067)
     user = models.ForeignKey(User)
     category = models.CharField(max_length=100)
     
@@ -248,7 +250,17 @@ def get_user_features(user):
 
     for feature in feature_queryset:
         feature_collection['features'].append(feature.geojson())
-    
+
+    # According to GeoJSON specification crs member should be on the top-level GeoJSON object
+    # get srid from the first feature in the collection
+    if feature_queryset.exists():
+        srid = feature_queryset[0].geometry.srid
+    else:
+        srid = 3067
+        
+    crs_object =  {"type": "EPSG", "properties": {"code": srid}}
+    feature_collection['crs'] = crs_object
+
     return feature_collection
 
 def get_features(limit_param, feature_queryset):
