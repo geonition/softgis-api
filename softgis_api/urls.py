@@ -22,6 +22,17 @@ urlpatterns = patterns('softgis_api.views',
             url(r'^logout/$',
                 'logout',
                 name="api_logout"),
+            #openid login urls
+            url(r'^openid/$',
+                'openid_begin',
+                name="api_openid_begin"),
+            url(r'^openid/complete/$',
+                'openid_complete',
+                name="api_openid_complete"),
+            url(r'^openid/signout/$',
+                'openid_signout',
+                name="api_openid_signout"),
+            
 
             #feature rest
             url(r'^feature/$',
@@ -37,4 +48,5 @@ urlpatterns = patterns('softgis_api.views',
             url(r'^softgis.js',
                 'javascript_api',
                 name="api_javascript"),
+
         )
