@@ -462,9 +462,10 @@ def feature(request):
     
         feature_json = None
         
+        feature_json = json.loads(request.POST.keys()[0])
         try:
             feature_json = json.loads(request.POST.keys()[0])
-        except Exception:
+        except ValueError:
             return HttpResponseBadRequest(
                         "mime type should be application/json")
 
@@ -479,6 +480,7 @@ def feature(request):
             properties = feature_json['properties']
             category = feature_json['properties']['category']
         except KeyError:
+            print "badrequest 2"
             return HttpResponseBadRequest("json requires properties \
                                             and geometry, and the \
                                             properties a category value")
@@ -522,6 +524,7 @@ def feature(request):
                 new_property.save()
                 
             except ObjectDoesNotExist:
+                print "object not exist"
                 return HttpResponseBadRequest(
                             "no feature with the given id found")
 
