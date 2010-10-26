@@ -248,8 +248,8 @@ class GeoApiTest(TestCase):
 class ProfileValueDBTest(TestCase):
     
     def setUp(self):
-        self.user = User.objects.create_user('testuser', \
-                                            'some@somewhere.com', \
+        self.user = User.objects.create_user('testuser', 
+                                            'some@somewhere.com', 
                                             'password')
     
     
@@ -260,14 +260,14 @@ class ProfileValueDBTest(TestCase):
 class FeatureDBTest(TestCase):
     
     def setUp(self):
-        self.user = User.objects.create_user('testuser', \
-                                            'some@somewhere.com', \
+        self.user = User.objects.create_user('testuser', 
+                                            'some@somewhere.com', 
                                             'password')
-        self.poly = GEOSGeometry('POLYGON(( 10 10, \
-                                            10 20, \
-                                            20 20, \
-                                            20 15, \
-                                            10 10))')
+        self.poly = GEOSGeometry('POLYGON(( 10 10,' + \
+                                            '10 20,' + \
+                                            '20 20,' + \
+                                            '20 15,' + \
+                                            '10 10))')
         self.point = GEOSGeometry('POINT(10 10)')
 
     def test_feature(self):
@@ -291,22 +291,22 @@ class FeatureDBTest(TestCase):
         
         #query all should contain both features saved
         feature_queryset = Feature.objects.all()
-        self.assertEquals(feature_queryset.count(), \
-                            2, \
+        self.assertEquals(feature_queryset.count(), 
+                            2, 
                             "added features removed from database")
         
         #return the latest feature
         latest_feature = feature_queryset.latest('create_time')
-        self.assertEquals(feat2, \
-                            latest_feature, \
+        self.assertEquals(feat2, 
+                            latest_feature, 
                             "latest feature is not the last saved feature")
         
         #retreive the latest deleted feature
         latest_deleted_feature = feature_queryset.latest('expire_time')
-        self.assertEquals(feat1, \
-                            latest_deleted_feature, \
-                            "latest deleted feature \
-                            is not the last deleted feature")
+        self.assertEquals(feat1, 
+                            latest_deleted_feature, 
+                            "latest deleted feature" + \
+                            "is not the last deleted feature")
                             
     
     def test_property(self):
