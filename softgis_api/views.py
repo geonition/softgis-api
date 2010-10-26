@@ -23,18 +23,12 @@ from softgis_api.models import get_profiles
 from emailconfirmation.models import EmailAddress
 from django.core.mail import send_mail 
 from django.core.mail import BadHeaderError
-from django.contrib.gis.geos import GEOSGeometry
 from random import Random
 from django.utils import translation
-from django.views.decorators.cache import cache_page
-#from django.contrib.gis.gdal.geometries import srid
 from django.contrib.gis.gdal import OGRGeometry
 from openid2rp.django import auth as openid_auth
-from django.core.urlresolvers import reverse
 
-import openid2rp
 import django
-import values
 import settings
 
 import sys
@@ -65,7 +59,8 @@ def login(request):
         try:
             request_json = eval(request.POST.keys()[0])
         except Exception:
-            return HttpResponseBadRequest("mime type should be application/json")
+            return HttpResponseBadRequest(
+                        "mime type should be application/json")
          
         username = request_json['username']
         password = request_json['password']
@@ -127,7 +122,8 @@ def openid_complete(request):
     if the user has logged in before then the same user is authenticated and logged
     in
     """
-    user = django_authenticate(request=request, claim=request.GET['openid.identity'])
+    user = django_authenticate(request=request,
+                                claim=request.GET['openid.identity'])
   
     if(user.is_anonymous()):
         search_user_name = True
@@ -135,10 +131,13 @@ def openid_complete(request):
         while(search_user_name):
             try:
                 username = "anonymous-" + str(i)
-                new_user = User.objects.create_user(username=username, password="no-pass", email="")
+                new_user = User.objects.create_user(username=username,
+                                                    password="no-pass",
+                                                    email="")
                 new_user.save()
                 openid_auth.linkOpenID(new_user, request.GET['openid.identity'])
-                new_user = django_authenticate(username=username, password="no-pass")
+                new_user = django_authenticate(username=username,
+                                                password="no-pass")
                 search_user_name = False
             except IntegrityError:
                 i = i + 1
@@ -152,7 +151,8 @@ def openid_complete(request):
     else:
         django_login(request, user)
     
-    return HttpResponseRedirect("/")
+    return HttpResponseRedirect(getattr(settings, "OPENID_REDIRECT_URL", "/"))
+    
 
 #registering for an softGIS API account
 def register(request):
@@ -200,7 +200,8 @@ def register(request):
         try:
             request_json = eval(request.POST.keys()[0])
         except Exception:
-            return HttpResponseBadRequest("mime type should be application/json")
+            return HttpResponseBadRequest(
+                        "mime type should be application/json")
             
             
         try:
@@ -229,7 +230,7 @@ def register(request):
                 django_login(request, user)
                 
             if not email == '':
-                email_addr = EmailAddress.objects.add_email(user, email)
+                EmailAddress.objects.add_email(user, email)
 
             if notifications == 'yes':
                 new_profile_value = ProfileValue(user=user,
@@ -260,17 +261,18 @@ def new_password(request):
         if not username == None:
             try:
                 user = User.objects.get(username__exact = username)
-            except:
+            except Exception:
                 pass
         
         if not email == None:
             try:
                 user = User.objects.get(email__exact = email)
-            except:
+            except Exception:
                 pass
                 
         if user == None:
-            return HttpResponseNotFound("username or email does not match existing user")
+            return HttpResponseNotFound(
+                        "username or email does not match existing user")
         
         elif user.email == None:
             return HttpResponseBadRequest("user has no email")
@@ -279,14 +281,13 @@ def new_password(request):
         
         righthand = '23456qwertasdfgzxcvbQWERTASDFGZXCVB'
         lefthand = '789yuiophjknmYUIPHJKLNM'
-        allchars = righthand + lefthand
         
         passwordlength = 8
         
         password = ""
         
         for i in range(passwordlength):
-            if i%2:
+            if i % 2:
                 password += rnd.choice(righthand)
             else:
                 password += rnd.choice(lefthand)
@@ -295,7 +296,10 @@ def new_password(request):
         message = user.username + _(' uusi salasana on: ') + password
         
         try:
-            send_mail(subject, message, 'do_not_reply@pehmogis.fi', [user.email])
+            send_mail(subject,
+                        message,
+                        'do_not_reply@pehmogis.fi',
+                        [user.email])
             user.set_password(password)
             user.save()
             return HttpResponse()
@@ -330,7 +334,7 @@ def profile(request):
         limiting_param = request.GET.items()
         
         if not request.user.is_authenticated():
-            return HttpResponseForbidden();
+            return HttpResponseForbidden()
 
         profile_queryset = None
         
@@ -338,7 +342,8 @@ def profile(request):
         if(request.user.has_perm('can_view_profiles')):
             profile_queryset = ProfileValue.objects.all()
         else:
-            profile_queryset = ProfileValue.objects.filter(user__exact = request.user)
+            profile_queryset = \
+                    ProfileValue.objects.filter(user__exact = request.user)
 
         profile_list = get_profiles(limiting_param, profile_queryset)
         
@@ -351,7 +356,8 @@ def profile(request):
         try:
             values = json.loads(request.POST.keys()[0])
         except Exception:
-            return HttpResponseBadRequest("mime type should be application/json")
+            return HttpResponseBadRequest(
+                        "mime type should be application/json")
 
         try:
             email = values['email']
@@ -391,7 +397,8 @@ def feature(request):
             feature_queryset = Feature.objects.exclude(category__exact = 'home')
         else:
             #else the user can only view his/her own features
-            feature_queryset = Feature.objects.filter(user__exact = request.user)
+            feature_queryset = \
+                    Feature.objects.filter(user__exact = request.user)
 
         # transform geometries to the correct SpatialReferenceSystem
         #feature_queryset.transform(3067)
@@ -408,19 +415,22 @@ def feature(request):
                 feature_queryset = \
                                 feature_queryset.filter(category__exact = value)
             else:
-                property_queryset = property_queryset.filter(value_name = key, value = value)
+                property_queryset = property_queryset.filter(value_name = key,
+                                                            value = value)
 
         
         #filter the features with wrong properties
         feature_id_list = property_queryset.values_list('feature_id', flat=True)
 
         # Not in use and gives database error in sqlite3
-        #feature_queryset = feature_queryset.filter(id__in = list(feature_id_list))
+        # feature_queryset =
+        #       feature_queryset.filter(id__in = list(feature_id_list))
         
         for feature in feature_queryset:
             feature_collection['features'].append(feature.geojson())
 
-        # According to GeoJSON specification crs member should be on the top-level GeoJSON object
+        # According to GeoJSON specification crs member
+        # should be on the top-level GeoJSON object
         # get srid from the first feature in the collection
         if feature_queryset.exists():
             srid = feature_queryset[0].geometry.srid
@@ -455,7 +465,8 @@ def feature(request):
         try:
             feature_json = json.loads(request.POST.keys()[0])
         except Exception:
-            return HttpResponseBadRequest("mime type should be application/json")
+            return HttpResponseBadRequest(
+                        "mime type should be application/json")
 
         
         identifier = None
@@ -468,8 +479,9 @@ def feature(request):
             properties = feature_json['properties']
             category = feature_json['properties']['category']
         except KeyError:
-            return HttpResponseBadRequest("json requires properties and geometry, \
-                                            and the properties a category value")
+            return HttpResponseBadRequest("json requires properties \
+                                            and geometry, and the \
+                                            properties a category value")
           
         try:
             identifier = feature_json['id']
@@ -480,10 +492,13 @@ def feature(request):
             #save a new feature if id is None
             
             #geos = GEOSGeometry(json.dumps(geometry))
-            # Have to make OGRGeometry as GEOSGeometry does not support spatial reference systems
+            # Have to make OGRGeometry as GEOSGeometry
+            # does not support spatial reference systems
             geos = OGRGeometry(json.dumps(geometry)).geos
             new_feature = None
-            new_feature = Feature(geometry=geos, user=request.user, category=category)
+            new_feature = Feature(geometry=geos,
+                                    user=request.user,
+                                    category=category)
             new_feature.save()
 
             #add the id to the feature json
@@ -498,14 +513,17 @@ def feature(request):
             
         else:
             #update old feature if id is given
-            #only the feature properties is updated otherwise a completely new feature should be added
+            #only the feature properties is updated otherwise a
+            #completely new feature should be added
             try:
                 new_feature = Feature.objects.get(id__exact = identifier)
-                new_property = Property(feature = new_feature, json_string = json.dumps(properties))
+                new_property = Property(feature = new_feature,
+                                        json_string = json.dumps(properties))
                 new_property.save()
                 
             except ObjectDoesNotExist:
-                return HttpResponseBadRequest("no feature with the given id found")
+                return HttpResponseBadRequest(
+                            "no feature with the given id found")
 
         return HttpResponse(json.dumps(feature_json))
 
@@ -516,4 +534,5 @@ def javascript_api(request):
     template = loader.get_template('javascript/softgis.js')
     context = RequestContext(request, context_dict)
 
-    return HttpResponse(template.render(context), mimetype="application/javascript")
+    return HttpResponse(template.render(context),
+                        mimetype="application/javascript")

@@ -29,10 +29,6 @@ urlpatterns = patterns('softgis_api.views',
             url(r'^openid/complete/$',
                 'openid_complete',
                 name="api_openid_complete"),
-            url(r'^openid/signout/$',
-                'openid_signout',
-                name="api_openid_signout"),
-            
 
             #feature rest
             url(r'^feature/$',
