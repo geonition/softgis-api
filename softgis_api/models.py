@@ -7,7 +7,10 @@ from django.utils import translation
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models as gis_models
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models.signals import post_save
+from django.db import IntegrityError
 
+import django
 import settings
 import datetime
 
@@ -23,11 +26,40 @@ if settings.USE_MONGODB:
 
 _ = translation.ugettext
     
+
+class StaticProfileValue(models.Model):
+    user = models.OneToOneField(User)
+    #add here static profile values for each user
+    allow_notifications = models.BooleanField(default=False)
+
+    GENDER_CHOICES = (('M', 'Male'), ('F', 'Female'), )
+    gender = models.CharField(blank=True, max_length = 1, choices = GENDER_CHOICES)
+
+    BIRTHYEAR_CHOICES = ()
+    years = range(datetime.date.today().year - 100, datetime.date.today().year - 5)
+    for year in years:
+        BIRTHYEAR_CHOICES = BIRTHYEAR_CHOICES + ((year, year),)
+    birthyear = models.IntegerField(blank=True, choices = BIRTHYEAR_CHOICES)
+
+    email = models.EmailField(blank=True)
+    email_confirmed = models.BooleanField(default=False)
+
     
+#signal handler for profile creation
+def profile_handler(sender, instance, created, **kwargs):
+    if created == True:
+        try:
+            associate_profile = StaticProfileValue(user=instance, allow_notifications = False)
+            associate_profile.save()
+        except IntegrityError:
+            django.db.connection.close()
+
+post_save.connect(profile_handler, sender=User)
+
 class ProfileValue(models.Model):
     """
     additional possibly changing values to connect to
-    a Person
+    a Persons profile
     """
     user = models.ForeignKey(User)
     json_string = models.TextField()
@@ -102,10 +134,17 @@ def get_user_profile(user):
 
     profile_dict = {}
     try:
+        print "get the lates profile values"
         profile = ProfileValue.objects.filter(user__exact = user)\
                                       .latest('create_time')
 
         profile_dict = json.loads(profile.json_string)
+        #add the static user profile values
+        profile_dict['allow_notifications'] = StaticProfileValue.objects.get(user__exact = user).allow_notifications
+        profile_dict['gender'] = StaticProfileValue.objects.get(user__exact = user).gender
+        profile_dict['email'] = StaticProfileValue.objects.get(user__exact = user).email
+        profile_dict['birthyear'] = StaticProfileValue.objects.get(user__exact = user).birthyear
+        
     except ObjectDoesNotExist:
         pass
     
@@ -118,7 +157,7 @@ def get_profiles(limit_param, profile_queryset):
     is in the given profile_queryset
     """
     if(profile_queryset == None):
-        profile_queryset = Profile.objects.all()
+        profile_queryset = ProfileValue.objects.all()
 
     profile_id_list = list(profile_queryset.values_list('id', flat=True))
 
@@ -181,12 +220,13 @@ def get_profiles(limit_param, profile_queryset):
     profile_list = []
     
     for profile in profile_queryset:
-        profile_list.append(json.loads(profile.json_string))
+        profile_dict = json.loads(profile.json_string)
+        profile_dict['allow_notifications'] = profile.user.staticprofilevalue.allow_notifications
+        profile_list.append(profile_dict)
 
     return profile_list
    
-#GEOMETRY MODELS   
-    
+#GEOMETRY MODELS
 class Feature(gis_models.Model):
     """
     A Feature is defined by structure as a geojson feature
