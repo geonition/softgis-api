@@ -19,6 +19,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from softgis_api.models import ProfileValue
 from softgis_api.models import Feature
 from softgis_api.models import Property
+from softgis_api.models import StaticProfileValue
 from softgis_api.models import get_profiles
 from emailconfirmation.models import EmailAddress
 from django.core.mail import send_mail 
@@ -57,8 +58,8 @@ def login(request):
     
         request_json = None
         try:
-            request_json = eval(request.POST.keys()[0])
-        except Exception:
+            request_json = json.loads(request.POST.keys()[0])
+        except ValueError:
             return HttpResponseBadRequest(
                         "mime type should be application/json")
          
@@ -198,12 +199,11 @@ def register(request):
     
         request_json = None
         try:
-            request_json = eval(request.POST.keys()[0])
-        except Exception:
+            request_json = json.loads(request.POST.keys()[0])
+        except ValueError:
             return HttpResponseBadRequest(
                         "mime type should be application/json")
-            
-            
+        
         try:
             username = request_json['username']
             password = request_json['password']
@@ -212,18 +212,27 @@ def register(request):
             except KeyError:
                 email = ''
             try:
-                notifications = request_json['notifications']
+                allow_notifications = request_json['allow_notifications']
+                if notifications == 'true':
+                    allow_notifications = True
+                else:
+                    allow_notifications = False
             except KeyError:
-                notifications = ''
-                
+                allow_notifications = False
+
             #create user for django auth
-            user = User.objects.create_user(username, \
-                                            email, \
-                                            password)
+            user = User.objects.create_user(username = username,
+                                            email = email,
+                                            password = password)
             user.save()
 
 
-            user = django_authenticate(username=username, \
+            #add additional profile values
+            static_profile_values = StaticProfileValue.objects.get(user=user)
+            static_profile_values.allow_notifications = allow_notifications
+            static_profile_values.save()
+
+            user = django_authenticate(username=username,
                                         password=password)
                                         
             if user is not None and user.is_active:
@@ -231,19 +240,12 @@ def register(request):
                 
             if not email == '':
                 EmailAddress.objects.add_email(user, email)
-
-            if notifications == 'yes':
-                new_profile_value = ProfileValue(user=user,
-                                                value_name="notifications",
-                                                value=str(notifications))
-                new_profile_value.save()
             
             return HttpResponse(status=201)
         
         except IntegrityError:
+            django.db.connection.close()
             return HttpResponse(status=409)
-        except Exception:
-            return HttpResponseBadRequest()
 
 def new_password(request):
     """
@@ -355,18 +357,34 @@ def profile(request):
         
         try:
             values = json.loads(request.POST.keys()[0])
-        except Exception:
+        except ValueError:
             return HttpResponseBadRequest(
                         "mime type should be application/json")
 
         try:
-            email = values['email']
+            email = values.pop('email')
+            #this is for confirming the email should be improved TODO
             email_addr = EmailAddress.objects.add_email(request.user, email)
         except KeyError:
-            pass
+            email = None
 
+        allow_notifications = values.pop('allow_notifications', False)
+        if allow_notifications == 'true':
+            allow_notifications = True
+
+        birthyear = values.pop('birthyear', None)
+        gender = values.pop('gender', None)
+
+        #add additional profile values
+        static_profile_values = StaticProfileValue.objects.get(user=request.user)
+        static_profile_values.allow_notifications = allow_notifications
+        static_profile_values.birthyear = birthyear
+        static_profile_values.gender = gender
+        static_profile_values.email = email
+        static_profile_values.save()
+            
         new_profile_value = ProfileValue(user = request.user,
-                                        json_string = request.POST.keys()[0])
+                                        json_string = json.dumps(values))
 
         new_profile_value.save()
         
