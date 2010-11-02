@@ -33,15 +33,15 @@ class StaticProfileValue(models.Model):
     allow_notifications = models.BooleanField(default=False)
 
     GENDER_CHOICES = (('M', 'Male'), ('F', 'Female'), )
-    gender = models.CharField(blank=True, max_length = 1, choices = GENDER_CHOICES)
+    gender = models.CharField(default='', max_length = 1, choices = GENDER_CHOICES)
 
     BIRTHYEAR_CHOICES = ()
     years = range(datetime.date.today().year - 100, datetime.date.today().year - 5)
     for year in years:
         BIRTHYEAR_CHOICES = BIRTHYEAR_CHOICES + ((year, year),)
-    birthyear = models.IntegerField(blank=True, choices = BIRTHYEAR_CHOICES)
+    birthyear = models.IntegerField(default=None, blank=True, null=True, choices = BIRTHYEAR_CHOICES)
 
-    email = models.EmailField(blank=True)
+    email = models.EmailField(default="")
     email_confirmed = models.BooleanField(default=False)
 
     
@@ -49,7 +49,7 @@ class StaticProfileValue(models.Model):
 def profile_handler(sender, instance, created, **kwargs):
     if created == True:
         try:
-            associate_profile = StaticProfileValue(user=instance, allow_notifications = False)
+            associate_profile = StaticProfileValue(user=instance)
             associate_profile.save()
         except IntegrityError:
             django.db.connection.close()
