@@ -197,39 +197,33 @@ def register(request):
                                           "when logged in")
         
     
-        request_json = None
+        values = None
         try:
-            request_json = json.loads(request.POST.keys()[0])
+            values = json.loads(request.POST.keys()[0])
         except ValueError:
             return HttpResponseBadRequest(
                         "mime type should be application/json")
         
         try:
-            username = request_json['username']
-            password = request_json['password']
-            try:
-                email = request_json['email']
-            except KeyError:
-                email = ''
-            try:
-                allow_notifications = request_json['allow_notifications']
-                if notifications == 'true':
-                    allow_notifications = True
-                else:
-                    allow_notifications = False
-            except KeyError:
-                allow_notifications = False
+            username = values.pop('username')
+            password = values.pop('password')
+            email = values.pop('email', "")    
+            allow_notifications = values.pop('allow_notifications', False)
 
+            print "notifications"
+            print allow_notifications
+            
             #create user for django auth
             user = User.objects.create_user(username = username,
                                             email = email,
                                             password = password)
-            user.save()
 
+            
 
             #add additional profile values
             static_profile_values = StaticProfileValue.objects.get(user=user)
             static_profile_values.allow_notifications = allow_notifications
+            static_profile_values.email = email
             static_profile_values.save()
 
             user = django_authenticate(username=username,
@@ -361,19 +355,16 @@ def profile(request):
             return HttpResponseBadRequest(
                         "mime type should be application/json")
 
-        try:
-            email = values.pop('email')
-            #this is for confirming the email should be improved TODO
+        email = values.pop('email', "")
+
+        #this is for confirming the email
+        if not email == "":
             email_addr = EmailAddress.objects.add_email(request.user, email)
-        except KeyError:
-            email = None
 
         allow_notifications = values.pop('allow_notifications', False)
-        if allow_notifications == 'true':
-            allow_notifications = True
 
         birthyear = values.pop('birthyear', None)
-        gender = values.pop('gender', None)
+        gender = values.pop('gender', '')
 
         #add additional profile values
         static_profile_values = StaticProfileValue.objects.get(user=request.user)
@@ -498,10 +489,9 @@ def feature(request):
             properties = feature_json['properties']
             category = feature_json['properties']['category']
         except KeyError:
-            print "badrequest 2"
-            return HttpResponseBadRequest("json requires properties \
-                                            and geometry, and the \
-                                            properties a category value")
+            return HttpResponseBadRequest("json requires properties"  + \
+                                            "and geometry, and the" + \
+                                            "properties a category value")
           
         try:
             identifier = feature_json['id']
