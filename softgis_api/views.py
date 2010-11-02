@@ -367,12 +367,15 @@ def profile(request):
         gender = values.pop('gender', '')
 
         #add additional profile values
-        static_profile_values = StaticProfileValue.objects.get(user=request.user)
-        static_profile_values.allow_notifications = allow_notifications
-        static_profile_values.birthyear = birthyear
-        static_profile_values.gender = gender
-        static_profile_values.email = email
-        static_profile_values.save()
+        try:
+            static_profile_values = StaticProfileValue.objects.get(user=request.user)
+            static_profile_values.allow_notifications = allow_notifications
+            static_profile_values.birthyear = birthyear
+            static_profile_values.gender = gender
+            static_profile_values.email = email
+            static_profile_values.save()
+        except ValueError:
+            return HttpResponseBadRequest("The JSON should contain only valid value types")
             
         new_profile_value = ProfileValue(user = request.user,
                                         json_string = json.dumps(values))
