@@ -5,7 +5,7 @@
 
 /* login, logout, register, changepassword */
 
-function register(username, password, email, notifications) {
+function register(username, password, email, allow_notifications) {
     {% if not user.is_authenticated %}
     
     dojo.xhrPost({
@@ -15,7 +15,7 @@ function register(username, password, email, notifications) {
 	        'username': username, 
 	        'password': password,
 	        'email': email,
-	        'notifications': notifications
+	        'allow_notifications': allow_notifications
             })),
         "failOk": true,
 	    "sync": false,
