@@ -134,19 +134,25 @@ def get_user_profile(user):
 
     profile_dict = {}
     try:
-        print "get the lates profile values"
         profile = ProfileValue.objects.filter(user__exact = user)\
                                       .latest('create_time')
 
         profile_dict = json.loads(profile.json_string)
-        #add the static user profile values
-        profile_dict['allow_notifications'] = StaticProfileValue.objects.get(user__exact = user).allow_notifications
-        profile_dict['gender'] = StaticProfileValue.objects.get(user__exact = user).gender
-        profile_dict['email'] = StaticProfileValue.objects.get(user__exact = user).email
-        profile_dict['birthyear'] = StaticProfileValue.objects.get(user__exact = user).birthyear
-        
     except ObjectDoesNotExist:
         pass
+    
+    profile_dict['allow_notifications'] = StaticProfileValue.objects\
+                                            .get(user__exact = user)\
+                                            .allow_notifications
+    profile_dict['gender'] = StaticProfileValue.objects\
+                                        .get(user__exact = user)\
+                                        .gender
+    profile_dict['email'] = StaticProfileValue.objects\
+                                        .get(user__exact = user)\
+                                        .email
+    profile_dict['birthyear'] = StaticProfileValue.objects\
+                                        .get(user__exact = user)\
+                                        .birthyear
     
     return profile_dict
 
