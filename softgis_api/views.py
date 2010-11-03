@@ -225,6 +225,7 @@ def register(request):
             static_profile_values.allow_notifications = allow_notifications
             static_profile_values.email = email
             static_profile_values.save()
+            print "static profile values saved"
 
             user = django_authenticate(username=username,
                                         password=password)
@@ -362,7 +363,6 @@ def profile(request):
             email_addr = EmailAddress.objects.add_email(request.user, email)
 
         allow_notifications = values.pop('allow_notifications', False)
-
         birthyear = values.pop('birthyear', None)
         gender = values.pop('gender', '')
 
