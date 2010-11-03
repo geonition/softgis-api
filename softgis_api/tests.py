@@ -155,8 +155,8 @@ class ProfileValueTest(TestCase):
                     "gender": "M",
                     "something": "no value2",
                     "something": "no value3"}
-        response = self.client.post(reverse('api_profile'), \
-                                    json.dumps(cur_value), \
+        response = self.client.post(reverse('api_profile'),
+                                    json.dumps(cur_value),
                                     content_type='application/json')
         
         self.assertEquals(response.status_code, 200)
@@ -166,11 +166,35 @@ class ProfileValueTest(TestCase):
         response = self.client.get(reverse('api_profile'))
         self.assertEquals(response.status_code, 200)
         response_json = json.loads(response.content)
-        
-        #email submission        
-        response = self.client.post(reverse('api_profile'), \
-                                    json.dumps({'email':'some@some.fi'}), \
+
+        #send static values to rest
+        static_values = {"allow_notifications": True,
+                        "gender": "F",
+                        "birthyear": 1980,
+                        "email": ""}
+        response = self.client.post(reverse('api_profile'),
+                                    json.dumps(static_values),
                                     content_type='application/json')
+        self.assertEquals(response.status_code,
+                          200,
+                          "Valid static profile values adding did not work")
+        
+        static_values_false = {"allow_notifications": "true",
+                            "gender": True,
+                            "birthyear": "1980",
+                            "email": None}
+        response = self.client.post(reverse('api_profile'),
+                                    json.dumps(static_values_false),
+                                    content_type='application/json')
+        self.assertEquals(response.status_code,
+                          400,
+                          "The false static values did not return a bad request response")
+       
+        #email submission        
+        response = self.client.post(reverse('api_profile'),
+                                    json.dumps({'email':'some@some.fi'}),
+                                    content_type='application/json')
+                                    
         self.assertEquals(response.status_code,
                             200,
                             "email adding did not work")
