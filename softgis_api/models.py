@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.contrib.gis.db import models as gis_models
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.signals import post_save
+from django.core.signals import request_finished
 from django.db import IntegrityError
 
 import django
@@ -28,31 +29,48 @@ _ = translation.ugettext
     
 
 class StaticProfileValue(models.Model):
+    """
+    This model contains all the information of a user that
+    is not dynamic. Meaning that it does not changes during
+    a persons lifetime.
+    """
     user = models.OneToOneField(User)
     #add here static profile values for each user
     allow_notifications = models.BooleanField(default=False)
 
     GENDER_CHOICES = (('M', 'Male'), ('F', 'Female'), )
-    gender = models.CharField(default='', max_length = 1, choices = GENDER_CHOICES)
+    gender = models.CharField(default='',
+                                max_length = 1,
+                                choices = GENDER_CHOICES)
 
     BIRTHYEAR_CHOICES = ()
-    years = range(datetime.date.today().year - 100, datetime.date.today().year - 5)
+    years = range(datetime.date.today().year - 100,
+                  datetime.date.today().year - 5)
     for year in years:
         BIRTHYEAR_CHOICES = BIRTHYEAR_CHOICES + ((year, year),)
-    birthyear = models.IntegerField(default=None, blank=True, null=True, choices = BIRTHYEAR_CHOICES)
+    birthyear = models.IntegerField(default=None,
+                                    blank=True,
+                                    null=True,
+                                    choices = BIRTHYEAR_CHOICES)
 
     email = models.EmailField(default="")
     email_confirmed = models.BooleanField(default=False)
 
-    
 #signal handler for profile creation
 def profile_handler(sender, instance, created, **kwargs):
+    """
+    This function makes sure that the extension profile values
+    the StaticProfileValue is created for each user.
+
+    it is connected to the post_save() signal of the user model
+    """
     if created == True:
         try:
             associate_profile = StaticProfileValue(user=instance)
             associate_profile.save()
         except IntegrityError:
             django.db.connection.close()
+            pass
 
 post_save.connect(profile_handler, sender=User)
 
@@ -67,6 +85,10 @@ class ProfileValue(models.Model):
     expire_time = models.DateTimeField(null=True)
     
     def save(self, *args, **kwargs):
+        """
+        This function saves the new profile value and marks the old profile
+        values as expired.
+        """
         current_value = None
         current_value = \
             ProfileValue.objects.filter(user__exact = self.user)
@@ -107,6 +129,10 @@ class ProfileValue(models.Model):
         con.disconnect()
 
     def delete(self, *args, **kwargs):
+        """
+        This function sets the current profile value as
+        expired
+        """
         
         self.expire_time = datetime.datetime.today()
         super(ProfileValue, self).save(*args, **kwargs)
@@ -227,7 +253,10 @@ def get_profiles(limit_param, profile_queryset):
     
     for profile in profile_queryset:
         profile_dict = json.loads(profile.json_string)
-        profile_dict['allow_notifications'] = profile.user.staticprofilevalue.allow_notifications
+        profile_dict['allow_notifications'] = profile\
+                                                .user\
+                                                .staticprofilevalue\
+                                                .allow_notifications
         profile_list.append(profile_dict)
 
     return profile_list
@@ -239,7 +268,8 @@ class Feature(gis_models.Model):
     containing a geometry object and has properties in
     the Property model.
     """
-    geometry = gis_models.GeometryField(srid=settings.SPATIAL_REFERENCE_SYSTEM_ID)
+    geometry = gis_models\
+                .GeometryField(srid=settings.SPATIAL_REFERENCE_SYSTEM_ID)
     user = models.ForeignKey(User)
     category = models.CharField(max_length=100)
     
