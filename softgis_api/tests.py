@@ -178,17 +178,54 @@ class ProfileValueTest(TestCase):
         self.assertEquals(response.status_code,
                           200,
                           "Valid static profile values adding did not work")
-        
+        # allow_notifications as wrong type
         static_values_false = {"allow_notifications": "true",
+                            "gender": 'M',
+                            "birthyear": 1980,
+                            "email": ""}
+        response = self.client.post(reverse('api_profile'),
+                                    json.dumps(static_values_false),
+                                    content_type='application/json')
+        self.assertEquals(response.status_code,
+                          400,
+                          "a faulty allow_notifications value type did not" + \
+                          "return a bad request response")
+        # gender as wrong type
+        static_values_false = {"allow_notifications": True,
                             "gender": True,
+                            "birthyear": 1980,
+                            "email": ""}
+        response = self.client.post(reverse('api_profile'),
+                                    json.dumps(static_values_false),
+                                    content_type='application/json')
+        self.assertEquals(response.status_code,
+                          400,
+                          "a faulty gender value type did not" + \
+                          "return a bad request response")
+        # birthyear as wrong type
+        static_values_false = {"allow_notifications": True,
+                            "gender": '',
                             "birthyear": "1980",
+                            "email": ""}
+        response = self.client.post(reverse('api_profile'),
+                                    json.dumps(static_values_false),
+                                    content_type='application/json')
+        self.assertEquals(response.status_code,
+                          400,
+                          "a faulty birthyear value type did not" + \
+                          "return a bad request response")
+        # email as wrong type
+        static_values_false = {"allow_notifications": False,
+                            "gender": 'F',
+                            "birthyear": 1980,
                             "email": None}
         response = self.client.post(reverse('api_profile'),
                                     json.dumps(static_values_false),
                                     content_type='application/json')
         self.assertEquals(response.status_code,
                           400,
-                          "The false static values did not return a bad request response")
+                          "a faulty email value type did not" + \
+                          "return a bad request response")
        
         #email submission        
         response = self.client.post(reverse('api_profile'),
