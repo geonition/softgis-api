@@ -56,23 +56,28 @@ class StaticProfileValue(models.Model):
     email = models.EmailField(default="")
     email_confirmed = models.BooleanField(default=False)
 
+
 #signal handler for profile creation
-def profile_handler(sender, instance, created, **kwargs):
+#def profile_handler(sender, instance, created, **kwargs):
     """
     This function makes sure that the extension profile values
     the StaticProfileValue is created for each user.
 
     it is connected to the post_save() signal of the user model
     """
-    if created == True:
-        try:
-            associate_profile = StaticProfileValue(user=instance)
-            associate_profile.save()
-        except IntegrityError:
-            django.db.connection.close()
-            pass
+ #   print sender
+  #  print instance
+ #   print created
+ #   if created == True:
+ #       try:
+            #associate_profile = StaticProfileValue(user=instance)
+            #associate_profile.save()
+ #           pass
+ #       except IntegrityError:
+            #django.db.connection.close()
+ #           pass
 
-post_save.connect(profile_handler, sender=User)
+#post_save.connect(profile_handler, sender=User)
 
 class ProfileValue(models.Model):
     """
@@ -166,19 +171,22 @@ def get_user_profile(user):
         profile_dict = json.loads(profile.json_string)
     except ObjectDoesNotExist:
         pass
-    
-    profile_dict['allow_notifications'] = StaticProfileValue.objects\
+
+    try:
+        profile_dict['allow_notifications'] = StaticProfileValue.objects\
+                                                .get(user__exact = user)\
+                                                .allow_notifications
+        profile_dict['gender'] = StaticProfileValue.objects\
                                             .get(user__exact = user)\
-                                            .allow_notifications
-    profile_dict['gender'] = StaticProfileValue.objects\
-                                        .get(user__exact = user)\
-                                        .gender
-    profile_dict['email'] = StaticProfileValue.objects\
-                                        .get(user__exact = user)\
-                                        .email
-    profile_dict['birthyear'] = StaticProfileValue.objects\
-                                        .get(user__exact = user)\
-                                        .birthyear
+                                            .gender
+        profile_dict['email'] = StaticProfileValue.objects\
+                                            .get(user__exact = user)\
+                                            .email
+        profile_dict['birthyear'] = StaticProfileValue.objects\
+                                            .get(user__exact = user)\
+                                            .birthyear
+    except ObjectDoesNotExist:
+        pass
     
     return profile_dict
 

@@ -209,9 +209,6 @@ def register(request):
             password = values.pop('password')
             email = values.pop('email', "")    
             allow_notifications = values.pop('allow_notifications', False)
-
-            print "notifications"
-            print allow_notifications
             
             #create user for django auth
             user = User.objects.create_user(username = username,
@@ -221,11 +218,10 @@ def register(request):
             
 
             #add additional profile values
-            static_profile_values = StaticProfileValue.objects.get(user=user)
+            static_profile_values = StaticProfileValue(user=user)
             static_profile_values.allow_notifications = allow_notifications
-            static_profile_values.email = email
+            #static_profile_values.email = email
             static_profile_values.save()
-            print "static profile values saved"
 
             user = django_authenticate(username=username,
                                         password=password)
@@ -239,7 +235,6 @@ def register(request):
             return HttpResponse(status=201)
         
         except IntegrityError:
-            django.db.connection.close()
             return HttpResponse(status=409)
 
 def new_password(request):
@@ -368,11 +363,16 @@ def profile(request):
 
         #add additional profile values
         try:
+            print request.user.id
+            print birthyear
+            print gender
+            print email
+            print allow_notifications
             static_profile_values = StaticProfileValue.objects.get(user=request.user)
             static_profile_values.allow_notifications = allow_notifications
             static_profile_values.birthyear = birthyear
             static_profile_values.gender = gender
-            static_profile_values.email = email
+            #static_profile_values.email = email
             static_profile_values.save()
         except ValueError:
             return HttpResponseBadRequest("The JSON should contain only valid value types")
@@ -471,7 +471,7 @@ def feature(request):
         
         
     elif request.method == "POST":
-    
+            
         feature_json = None
         
         feature_json = json.loads(request.POST.keys()[0])
