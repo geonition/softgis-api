@@ -267,6 +267,17 @@ class ProfileValueTest(TestCase):
         
         print "CONFIRMATION EMAIL SENT SUPPOSED TO PRINT THE EMAIL:"
         print mail.outbox[0].body
+                
+        #change the email  
+        response = self.client.post(reverse('api_profile'),
+                                    json.dumps({'email':'some@other.fi'}),
+                                    content_type='application/json')
+                                    
+        self.assertEquals(response.status_code,
+                            200,
+                            "email adding did not work")
+        self.assertEquals(len(mail.outbox), 2)
+        
         
         
 class GeoApiTest(TestCase):
