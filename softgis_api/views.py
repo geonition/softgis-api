@@ -14,7 +14,9 @@ from django.contrib.auth import logout as django_logout
 from django.contrib.auth import authenticate as django_authenticate
 from django.contrib.auth.models import User
 from django.db import IntegrityError
+from django.db import DatabaseError
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ValidationError
 #from pehmogis.api.softgis_api.models import geometry
 from softgis_api.models import ProfileValue
 from softgis_api.models import Feature
@@ -28,6 +30,7 @@ from random import Random
 from django.utils import translation
 from django.contrib.gis.gdal import OGRGeometry
 from openid2rp.django import auth as openid_auth
+from django.shortcuts import render_to_response
 
 import django
 import settings
@@ -65,7 +68,6 @@ def login(request):
          
         username = request_json['username']
         password = request_json['password']
-     
 
         user = django_authenticate(username=username, password=password)
         
@@ -78,9 +80,7 @@ def login(request):
             return HttpResponse(status=401)
             
     except TypeError:
-        return HttpResponseBadRequest()
-    except Exception:
-        return HttpResponseBadRequest()
+        return HttpResponseBadRequest("typeError")
 
 def logout(request):
     """
@@ -236,6 +236,8 @@ def register(request):
         
         except IntegrityError:
             return HttpResponse(status=409)
+        except KeyError:
+            return HttpResponseBadRequest("no username or password provided")
 
 def new_password(request):
     """
@@ -320,13 +322,12 @@ def profile(request):
     This method handles the profile part of the
     REST api.
     """
-    
+    if not request.user.is_authenticated():
+        return HttpResponseForbidden("The request has to be made by an signed in user")
+        
     if(request.method == "GET"):
         # get the definied limiting parameters
         limiting_param = request.GET.items()
-        
-        if not request.user.is_authenticated():
-            return HttpResponseForbidden()
 
         profile_queryset = None
         
@@ -351,37 +352,37 @@ def profile(request):
             return HttpResponseBadRequest(
                         "mime type should be application/json")
 
-        email = values.pop('email', "")
-
-        #this is for confirming the email
-        if not email == "":
-            email_addr = EmailAddress.objects.add_email(request.user, email)
-
         allow_notifications = values.pop('allow_notifications', False)
         birthyear = values.pop('birthyear', None)
-        gender = values.pop('gender', '')
-
-        #add additional profile values
-        try:
-            print request.user.id
-            print birthyear
-            print gender
-            print email
-            print allow_notifications
-            static_profile_values = StaticProfileValue.objects.get(user=request.user)
-            static_profile_values.allow_notifications = allow_notifications
-            static_profile_values.birthyear = birthyear
-            static_profile_values.gender = gender
-            #static_profile_values.email = email
-            static_profile_values.save()
-        except ValueError:
-            return HttpResponseBadRequest("The JSON should contain only valid value types")
+        gender = values.pop('gender', u'')
+        email = values.pop('email', None)
+        
+        static_profile_values = StaticProfileValue.objects.filter(user__exact=request.user)
+        if len(static_profile_values) == 0:
+            static_profile_values = StaticProfileValue(user_id = request.user)
+        else:
+            static_profile_values = static_profile_values[0]
             
+        static_profile_values.allow_notifications = allow_notifications
+        static_profile_values.birthyear = birthyear
+        static_profile_values.gender = gender
+        static_profile_values.email = email
+
+        try:
+            static_profile_values.full_clean()
+        except ValidationError, e:
+            return HttpResponseBadRequest(json.dumps(e.message_dict))
+            
+        static_profile_values.save()
+        
+        #confirm email TODO should use own version of confirmation
+        if not email == "" and not email == None:
+            email_addr = EmailAddress.objects.add_email(request.user, email)
+
         new_profile_value = ProfileValue(user = request.user,
                                         json_string = json.dumps(values))
-
-        new_profile_value.save()
         
+        new_profile_value.save()
         
     return HttpResponse("")
         
@@ -550,3 +551,8 @@ def javascript_api(request):
 
     return HttpResponse(template.render(context),
                         mimetype="application/javascript")
+
+
+def test_api(request):
+    return render_to_response("test/test.html",
+                              context_instance = RequestContext(request))

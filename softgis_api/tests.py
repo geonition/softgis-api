@@ -31,7 +31,8 @@ class AuthenticationTest(TestCase):
         """
         #valid post
         post_content = {'username':'mike', 'password':'mikepass'}
-        response = self.client.post(reverse('api_register'), post_content, \
+        response = self.client.post(reverse('api_register'),
+                                    json.dumps(post_content),
                                     content_type='application/json')
         self.assertEquals(response.status_code, 201)
 
@@ -40,23 +41,27 @@ class AuthenticationTest(TestCase):
 
         #invalid post
         post_content = {'something':'some'}
-        response = self.client.post(reverse('api_register'), post_content, \
+        response = self.client.post(reverse('api_register'),
+                                    json.dumps(post_content),
                                     content_type='application/json')
         self.assertEquals(response.status_code, 400)
         
         post_content = {'username':'mike'}
-        response = self.client.post(reverse('api_register'), post_content, \
+        response = self.client.post(reverse('api_register'),
+                                    json.dumps(post_content),
                                     content_type='application/json')
         self.assertEquals(response.status_code, 400)
         
         post_content = {'password':'mike'}
-        response = self.client.post(reverse('api_register'), post_content, \
+        response = self.client.post(reverse('api_register'),
+                                    json.dumps(post_content),
                                     content_type='application/json')
         self.assertEquals(response.status_code, 400)
         
         #conflict
         post_content = {'username':'mike', 'password':'mikepass'}
-        response = self.client.post(reverse('api_register'), post_content, \
+        response = self.client.post(reverse('api_register'),
+                                    json.dumps(post_content),
                                     content_type='application/json')
         self.assertEquals(response.status_code, 409)
 
@@ -66,9 +71,11 @@ class AuthenticationTest(TestCase):
         """
         #register a user
         post_content = {'username':'testuser', 'password':'testpass'}
-        response = self.client.post(reverse('api_register'), post_content, \
+        response = self.client.post(reverse('api_register'),
+                                    json.dumps(post_content), \
                                     content_type='application/json')
-        self.assertEquals(response.status_code, 201,
+        self.assertEquals(response.status_code,
+                          201,
                           'registration did not work')
 
         #logout after registration
@@ -76,23 +83,28 @@ class AuthenticationTest(TestCase):
         
         #invalid login
         post_content = {'username':'some', 'password':'pass'}
-        response = self.client.post(reverse('api_login'), post_content, \
+        response = self.client.post(reverse('api_login'),
+                                    json.dumps(post_content), 
                                     content_type='application/json')
         self.assertEquals(response.status_code, 401)
         post_content = {'username':'some', 'password':'testpass'}
-        response = self.client.post(reverse('api_login'), post_content, \
+        response = self.client.post(reverse('api_login'),
+                                    json.dumps(post_content),
                                     content_type='application/json')
         self.assertEquals(response.status_code, 401)
         post_content = {'username':'testuser', 'password':'pass'}
-        response = self.client.post(reverse('api_login'), post_content, \
+        response = self.client.post(reverse('api_login'),
+                                    json.dumps(post_content),
                                     content_type='application/json')
         self.assertEquals(response.status_code, 401)
         
         #valid login
         post_content = {'username':'testuser', 'password':'testpass'}
-        response = self.client.post(reverse('api_login'), post_content, \
+        response = self.client.post(reverse('api_login'),
+                                    json.dumps(post_content), 
                                     content_type='application/json')
-        self.assertEquals(response.status_code, 200,
+        self.assertEquals(response.status_code,
+                          200,
                           'login with valid username and password did not work')
         
 class ProfileValueTest(TestCase):
@@ -101,7 +113,8 @@ class ProfileValueTest(TestCase):
         self.client = Client()
         #register a user
         post_content = {'username':'testuser', 'password':'testpass'}
-        response = self.client.post(reverse('api_register'), post_content, \
+        response = self.client.post(reverse('api_register'),
+                                    json.dumps(post_content),
                                     content_type='application/json')
 
     
@@ -117,8 +130,16 @@ class ProfileValueTest(TestCase):
         response = self.client.get(reverse('api_profile'))
         
         #login
-        response = self.client.login(username='testuser', password='testpass')
-        self.assertEquals(response, True)
+        post_content = {'username':'testuser', 'password':'testpass'}
+        response = self.client.post(reverse('api_login'),
+                                    json.dumps(post_content), 
+                                    content_type='application/json')
+        self.assertEquals(response.status_code,
+                          200,
+                          'login with valid username and password did not work')
+
+        #response = self.client.login(username='testuser', password='testpass')
+        #self.assertEquals(response, True)
         
         #get all values when no values yet added to user
         response = self.client.get(reverse('api_profile'))
@@ -127,8 +148,8 @@ class ProfileValueTest(TestCase):
 
         #add profile values to user
         cur_value = {"birth_year": 1980}
-        response = self.client.post(reverse('api_profile'), \
-                                    json.dumps(cur_value), \
+        response = self.client.post(reverse('api_profile'),
+                                    json.dumps(cur_value),
                                     content_type='application/json')
         self.assertEquals(response.status_code, 200)
         
@@ -143,6 +164,7 @@ class ProfileValueTest(TestCase):
         response = self.client.post(reverse('api_profile'),
                                     json.dumps(cur_value),
                                     content_type='application/json')
+
         self.assertEquals(response.status_code, 200)
         
         # check values in db        
@@ -162,7 +184,9 @@ class ProfileValueTest(TestCase):
         self.assertEquals(response.status_code, 200)
         
         # check values in db        
-        cur_value = {"birth_year": 1983, "gender": "M", "something": "no value3"}
+        cur_value = {"birth_year": 1983,
+                     "gender": "M",
+                     "something": "no value3"}
         response = self.client.get(reverse('api_profile'))
         self.assertEquals(response.status_code, 200)
         response_json = json.loads(response.content)
@@ -186,10 +210,12 @@ class ProfileValueTest(TestCase):
         response = self.client.post(reverse('api_profile'),
                                     json.dumps(static_values_false),
                                     content_type='application/json')
+        #print response.status_code
         self.assertEquals(response.status_code,
                           400,
                           "a faulty allow_notifications value type did not" + \
                           "return a bad request response")
+        
         # gender as wrong type
         static_values_false = {"allow_notifications": True,
                             "gender": True,
@@ -200,31 +226,33 @@ class ProfileValueTest(TestCase):
                                     content_type='application/json')
         self.assertEquals(response.status_code,
                           400,
-                          "a faulty gender value type did not" + \
+                          "a faulty gender value type did not " + \
                           "return a bad request response")
+        
         # birthyear as wrong type
         static_values_false = {"allow_notifications": True,
                             "gender": '',
-                            "birthyear": "1980",
+                            "birthyear": "yyyy",
                             "email": ""}
         response = self.client.post(reverse('api_profile'),
                                     json.dumps(static_values_false),
                                     content_type='application/json')
         self.assertEquals(response.status_code,
                           400,
-                          "a faulty birthyear value type did not" + \
+                          "a faulty birthyear value type did not " + \
                           "return a bad request response")
+        
         # email as wrong type
         static_values_false = {"allow_notifications": False,
                             "gender": 'F',
                             "birthyear": 1980,
-                            "email": None}
+                            "email": "hello.wrong.email"}
         response = self.client.post(reverse('api_profile'),
                                     json.dumps(static_values_false),
                                     content_type='application/json')
         self.assertEquals(response.status_code,
                           400,
-                          "a faulty email value type did not" + \
+                          "a faulty email value type did not " + \
                           "return a bad request response")
        
         #email submission        
@@ -244,14 +272,15 @@ class ProfileValueTest(TestCase):
 class GeoApiTest(TestCase):
 
     def setUp(self):
-        self.client = Client()
         #register a user
         post_content = {'username':'testuser', 'password':'testpass'}
-        response = self.client.post(reverse('api_register'), \
-                                    post_content, \
+        response = self.client.post(reverse('api_register'),
+                                    json.dumps(post_content),
                                     content_type='application/json')
+        self.client = Client()
     
     def test_feature(self):
+        
         #login 
         response = self.client.login(username='testuser', password='testpass')
     

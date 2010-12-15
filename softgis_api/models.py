@@ -39,21 +39,23 @@ class StaticProfileValue(models.Model):
     allow_notifications = models.BooleanField(default=False)
 
     GENDER_CHOICES = (('M', 'Male'), ('F', 'Female'), )
-    gender = models.CharField(default='',
-                                max_length = 1,
-                                choices = GENDER_CHOICES)
+    gender = models.CharField(blank=True,
+                              null=True,
+                              max_length = 1,
+                              choices = GENDER_CHOICES)
 
     BIRTHYEAR_CHOICES = ()
     years = range(datetime.date.today().year - 100,
                   datetime.date.today().year - 5)
     for year in years:
         BIRTHYEAR_CHOICES = BIRTHYEAR_CHOICES + ((year, year),)
-    birthyear = models.IntegerField(default=None,
-                                    blank=True,
+        
+    birthyear = models.IntegerField(blank=True,
                                     null=True,
                                     choices = BIRTHYEAR_CHOICES)
 
-    email = models.EmailField(default="")
+    email = models.EmailField(blank=True,
+                              null=True)
     email_confirmed = models.BooleanField(default=False)
 
 

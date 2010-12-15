@@ -44,5 +44,10 @@ urlpatterns = patterns('softgis_api.views',
             url(r'^softgis.js',
                 'javascript_api',
                 name="api_javascript"),
+            
+            #javascript API for the REST
+            url(r'^test.html',
+                'test_api',
+                name="api_test"),
 
         )
