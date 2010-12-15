@@ -112,7 +112,7 @@ class ProfileValueTest(TestCase):
     def setUp(self):
         self.client = Client()
         #register a user
-        post_content = {'username':'testuser', 'password':'testpass'}
+        post_content = {'username':'testuser-1', 'password':'testpass'}
         response = self.client.post(reverse('api_register'),
                                     json.dumps(post_content),
                                     content_type='application/json')
@@ -130,7 +130,7 @@ class ProfileValueTest(TestCase):
         response = self.client.get(reverse('api_profile'))
         
         #login
-        post_content = {'username':'testuser', 'password':'testpass'}
+        post_content = {'username':'testuser-1', 'password':'testpass'}
         response = self.client.post(reverse('api_login'),
                                     json.dumps(post_content), 
                                     content_type='application/json')
@@ -283,12 +283,12 @@ class ProfileValueTest(TestCase):
 class GeoApiTest(TestCase):
 
     def setUp(self):
+        self.client = Client()
         #register a user
         post_content = {'username':'testuser', 'password':'testpass'}
         response = self.client.post(reverse('api_register'),
                                     json.dumps(post_content),
                                     content_type='application/json')
-        self.client = Client()
     
     def test_feature(self):
         

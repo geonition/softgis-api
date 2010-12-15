@@ -109,7 +109,13 @@ class ProfileValue(models.Model):
        
         else:
             current_value = current_value.latest('create_time')
-
+            
+            #update the values  
+            current_dict = json.loads(current_value.json_string)
+            new_dict = json.loads(self.json_string)
+            current_dict.update(new_dict)
+            self.json_string = json.dumps(current_dict)
+            
             if(current_value.json_string == self.json_string):
                 pass
             else:

@@ -80,7 +80,7 @@ def login(request):
             return HttpResponse(status=401)
             
     except TypeError:
-        return HttpResponseBadRequest("typeError")
+        return HttpResponseBadRequest()
 
 def logout(request):
     """
@@ -207,29 +207,28 @@ def register(request):
         try:
             username = values.pop('username')
             password = values.pop('password')
-            email = values.pop('email', "")    
-            allow_notifications = values.pop('allow_notifications', False)
             
             #create user for django auth
             user = User.objects.create_user(username = username,
-                                            email = email,
+                                            email = "",
                                             password = password)
-
-            
-
-            #add additional profile values
-            static_profile_values = StaticProfileValue(user=user)
-            static_profile_values.allow_notifications = allow_notifications
-            #static_profile_values.email = email
-            static_profile_values.save()
 
             user = django_authenticate(username=username,
                                         password=password)
                                         
             if user is not None and user.is_active:
                 django_login(request, user)
+             
+            email = values.pop('email', None)    
+            allow_notifications = values.pop('allow_notifications', False)
+
+            #add additional profile values
+            static_profile_values = StaticProfileValue(user=user)
+            static_profile_values.allow_notifications = allow_notifications
+            static_profile_values.email = email
+            static_profile_values.save()
                 
-            if not email == '':
+            if not email == '' and not email == None:
                 EmailAddress.objects.add_email(user, email)
             
             return HttpResponse(status=201)
@@ -359,7 +358,7 @@ def profile(request):
         
         static_profile_values = StaticProfileValue.objects.filter(user__exact=request.user)
         if len(static_profile_values) == 0:
-            static_profile_values = StaticProfileValue(user_id = request.user)
+            static_profile_values = StaticProfileValue(user_id = request.user.id)
         else:
             static_profile_values = static_profile_values[0]
             
@@ -367,7 +366,7 @@ def profile(request):
         static_profile_values.birthyear = birthyear
         static_profile_values.gender = gender
         static_profile_values.email = email
-
+        
         try:
             static_profile_values.full_clean()
         except ValidationError, e:
@@ -381,7 +380,6 @@ def profile(request):
 
         new_profile_value = ProfileValue(user = request.user,
                                         json_string = json.dumps(values))
-        
         new_profile_value.save()
         
     return HttpResponse("")
