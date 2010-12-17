@@ -17,14 +17,14 @@ function register(username, password, email, allow_notifications) {
 	        'email': email,
 	        'allow_notifications': allow_notifications
             })),
-        "failOk": true,
+	    "failOk": true,
 	    "sync": false,
-		"headers": {"Content-Type":"application/json"},
+	    "headers": {"Content-Type":"application/json"},
 	    
 	    // The LOAD function will be called on a successful response.
 	    "load": function(response, ioArgs) {
 	                window.location.reload();
-			        return true;
+			return true;
 		        },
 
 	    // The ERROR function will be called in an error case.
@@ -34,9 +34,9 @@ function register(username, password, email, allow_notifications) {
 	                } 
 	                if (djConfig.debug) {
 	                    console.error("HTTP status code: ", ioArgs.xhr.status);
+                        }
+                        return false;
                     }
-                    return false;
-                }
         });
     {% endif %}
 }
@@ -47,28 +47,30 @@ function login(username, password) {
     
     dojo.xhrPost({
 	    "url": '{% url api_login %}', 
-	    "handleAs": "json",
+	    "handleAs": "text",
 	    "postData": encodeURIComponent(dojo.toJson({
 	        'username': username, 
 	        'password': password
             })),
 	    "sync": false,
-		"headers": {"Content-Type":"application/json"},
+	    "headers": {"Content-Type":"application/json"},
 	    
 	    // The LOAD function will be called on a successful response.
 	    "load": function(response, ioArgs) {
-	                window.location.reload();
-			        return true;
-		        },
+		        window.location.reload();
+			return true;
+	            },
 
 	    // The ERROR function will be called in an error case.
 	    "error": function(response, ioArgs) {
 	                if (djConfig.debug) {
 	                    console.error("HTTP status code: ", ioArgs.xhr.status);
+			    console.error(ioArgs.xhr.responseText);
+                        }
+			alert(ioArgs.xhr.responseText);
+                        //alert("{% trans 'Käyttäjätunnus ja salasana eivät täsmää' %}");
+                        return false;
                     }
-                    alert("{% trans 'Käyttäjätunnus ja salasana eivät täsmää' %}");
-                    return false;
-                }
         });
     {% endif %}
     
@@ -167,21 +169,21 @@ This function saves the profile value pairs given
 function save_profile_values(profile_value_pairs) {
     {% if user.is_authenticated %}
     
-    var params = "?user_id={{ user.id }}"
-    profile_value_pairs['user_id'] = {{ user.id }};
+    var params = "?user_id={{ user.id }}";
+    profile_value_pairs.user_id = {{ user.id }};
     
 	dojo.xhrPost({
 		"url": "{% url api_profile %}" + params,
 		"handleAs": "json",
 		"postData": encodeURIComponent(dojo.toJson(profile_value_pairs)),
-	    "headers": {"Content-Type":"application/json"},
+		"headers": {"Content-Type":"application/json"},
 		"load": function(response, ioArgs) {
 		            return;
 				},
 		"error": function(response,ioArgs) {
 		            console.log(response);
 			    }
-    	});
+		    });
     
     {% endif %}
 }
@@ -401,7 +403,7 @@ function get_graphics(limiter_param, map_layer, infotemplate) {
                         }
                         graphic.setAttributes(properties);
                         
-                        graphic["id"] = id;
+                        graphic.id = id;
                         
                         if(infotemplate !== undefined) {
                             graphic.setInfoTemplate(infotemplate);

@@ -56,32 +56,26 @@ def login(request):
             401 for unauthorized (wrong password or username not found)
 
     """
+    request_json = None
     try:
-    
-    
-        request_json = None
-        try:
-            request_json = json.loads(request.POST.keys()[0])
-        except ValueError:
-            return HttpResponseBadRequest(
-                        "mime type should be application/json")
+        request_json = json.loads(request.POST.keys()[0])
+    except ValueError:
+        return HttpResponseBadRequest(
+                    _(u"mime type should be application/json"))
          
-        username = request_json['username']
-        password = request_json['password']
+    username = request_json['username']
+    password = request_json['password']
 
-        user = django_authenticate(username=username, password=password)
+    user = django_authenticate(username=username, password=password)
         
 
         
-        if user is not None:
-            django_login(request, user)
-            return HttpResponse(status=200)
-        else:
-            return HttpResponse(status=401)
+    if user is not None:
+        django_login(request, user)
+        return HttpResponse(_(u"Login successfull"), status=200)
+    else:
+        return HttpResponse(_(u"Wrong password or username not found"),status=401)
             
-    except TypeError:
-        return HttpResponseBadRequest()
-
 def logout(request):
     """
     simple logout function
