@@ -4,8 +4,23 @@
 /* global dojo, djConfig, console, esri  */
 
 /* login, logout, register, changepassword */
-
-function register(username, password, email, allow_notifications) {
+/*
+ This function registers the a new user
+ 
+ The function takes a JSON object as a parameter which
+ should include the following values:
+ 
+ username - username of the user to be created (required)
+ password - password for the user to be created (required)
+ email - email of the user to be created (optional)
+ allow_notifications - boolean if the user wants updates/news to the email (optional)
+ callback_function - function to be called after the response is received (optional)
+ 
+ The callback_function will be passed the following parameters:
+ status_code = 201/400/409
+ message = A message describing the result
+*/
+function register(json_args) {
     {% if not user.is_authenticated %}
     
     dojo.xhrPost({
