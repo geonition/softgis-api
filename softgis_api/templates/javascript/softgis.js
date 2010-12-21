@@ -26,7 +26,6 @@ function register(username, password, email, allow_notifications, callback_funct
 	        'allow_notifications': allow_notifications
             })),
 	    "failOk": true,
-	    "sync": false,
 	    "headers": {"Content-Type":"application/json"},
 	    
             "handle": function(response, ioArgs) {
@@ -42,13 +41,14 @@ function register(username, password, email, allow_notifications, callback_funct
  This function signs a user into the service.
  
  The function requires two parameters:
- username - The username of the user to sign in
- password - The password of the user
- 
- Optional parameters:
+ username - The username of the user to sign in (required)
+ password - The password of the user (required)
  callback_function - This function is called when the response is received from
-                    the server. The function is passed a status_code(200/400/401)
-                    and the reponse text.
+                    the server. (optional)
+                    
+ The callback_function will be passed the following parameters in a JSON object:
+ status_code = 201/400/409
+ message = message from server
 */
 function login(username, password, callback_function) {
     
@@ -59,13 +59,12 @@ function login(username, password, callback_function) {
 	        'username': username, 
 	        'password': password
             })),
-	    "sync": false,
 	    "headers": {"Content-Type":"application/json"},
 	    
             "handle": function(response, ioArgs) {
                 if(callback_function !== undefined) {
                     callback_function({"status_code": ioArgs.xhr.status,
-                                      "response": ioArgs.xhr.responseText});
+                                      "message": ioArgs.xhr.responseText});
                 }
             }
         });
@@ -80,75 +79,77 @@ function login(username, password, callback_function) {
  The logout function takes as parameter a callback function
  which will be passed the following parameters:
  status_code = 200/400
- response = response from server
+ message = message from server
 */
 function logout(callback_function) {
     dojo.xhrGet({
 	"url": '{% url api_logout %}',
-        "sync": false,
 	    
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
                 callback_function({"status_code": ioArgs.xhr.status,
-                                  "response": ioArgs.xhr.responseText});
+                                  "message": ioArgs.xhr.responseText});
             }
         }
     });
 }
 
-function new_password(username, email) {
+/*
+ This function send a new password for the user
+ with the email or username provided.
+ 
+ Takes as parameters:
+ username - the username of the person who need a new password (required if email is not provided)
+ email - email of the person that needs a new password (required if username is not provided)
+ callback_function - the function to be called when a response from the server
+                    is received (optional)
+*/
+function new_password(username, email, callback_function) {    
+    dojo.xhrPost({
+        "url": '{% url api_new_password %}', 
+        "handleAs": "json",
+        "postData": encodeURIComponent(dojo.toJson({
+            'username': username,
+            'email': email
+        })),
+        "sync": false,
+        "headers": {"Content-Type":"application/json"},
+	    
+        "handle": function(response, ioArgs) {
+            if(callback_function !== undefined) {
+                callback_function({"status_code": ioArgs.xhr.status,
+                                  "message": ioArgs.xhr.responseText});
+            }
+        }
+    });
+}
 
+/*
+ This function changes the password for a user.
+ 
+ It takes as parameters:
+ new_password - the new password to change the old one to (required)
+ callback_function - a callback function that will be called when a reponse
+                    from the server is received (optional)
+*/
+function change_password(new_password, callback_function) { 
     
     dojo.xhrPost({
-	    "url": '{% url api_new_password %}', 
-	    "handleAs": "json",
-	    "postData": encodeURIComponent(dojo.toJson({
-	        'username': username,
-	        'email': email
-            })),
-	    "sync": false,
-		"headers": {"Content-Type":"application/json"},
+	"url": '{% url api_change_password %}', 
+	"handleAs": "json",
+	"postData": encodeURIComponent(dojo.toJson({
+            'new_password': new_password
+        })),
+	"sync": false,
+	"headers": {"Content-Type":"application/json"},
 	    
-	    // The LOAD function will be called on a successful response.
-	    "load": function(response, ioArgs) {
-			        return true;
-		        },
-
-	    // The ERROR function will be called in an error case.
-	    "error": function(response, ioArgs) {
-	                if (djConfig.debug) {
-	                    console.error("HTTP status code: ", ioArgs.xhr.status);
-                    }
-                    return false;
-                }
-        });
-} 
-
-function change_password(new_password) { 
-    
-    dojo.xhrPost({
-	    "url": '{% url api_change_password %}', 
-	    "handleAs": "json",
-	    "postData": encodeURIComponent(dojo.toJson({
-	        'new_password': new_password
-            })),
-	    "sync": false,
-		"headers": {"Content-Type":"application/json"},
-	    
-	    // The LOAD function will be called on a successful response.
-	    "load": function(response, ioArgs) {
-                    alert("Salasanasi on vaihdettu");
-			        return true;
-		        },
-
-	    // The ERROR function will be called in an error case.
-	    "error": function(response, ioArgs) {
-	                if (djConfig.debug) {
-	                    console.error("HTTP status code: ", ioArgs.xhr.status);
-                    }
-                    return false;
-                }
-        });
+        "handle": function(response, ioArgs) {
+            if(callback_function !== undefined) {
+                callback_function({"status_code": ioArgs.xhr.status,
+                                  "message": ioArgs.xhr.responseText});
+            }
+        }
+    });
 }
 
 /* PROFILE API begins */
@@ -156,24 +157,24 @@ function change_password(new_password) {
 /*
 This function saves the profile value pairs given
 */
-function save_profile_values(profile_value_pairs) {
+function save_profile_values(profile_value_pairs, callback_function) {
     
     var params = "?user_id={{ user.id }}";
     profile_value_pairs.user_id = {{ user.id }};
     
-	dojo.xhrPost({
-		"url": "{% url api_profile %}" + params,
-		"handleAs": "json",
-		"postData": encodeURIComponent(dojo.toJson(profile_value_pairs)),
-		"headers": {"Content-Type":"application/json"},
-		"load": function(response, ioArgs) {
-		            return;
-				},
-		"error": function(response,ioArgs) {
-		            console.log(response);
-			    }
-		    });
-    
+    dojo.xhrPost({
+        "url": "{% url api_profile %}" + params,
+        "handleAs": "json",
+        "postData": encodeURIComponent(dojo.toJson(profile_value_pairs)),
+        "headers": {"Content-Type":"application/json"},
+	    
+        "handle": function(response, ioArgs) {
+            if(callback_function !== undefined) {
+                callback_function({"status_code": ioArgs.xhr.status,
+                                  "message": ioArgs.xhr.responseText});
+            }
+        }
+    });
 }
 
 
