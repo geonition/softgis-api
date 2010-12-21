@@ -546,5 +546,5 @@ def javascript_api(request):
 
 
 def test_api(request):
-    return render_to_response("test/test.html",
+    return render_to_response("test/test_dojo.html",
                               context_instance = RequestContext(request))
