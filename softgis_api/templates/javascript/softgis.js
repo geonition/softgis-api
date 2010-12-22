@@ -15,26 +15,26 @@
  message = message from server
 */
 function register(username, password, email, allow_notifications, callback_function) {
-    
+    var data = {};
+    data['username'] = (username !== undefined) ? username : null;
+    data['password'] = (password !== undefined) ? password : null;
+    data['email'] = (email !== undefined) ? email : null;
+    data['allow_notifications'] = (allow_notifications !== undefined) ? allow_notifications : null;
+    console.log(data);
     dojo.xhrPost({
-	    "url": '{% url api_register %}', 
-	    "handleAs": "json",
-	    "postData": encodeURIComponent(dojo.toJson({
-	        'username': username, 
-	        'password': password,
-	        'email': email,
-	        'allow_notifications': allow_notifications
-            })),
-	    "failOk": true,
-	    "headers": {"Content-Type":"application/json"},
-	    
-            "handle": function(response, ioArgs) {
-                if(callback_function !== undefined) {
-                    callback_function({"status_code": ioArgs.xhr.status,
-                                      "message": ioArgs.xhr.responseText});
-                }
+        "url": '{% url api_register %}', 
+        "handleAs": "json",
+        "postData": encodeURIComponent(dojo.toJson(data)),
+        "failOk": true,
+        "headers": {"Content-Type":"application/json"},
+        
+        "handle": function(response, ioArgs) {
+            if(callback_function !== undefined) {
+                callback_function({"status_code": ioArgs.xhr.status,
+                                  "message": ioArgs.xhr.responseText});
             }
-        });
+        }
+    });
 }
 
 /*

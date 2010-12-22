@@ -189,48 +189,61 @@ def register(request):
         if request.user.is_authenticated() == True:
             return HttpResponseBadRequest("You cannot register a user" + \
                                           "when logged in")
-        
+    
     
         values = None
         try:
             values = json.loads(request.POST.keys()[0])
-        except ValueError:
-            return HttpResponseBadRequest(
-                        "mime type should be application/json")
+        except ValueError, e:
+            return HttpResponseBadRequest("JSON error: ".join(e))
         
+
+        username = values.pop('username', None)
+        password = values.pop('password', None)
+        email = values.pop('email', None)
+        allow_notifications = values.pop('allow_notifications', False)
+        
+        if(username == None or username == ""):
+            return HttpResponseBadRequest(_(u"You have to provide a username"))
+        
+        if(password == None or password == ""):
+            return HttpResponseBadRequest(_(u"You have to provide a password"))
+        
+        #create user for django auth
+        user = User(username = username,
+                    email = email,
+                    password = password)
         try:
-            username = values.pop('username')
-            password = values.pop('password')
-            
-            #create user for django auth
-            user = User.objects.create_user(username = username,
-                                            email = "",
-                                            password = password)
+            user.full_clean()
+        except ValidationError, e:
+            message = _(" ja ")
+            error_msg = []
 
-            user = django_authenticate(username=username,
-                                        password=password)
-                                        
-            if user is not None and user.is_active:
-                django_login(request, user)
-             
-            email = values.pop('email', None)    
-            allow_notifications = values.pop('allow_notifications', False)
-
-            #add additional profile values
-            static_profile_values = StaticProfileValue(user=user)
-            static_profile_values.allow_notifications = allow_notifications
-            static_profile_values.email = email
-            static_profile_values.save()
+            for desc in e.message_dict.keys():
+                error_msg.append(e.message_dict[desc][0])
                 
-            if not email == '' and not email == None:
-                EmailAddress.objects.add_email(user, email)
-            
-            return HttpResponse(status=201)
+            return HttpResponseBadRequest(message.join(error_msg))
         
-        except IntegrityError:
-            return HttpResponse(status=409)
-        except KeyError:
-            return HttpResponseBadRequest("no username or password provided")
+        user.save();
+        
+        user = django_authenticate(username=username,
+                                    password=password)
+                                        
+        if user is not None and user.is_active:
+            django_login(request, user)
+             
+
+        #add additional profile values
+        static_profile_values = StaticProfileValue(user=user)
+        static_profile_values.allow_notifications = allow_notifications
+        static_profile_values.email = email
+        static_profile_values.save()
+                
+        if not email == '' and not email == None:
+            EmailAddress.objects.add_email(user, email)
+            
+        return HttpResponse(status=201)
+        
 
 def new_password(request):
     """
