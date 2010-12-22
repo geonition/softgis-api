@@ -68,7 +68,6 @@ def login(request):
 
     user = django_authenticate(username=username, password=password)
         
-
         
     if user is not None:
         django_login(request, user)
@@ -179,7 +178,6 @@ def register(request):
     Returns 201 if successful
             400 for Bad Request
             409 for Conflict
-
     """
     if(request.method == "GET"):    
         return HttpResponse("")
@@ -211,7 +209,7 @@ def register(request):
         
         #create user for django auth
         user = User(username = username,
-                    email = email,
+                    email = "",
                     password = password)
         try:
             user.full_clean()
@@ -223,16 +221,9 @@ def register(request):
                 error_msg.append(e.message_dict[desc][0])
                 
             return HttpResponseBadRequest(message.join(error_msg))
+            
+        user.save()
         
-        user.save();
-        
-        user = django_authenticate(username=username,
-                                    password=password)
-                                        
-        if user is not None and user.is_active:
-            django_login(request, user)
-             
-
         #add additional profile values
         static_profile_values = StaticProfileValue(user=user)
         static_profile_values.allow_notifications = allow_notifications
@@ -241,6 +232,14 @@ def register(request):
                 
         if not email == '' and not email == None:
             EmailAddress.objects.add_email(user, email)
+            
+        #authenticate and login
+        user = django_authenticate(username=username,
+                                    password=password)
+        
+        
+        if user is not None and user.is_active:
+            django_login(request, user)
             
         return HttpResponse(status=201)
         
