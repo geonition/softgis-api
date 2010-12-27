@@ -57,38 +57,47 @@ def login(request):
             401 for unauthorized (wrong password or username not found)
 
     """
-    request_json = None
-    try:
-        request_json = json.loads(request.POST.keys()[0])
-    except ValueError:
-        return HttpResponseBadRequest(
-                    _(u"mime type should be application/json"))
-         
-    username = request_json['username']
-    password = request_json['password']
-
-    user = django_authenticate(username=username, password=password)
+    if(request.method == "GET"):
+        return HttpBadRequest(_("This url only accept POST requests"))
         
-        
-    if user is not None:
-        django_login(request, user)
-        return HttpResponse(_(u"Login successfull"), status=200)
-    else:
-        return HttpResponse(_(u"Wrong password or username not found"),status=401)
+    elif (request.method == "POST"):
+        if request.user.is_authenticated() == True:
+            return HttpResponseBadRequest(_("You have already signed in"))
             
+        values = None
+        try:
+            values = json.loads(request.POST.keys()[0])
+        except ValueError, e:
+            return HttpResponseBadRequest("JSON error: " + str(e.args))
+    
+             
+        username = values.pop('username', None)
+        password = values.pop('password', None)
+        
+        if(username == None):
+            return HttpResponseBadRequest(_("You have to provide a username"))
+            
+        if(password == None):
+            return HttpResponseBadRequest(_("You have to provide a password"))
+            
+        user = django_authenticate(username=username, password=password)
+            
+        if user is not None:
+            django_login(request, user)
+            return HttpResponse(_(u"Login successfull"), status=200)
+        else:
+            return HttpResponse(_(u"Wrong password or username not found"),status=401)
+            
+
 def logout(request):
     """
     simple logout function
 
     Returns
         200 if logout successful
-        400 if an error occures (no one is logged in)
     """
-    try:
-        django_logout(request)
-        return HttpResponse("")
-    except:
-        return HttpResponseBadRequest()
+    django_logout(request)
+    return HttpResponse(_("You have succesfully signed out"))
 
 #openid authentication views
 def openid_begin(request):
@@ -186,8 +195,8 @@ def register(request):
     elif(request.method == "POST"):
 
         if request.user.is_authenticated() == True:
-            return HttpResponseBadRequest("You cannot register a user" + \
-                                          "when logged in")
+            return HttpResponseBadRequest(_("You cannot register a user" + \
+                                            "when logged in"))
     
     
         values = None
