@@ -14,7 +14,6 @@ from django.contrib.auth import logout as django_logout
 from django.contrib.auth import authenticate as django_authenticate
 from django.contrib.auth.models import User
 from django.db import IntegrityError
-from django.db import DatabaseError
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ValidationError
 #from pehmogis.api.softgis_api.models import geometry
@@ -32,7 +31,6 @@ from django.contrib.gis.gdal import OGRGeometry
 from openid2rp.django import auth as openid_auth
 from django.shortcuts import render_to_response
 
-import time
 import django
 import settings
 
@@ -57,38 +55,48 @@ def login(request):
             401 for unauthorized (wrong password or username not found)
 
     """
-    request_json = None
-    try:
-        request_json = json.loads(request.POST.keys()[0])
-    except ValueError:
-        return HttpResponseBadRequest(
-                    _(u"mime type should be application/json"))
-         
-    username = request_json['username']
-    password = request_json['password']
-
-    user = django_authenticate(username=username, password=password)
+    if(request.method == "GET"):
+        return HttpResponseBadRequest(_("This url only accept POST requests"))
         
-        
-    if user is not None:
-        django_login(request, user)
-        return HttpResponse(_(u"Login successfull"), status=200)
-    else:
-        return HttpResponse(_(u"Wrong password or username not found"),status=401)
+    elif (request.method == "POST"):
+        if request.user.is_authenticated() == True:
+            return HttpResponseBadRequest(_("You have already signed in"))
             
+        values = None
+        try:
+            values = json.loads(request.POST.keys()[0])
+        except ValueError, err:
+            return HttpResponseBadRequest("JSON error: " + str(err.args))
+    
+             
+        username = values.pop('username', None)
+        password = values.pop('password', None)
+        
+        if(username == None):
+            return HttpResponseBadRequest(_("You have to provide a username"))
+            
+        if(password == None):
+            return HttpResponseBadRequest(_("You have to provide a password"))
+            
+        user = django_authenticate(username=username, password=password)
+            
+        if user is not None:
+            django_login(request, user)
+            return HttpResponse(_(u"Login successfull"), status=200)
+        else:
+            return HttpResponse(_(u"Wrong password or username not found"),
+                                status=401)
+            
+
 def logout(request):
     """
     simple logout function
 
     Returns
         200 if logout successful
-        400 if an error occures (no one is logged in)
     """
-    try:
-        django_logout(request)
-        return HttpResponse("")
-    except:
-        return HttpResponseBadRequest()
+    django_logout(request)
+    return HttpResponse(_("You have succesfully signed out"))
 
 #openid authentication views
 def openid_begin(request):
@@ -186,15 +194,15 @@ def register(request):
     elif(request.method == "POST"):
 
         if request.user.is_authenticated() == True:
-            return HttpResponseBadRequest("You cannot register a user" + \
-                                          "when logged in")
+            return HttpResponseBadRequest(_("You cannot register a user" + \
+                                            "when logged in"))
     
     
         values = None
         try:
             values = json.loads(request.POST.keys()[0])
-        except ValueError, e:
-            return HttpResponseBadRequest("JSON error: " + str(e.args))
+        except ValueError, err:
+            return HttpResponseBadRequest("JSON error: " + str(err.args))
         
 
         username = values.pop('username', None)
@@ -216,23 +224,23 @@ def register(request):
         
         try:
             user.validate_unique()
-        except ValidationError, e:
+        except ValidationError, err:
             message = " "
             error_msg = []
 
-            for desc in e.message_dict.keys():
-                error_msg.append(e.message_dict[desc][0])
+            for desc in err.message_dict.keys():
+                error_msg.append(err.message_dict[desc][0])
                 
             return HttpResponse(status=409, content=message.join(error_msg))
 
         try:
             user.full_clean()
-        except ValidationError, e:
+        except ValidationError, err:
             message = " "
             error_msg = []
 
-            for desc in e.message_dict.keys():
-                error_msg.append(e.message_dict[desc][0])
+            for desc in err.message_dict.keys():
+                error_msg.append(err.message_dict[desc][0])
                 
             return HttpResponseBadRequest(message.join(error_msg))
             
@@ -259,7 +267,7 @@ def register(request):
 
 def new_password(request):
     """
-    
+    TODO: write this docstring
     """
     
     if(request.method == "POST"):
@@ -282,7 +290,8 @@ def new_password(request):
                 user2 = User.objects.get(email__exact = email)
             except Exception:
                 pass
-
+        print user
+        print user2
         if not user == None and not user2 == None and user != user2:
             return HttpResponseBadRequest(_(u"username and email does not match"))
         
@@ -299,9 +308,10 @@ def new_password(request):
         elif user == None:
             user = user2
             
-        elif user.email == None:
+        elif user.email == None or user.email == '':
             return HttpResponseBadRequest(_(u"user has no email"))
             
+        print user.email
         rnd = Random()
         
         righthand = '23456qwertasdfgzxcvbQWERTASDFGZXCVB'
@@ -332,7 +342,7 @@ def new_password(request):
             return HttpResponseBadRequest('Invalid header found.')
             
 
-    return HttpResponseBadRequest("This URL only accepts POST requests")
+    return HttpResponseBadRequest(_("This URL only accepts POST requests"))
     
 def change_password(request):
     if(request.method == "POST"):
@@ -354,7 +364,8 @@ def profile(request):
     REST api.
     """
     if not request.user.is_authenticated():
-        return HttpResponseForbidden("The request has to be made by an signed in user")
+        return HttpResponseForbidden(_("The request has to be made" + \
+                                     "by an signed in user"))
         
     if(request.method == "GET"):
         # get the definied limiting parameters
@@ -388,9 +399,12 @@ def profile(request):
         gender = values.pop('gender', u'')
         email = values.pop('email', None)
         
-        static_profile_values = StaticProfileValue.objects.filter(user__exact=request.user)
+        static_profile_values = \
+                StaticProfileValue.objects.filter(user__exact = request.user)
+        
         if len(static_profile_values) == 0:
-            static_profile_values = StaticProfileValue(user_id = request.user.id)
+            static_profile_values = \
+                                StaticProfileValue(user_id = request.user.id)
         else:
             static_profile_values = static_profile_values[0]
             
@@ -584,5 +598,10 @@ def javascript_api(request):
 
 
 def test_api(request):
+    """
+    This view function returns an HTML page that loads the
+    dojo api and the softgis.js so that the API javascript
+    functions can be tested from a javascript console.
+    """
     return render_to_response("test/test_dojo.html",
                               context_instance = RequestContext(request))

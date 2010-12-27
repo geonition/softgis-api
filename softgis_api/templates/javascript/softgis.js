@@ -51,14 +51,15 @@ function register(username, password, email, allow_notifications, callback_funct
  message = message from server
 */
 function login(username, password, callback_function) {
+    var data = {};
+    data['username'] = (username !== undefined) ? username : null;
+    data['password'] = (password !== undefined) ? password : null;
     
     dojo.xhrPost({
 	    "url": '{% url api_login %}', 
-	    "handleAs": "text",
-	    "postData": encodeURIComponent(dojo.toJson({
-	        'username': username, 
-	        'password': password
-            })),
+	    "handleAs": "json",
+	    "postData": encodeURIComponent(dojo.toJson(data)),
+            "failOk": true,
 	    "headers": {"Content-Type":"application/json"},
 	    
             "handle": function(response, ioArgs) {
@@ -78,7 +79,7 @@ function login(username, password, callback_function) {
  
  The logout function takes as parameter a callback function
  which will be passed the following parameters:
- status_code = 200/400
+ status_code = 200
  message = message from server
 */
 function logout(callback_function) {
