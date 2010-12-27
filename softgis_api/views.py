@@ -32,6 +32,7 @@ from django.contrib.gis.gdal import OGRGeometry
 from openid2rp.django import auth as openid_auth
 from django.shortcuts import render_to_response
 
+import time
 import django
 import settings
 
@@ -193,7 +194,7 @@ def register(request):
         try:
             values = json.loads(request.POST.keys()[0])
         except ValueError, e:
-            return HttpResponseBadRequest("JSON error: ".join(e))
+            return HttpResponseBadRequest("JSON error: " + str(e.args))
         
 
         username = values.pop('username', None)
@@ -211,10 +212,23 @@ def register(request):
         user = User(username = username,
                     email = "",
                     password = password)
+        user.set_password(password)
+        
+        try:
+            user.validate_unique()
+        except ValidationError, e:
+            message = " "
+            error_msg = []
+
+            for desc in e.message_dict.keys():
+                error_msg.append(e.message_dict[desc][0])
+                
+            return HttpResponse(status=409, content=message.join(error_msg))
+
         try:
             user.full_clean()
         except ValidationError, e:
-            message = _(" ja ")
+            message = " "
             error_msg = []
 
             for desc in e.message_dict.keys():
@@ -236,7 +250,6 @@ def register(request):
         #authenticate and login
         user = django_authenticate(username=username,
                                     password=password)
-        
         
         if user is not None and user.is_active:
             django_login(request, user)

@@ -19,8 +19,8 @@ function register(username, password, email, allow_notifications, callback_funct
     data['username'] = (username !== undefined) ? username : null;
     data['password'] = (password !== undefined) ? password : null;
     data['email'] = (email !== undefined) ? email : null;
-    data['allow_notifications'] = (allow_notifications !== undefined) ? allow_notifications : null;
-    console.log(data);
+    data['allow_notifications'] = (allow_notifications !== undefined) ? allow_notifications : false;
+    
     dojo.xhrPost({
         "url": '{% url api_register %}', 
         "handleAs": "json",
