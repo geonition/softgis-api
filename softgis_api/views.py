@@ -269,25 +269,38 @@ def new_password(request):
         username = request_json['username']
         email = request_json['email']
         user = None
+        user2 = None
         
-        if not username == None:
+        if not username == None and not username == '':
             try:
                 user = User.objects.get(username__exact = username)
             except Exception:
                 pass
-        
-        if not email == None:
+
+        if not email == None and not email == '':
             try:
-                user = User.objects.get(email__exact = email)
+                user2 = User.objects.get(email__exact = email)
             except Exception:
                 pass
-                
-        if user == None:
-            return HttpResponseNotFound(
-                        "username or email does not match existing user")
+
+        if not user == None and not user2 == None and user != user2:
+            return HttpResponseBadRequest(_(u"username and email does not match"))
         
+        elif user == None and (email == '' or email == None):
+            return HttpResponseNotFound(
+                        _(u"username does not match existing user"))
+        elif user2 == None and (username == '' or username == None):
+            return HttpResponseNotFound(
+                        _(u"email does not match existing user"))
+
+        elif user2 == None and user == None:
+            return HttpResponseNotFound(
+                        _(u"username and email does not match existing user"))
+        elif user == None:
+            user = user2
+            
         elif user.email == None:
-            return HttpResponseBadRequest("user has no email")
+            return HttpResponseBadRequest(_(u"user has no email"))
             
         rnd = Random()
         
@@ -314,7 +327,7 @@ def new_password(request):
                         [user.email])
             user.set_password(password)
             user.save()
-            return HttpResponse()
+            return HttpResponse(_(u"New password sent to ") + user.email, status=200)
         except BadHeaderError:
             return HttpResponseBadRequest('Invalid header found.')
             
