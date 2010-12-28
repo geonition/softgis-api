@@ -105,14 +105,15 @@ function logout(callback_function) {
  callback_function - the function to be called when a response from the server
                     is received (optional)
 */
-function new_password(username, email, callback_function) {    
+function new_password(email, callback_function) {
+
+    var data = {};
+    data['email'] = (email !== undefined) ? email : null;
+    
     dojo.xhrPost({
         "url": '{% url api_new_password %}', 
         "handleAs": "json",
-        "postData": encodeURIComponent(dojo.toJson({
-            'username': username,
-            'email': email
-        })),
+        "postData": encodeURIComponent(dojo.toJson(data)),
         "sync": false,
         "headers": {"Content-Type":"application/json"},
 	    

@@ -267,6 +267,12 @@ def register(request):
 
 def new_password(request):
     """
+    This function sends new password to the given email address.
+    
+    Returns 200 if successful
+        400 if email address is not confirmed
+        404 if email address is not found
+
     TODO: write this docstring
     """
     
@@ -274,44 +280,30 @@ def new_password(request):
     
         request_json = json.loads(request.POST.keys()[0])
         
-        username = request_json['username']
         email = request_json['email']
-        user = None
-        user2 = None
-        
-        if not username == None and not username == '':
-            try:
-                user = User.objects.get(username__exact = username)
-            except Exception:
-                pass
-
+        static_user = None
+        confirmed = False
+ 
         if not email == None and not email == '':
             try:
-                user2 = User.objects.get(email__exact = email)
+                static_user = \
+                    StaticProfileValue.objects.get(email__exact = email)
             except Exception:
                 pass
-        print user
-        print user2
-        if not user == None and not user2 == None and user != user2:
-            return HttpResponseBadRequest(_(u"username and email does not match"))
-        
-        elif user == None and (email == '' or email == None):
-            return HttpResponseNotFound(
-                        _(u"username does not match existing user"))
-        elif user2 == None and (username == '' or username == None):
-            return HttpResponseNotFound(
-                        _(u"email does not match existing user"))
 
-        elif user2 == None and user == None:
+        if static_user == None:
             return HttpResponseNotFound(
-                        _(u"username and email does not match existing user"))
-        elif user == None:
-            user = user2
-            
-        elif user.email == None or user.email == '':
-            return HttpResponseBadRequest(_(u"user has no email"))
-            
-        print user.email
+                        _(u"email not found"))
+        else:
+            confirmed = EmailAddress.objects.get(
+                                    user__exact = static_user.user).verified
+
+        if confirmed == False:
+            return HttpResponseBadRequest(
+                        _(u"email address is not confirmed, please " + \
+                            "confirm your email address before requesting " + \
+                            "new password"))
+
         rnd = Random()
         
         righthand = '23456qwertasdfgzxcvbQWERTASDFGZXCVB'
@@ -328,18 +320,20 @@ def new_password(request):
                 password += rnd.choice(lefthand)
         
         subject = _('Uusi salasana pehmogis sivustolle')
-        message = user.username + _(' uusi salasana on: ') + password
+        message = static_user.user.username + \
+                        _(' uusi salasana on: ') + password
         
         try:
             send_mail(subject,
                         message,
                         'do_not_reply@pehmogis.fi',
-                        [user.email])
-            user.set_password(password)
-            user.save()
-            return HttpResponse(_(u"New password sent to ") + user.email, status=200)
+                        [static_user.email])
+            static_user.user.set_password(password)
+            static_user.user.save()
+            return HttpResponse(_(u"New password sent to ") + \
+                                    static_user.email, status=200)
         except BadHeaderError:
-            return HttpResponseBadRequest('Invalid header found.')
+            return HttpResponseBadRequest(_(u'Invalid header found.'))
             
 
     return HttpResponseBadRequest(_("This URL only accepts POST requests"))

@@ -11,6 +11,7 @@ from django.contrib.auth.models import User
 from django.contrib.gis.geos import GEOSGeometry
 from django.core import mail
 from softgis_api.models import Feature
+from emailconfirmation.models import EmailConfirmation
 
 import sys
 
@@ -20,7 +21,6 @@ else:
     import simplejson as json
     
 class AuthenticationTest(TestCase):
-
     def setUp(self):
         self.client = Client()
 
@@ -414,3 +414,88 @@ class FeatureDBTest(TestCase):
         #TODO
         pass
         
+class NewPasswordTest(TestCase):
+
+    def setUp(self):
+        self.client = Client()
+        #register a user
+        post_content = {'username':'testuser-1',
+                        'password':'testpass',
+                        'email': 'some@some.fi'}
+                        
+        response = self.client.post(reverse('api_register'),
+                                    json.dumps(post_content),
+                                    content_type='application/json')
+
+    
+    def test_new_password(self):
+        """
+        Test sending new password in email
+        """
+        
+        #Test if confirmation email is sent
+        self.assertEquals(len(mail.outbox), 1, "Confirmation email not sent")
+
+        #logout
+        self.client.logout()
+        
+        # Test with correct but not confirmed email
+        response = self.client.post(reverse('api_new_password'),
+                                    json.dumps({'email':'some@some.fi'}),
+                                    content_type='application/json')
+                                    
+                                    
+        self.assertEquals(response.status_code,
+                            400,
+                            "not sending non-confirmed email did not work")
+
+        
+        self.assertEquals(len(mail.outbox), 1,
+                          "Mail sent even not confirmed email address")
+        
+        # Test with non-existing email 
+        response = self.client.post(reverse('api_new_password'),
+                                    json.dumps({'email':'example@example.com'}),
+                                    content_type='application/json')
+                                    
+        self.assertEquals(response.status_code,
+                            404,
+                            "test with non-existing email did not work")
+ 
+        self.assertEquals(len(mail.outbox),
+                          1,
+                          "Mail sent to non-existing email address")
+
+        #confirm the email
+        key = EmailConfirmation.objects.get(
+                email_address__email__exact = 'some@some.fi').confirmation_key
+        url = '/confirm_email/' + key + '/'
+        self.client.get(url)
+        
+        #Test with confirmed email
+        response = self.client.post(reverse('api_new_password'),
+                            json.dumps({'email':'some@some.fi'}),
+                            content_type='application/json')
+                            
+        self.assertEquals(response.status_code, 
+                          200,
+                          "Test with confirmed email failed")
+
+        self.assertEquals(len(mail.outbox), 2, "new password email not sent")
+        
+        #test login with new password
+        #parse new password, this will be broken if mail body is changed
+        new_password = mail.outbox[1].body.rpartition(' ')[2]
+        
+        post_content = {'username':'testuser-1', 'password': new_password}
+        response = self.client.post(reverse('api_login'),
+                                    json.dumps(post_content), 
+                                    content_type='application/json')
+        
+        self.assertEquals(response.status_code,
+                          200,
+                          'login with new password did not work')
+        
+
+        print '\nNew password email sent:'
+        print mail.outbox[1].body
