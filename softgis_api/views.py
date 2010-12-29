@@ -345,18 +345,39 @@ def new_password(request):
     return HttpResponseBadRequest(_("This URL only accepts POST requests"))
     
 def change_password(request):
+    """
+    TODO: docstring
+    """
+    
+    if not request.user.is_authenticated():
+        return HttpResponseForbidden(_(u"The request has to be made" + \
+                                 "by an signed in user"))
+
+
     if(request.method == "POST"):
         
         request_json = json.loads(request.POST.keys()[0])
         
         new_password = request_json['new_password']
+        old_password = request_json['old_password']
+
+        if(old_password == None or old_password == ''):
+            return HttpResponseBadRequest(_(u"You have to enter your " + \
+                                            "current password"))
+
+        if not request.user.check_password(old_password):
+            return HttpResponse(_(u"Wrong password"), status=401)
+        
+        if(new_password == None or new_password == ''):
+            return HttpResponseBadRequest(_(u"You have to provide a password"))
         
         request.user.set_password(new_password)
         request.user.save()
         
-        return HttpResponse()
+        return HttpResponse(_(u"Password changed succesfully"),
+                                status=200)
         
-    return HttpResponseBadRequest()   
+    return HttpResponseBadRequest(_(u"This URL only accepts POST requests"))   
     
 def profile(request):
     """

@@ -134,14 +134,15 @@ function new_password(email, callback_function) {
  callback_function - a callback function that will be called when a reponse
                     from the server is received (optional)
 */
-function change_password(new_password, callback_function) { 
+function change_password(old_password, new_password, callback_function) { 
+    var data = {};
+    data['old_password'] = (old_password !== undefined) ? old_password : null;
+    data['new_password'] = (new_password !== undefined) ? new_password : null;
     
     dojo.xhrPost({
 	"url": '{% url api_change_password %}', 
-	"handleAs": "json",
-	"postData": encodeURIComponent(dojo.toJson({
-            'new_password': new_password
-        })),
+        "handleAs": "text",
+        "postData": encodeURIComponent(dojo.toJson(data)),
 	"sync": false,
 	"headers": {"Content-Type":"application/json"},
 	    

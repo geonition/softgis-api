@@ -499,3 +499,83 @@ class NewPasswordTest(TestCase):
 
         print '\nNew password email sent:'
         print mail.outbox[1].body
+
+class ChangePasswordTest(TestCase):
+
+    def setUp(self):
+        self.client = Client()
+        #register a user
+        post_content = {'username':'testuser-1',
+                        'password':'testpass',
+                        'email': 'some@some.fi'}
+                        
+        response = self.client.post(reverse('api_register'),
+                                    json.dumps(post_content),
+                                    content_type='application/json')
+
+    
+    def test_change_password(self):
+        """
+        Test changing the password
+        """
+        
+        #Test with empty old password
+        post_content = {'username':'testuser-1', 'old_password':'',  'new_password': 'testpass2'}
+        response = self.client.post(reverse('api_change_password'),
+                                    json.dumps(post_content), 
+                                    content_type='application/json')
+
+        self.assertEquals(response.status_code,
+                            400,
+                            "test with empty old password failed")
+
+        #Test with empty new password
+        post_content = {'username':'testuser-1', 'old_password':'testpass',  'new_password': ''}
+        response = self.client.post(reverse('api_change_password'),
+                                    json.dumps(post_content), 
+                                    content_type='application/json')
+
+        self.assertEquals(response.status_code,
+                            400,
+                            "test with empty new password failed")
+
+        #Test with wrong old password
+        post_content = {'username':'testuser-1', 'old_password':'testpass3',  'new_password': 'testpass2'}
+        response = self.client.post(reverse('api_change_password'),
+                                    json.dumps(post_content), 
+                                    content_type='application/json')
+
+        self.assertEquals(response.status_code,
+                            401,
+                            "test with wrong old password failed, status_code: " + str(response.status_code))
+
+        #Test with valid input
+        post_content = {'username':'testuser-1', 'old_password':'testpass',  'new_password': 'testpass2'}
+        response = self.client.post(reverse('api_change_password'),
+                                    json.dumps(post_content), 
+                                    content_type='application/json')
+
+        self.assertEquals(response.status_code,
+                            200,
+                            "test with valid input failed")
+
+        self.client.logout()
+        #test when not signed in
+        post_content = {'username':'testuser-1', 'old_password':'testpass2',  'new_password': 'testpass'}
+        response = self.client.post(reverse('api_change_password'),
+                                    json.dumps(post_content), 
+                                    content_type='application/json')
+        
+        self.assertEquals(response.status_code,
+                          403,
+                          'test when not signed in FAILED')
+
+        #test login with new password
+        post_content = {'username':'testuser-1', 'password': 'testpass2'}
+        response = self.client.post(reverse('api_login'),
+                                    json.dumps(post_content), 
+                                    content_type='application/json')
+        
+        self.assertEquals(response.status_code,
+                          200,
+                          'login with new password did not work')
