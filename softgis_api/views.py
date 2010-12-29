@@ -273,7 +273,6 @@ def new_password(request):
         400 if email address is not confirmed
         404 if email address is not found
 
-    TODO: write this docstring
     """
     
     if(request.method == "POST"):
@@ -288,21 +287,26 @@ def new_password(request):
             try:
                 static_user = \
                     StaticProfileValue.objects.get(email__exact = email)
-            except Exception:
+            except ObjectDoesNotExist:
                 pass
 
         if static_user == None:
             return HttpResponseNotFound(
                         _(u"email not found"))
         else:
-            confirmed = EmailAddress.objects.get(
+            try:
+                confirmed = EmailAddress.objects.get(
                                     user__exact = static_user.user).verified
-
+            except ObjectDoesNotExist:
+                pass
+            
         if confirmed == False:
             return HttpResponseBadRequest(
-                        _(u"email address is not confirmed, please " + \
-                            "confirm your email address before requesting " + \
-                            "new password"))
+#                        _(u"email address is not confirmed, please " + \
+#                            "confirm your email address before requesting " + \
+#                            "new password"))
+                        _(u"Before requesting new password, please  " + \
+                            "confirm your email address"))
 
         rnd = Random()
         
@@ -331,7 +335,9 @@ def new_password(request):
             static_user.user.set_password(password)
             static_user.user.save()
             return HttpResponse(_(u"New password sent to ") + \
-                                    static_user.email, status=200)
+                                    static_user.email, 
+                                    status=200, 
+                                    content_type='text/plain')
         except BadHeaderError:
             return HttpResponseBadRequest(_(u'Invalid header found.'))
             

@@ -112,7 +112,7 @@ function new_password(email, callback_function) {
     
     dojo.xhrPost({
         "url": '{% url api_new_password %}', 
-        "handleAs": "json",
+        "handleAs": "text",
         "postData": encodeURIComponent(dojo.toJson(data)),
         "sync": false,
         "headers": {"Content-Type":"application/json"},
@@ -296,7 +296,7 @@ function save_graphic(graphic) {
         "error": function(response,ioArgs) {
                         console.log(response);
                 }
-    	});
+        });
     
 }
 
