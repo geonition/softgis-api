@@ -114,7 +114,7 @@ function new_password(email, callback_function) {
         "url": '{% url api_new_password %}', 
         "handleAs": "text",
         "postData": encodeURIComponent(dojo.toJson(data)),
-        "sync": false,
+        "failOk": true,
         "headers": {"Content-Type":"application/json"},
 	    
         "handle": function(response, ioArgs) {
@@ -143,7 +143,7 @@ function change_password(old_password, new_password, callback_function) {
 	"url": '{% url api_change_password %}', 
         "handleAs": "text",
         "postData": encodeURIComponent(dojo.toJson(data)),
-	"sync": false,
+        "failOk": true,
 	"headers": {"Content-Type":"application/json"},
 	    
         "handle": function(response, ioArgs) {
@@ -170,6 +170,7 @@ function save_profile_values(profile_value_pairs, callback_function) {
         "handleAs": "json",
         "postData": encodeURIComponent(dojo.toJson(profile_value_pairs)),
         "headers": {"Content-Type":"application/json"},
+        "failOk": true,
 	    
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
@@ -203,7 +204,7 @@ function get_profiles(limiter_param, callback_function) {
         dojo.xhrGet({
             "url": '{% url api_profile %}' + limiter_param,
             "handleAs": "json",
-            "sync": false,
+            "failOk": true,
             "headers": {"Content-Type":"application/json"},
 
             // The LOAD function will be called on a successful response.
@@ -305,7 +306,7 @@ function remove_graphic(feature_id) {
     dojo.xhrDelete({
 		"url": '{% url api_feature %}?id=' + feature_id,
 		"handleAs": "text",
-        "headers": {"Content-Type":"application/json"},
+                "headers": {"Content-Type":"application/json"},
 		"failOk": true,
 		"load": function(response, ioArgs) {
 					if(djConfig.isDebug) {
