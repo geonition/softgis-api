@@ -96,7 +96,7 @@ def logout(request):
         200 if logout successful
     """
     django_logout(request)
-    return HttpResponse(_("You have succesfully signed out"))
+    return HttpResponse(_("You have successfully signed out"))
 
 #openid authentication views
 def openid_begin(request):
@@ -194,8 +194,7 @@ def register(request):
     elif(request.method == "POST"):
 
         if request.user.is_authenticated() == True:
-            return HttpResponseBadRequest(_("You cannot register a user" + \
-                                            "when logged in"))
+            return HttpResponseBadRequest(_("You cannot register a user when logged in"))
     
     
         values = None
@@ -302,8 +301,7 @@ def new_password(request):
             
         if confirmed == False:
             return HttpResponseBadRequest(
-                        _(u"Please confirm your email address " + \
-                            "before requesting a new password"))
+                        _(u"Please confirm your email address before requesting a new password"))
 
         rnd = Random()
         
@@ -347,8 +345,7 @@ def change_password(request):
     """
     
     if not request.user.is_authenticated():
-        return HttpResponseForbidden(_(u"The request has to be made" + \
-                                 "by an signed in user"))
+        return HttpResponseForbidden(_(u"The request has to be made by an signed in user"))
 
 
     if(request.method == "POST"):
@@ -359,8 +356,7 @@ def change_password(request):
         old_password = request_json['old_password']
 
         if(old_password == None or old_password == ''):
-            return HttpResponseBadRequest(_(u"You have to enter your " + \
-                                            "current password"))
+            return HttpResponseBadRequest(_(u"You have to enter your current password"))
 
         if not request.user.check_password(old_password):
             return HttpResponse(_(u"Wrong password"), status=401)
@@ -382,8 +378,7 @@ def profile(request):
     REST api.
     """
     if not request.user.is_authenticated():
-        return HttpResponseForbidden(_("The request has to be made" + \
-                                     "by an signed in user"))
+        return HttpResponseForbidden(_("The request has to be made by an signed in user"))
         
     if(request.method == "GET"):
         # get the definied limiting parameters
@@ -599,7 +594,6 @@ def feature(request):
                 new_property.save()
                 
             except ObjectDoesNotExist:
-                print "object not exist"
                 return HttpResponseBadRequest(
                             "no feature with the given id found")
 
