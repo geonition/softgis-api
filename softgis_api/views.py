@@ -302,11 +302,8 @@ def new_password(request):
             
         if confirmed == False:
             return HttpResponseBadRequest(
-#                        _(u"email address is not confirmed, please " + \
-#                            "confirm your email address before requesting " + \
-#                            "new password"))
-                        _(u"Before requesting new password, please  " + \
-                            "confirm your email address"))
+                        _(u"Please confirm your email address " + \
+                            "before requesting a new password"))
 
         rnd = Random()
         
@@ -411,9 +408,8 @@ def profile(request):
         
         try:
             values = json.loads(request.POST.keys()[0])
-        except ValueError:
-            return HttpResponseBadRequest(
-                        "mime type should be application/json")
+        except ValueError, err:
+            return HttpResponseBadRequest("JSON error: " + str(err.args))
 
         allow_notifications = values.pop('allow_notifications', False)
         birthyear = values.pop('birthyear', None)
@@ -436,9 +432,9 @@ def profile(request):
         
         try:
             static_profile_values.full_clean()
-        except ValidationError, e:
-            return HttpResponseBadRequest(json.dumps(e.message_dict))
-            
+        except ValidationError, err:
+            return HttpResponseBadRequest(json.dumps(err.message_dict))
+        print static_profile_values    
         static_profile_values.save()
         
         #confirm email TODO should use own version of confirmation
