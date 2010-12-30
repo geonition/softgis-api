@@ -434,13 +434,15 @@ def profile(request):
             static_profile_values.full_clean()
         except ValidationError, err:
             return HttpResponseBadRequest(json.dumps(err.message_dict))
-        print static_profile_values    
+
         static_profile_values.save()
         
         #confirm email TODO should use own version of confirmation
         if not email == "" and not email == None:
             email_addr = EmailAddress.objects.add_email(request.user, email)
-
+            if email_addr == None:
+                django.db.connection.close()
+                
         new_profile_value = ProfileValue(user = request.user,
                                         json_string = json.dumps(values))
         new_profile_value.save()
