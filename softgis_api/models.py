@@ -273,6 +273,14 @@ def get_profiles(limit_param, profile_queryset):
                                                 .user\
                                                 .staticprofilevalue\
                                                 .allow_notifications
+        profile_dict['gender'] = profile\
+                                    .user\
+                                    .staticprofilevalue\
+                                    .gender
+        profile_dict['birthyear'] = profile\
+                                    .user\
+                                    .staticprofilevalue\
+                                    .birthyear
         profile_list.append(profile_dict)
 
     return profile_list
