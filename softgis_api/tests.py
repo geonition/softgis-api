@@ -497,9 +497,6 @@ class NewPasswordTest(TestCase):
                           'login with new password did not work')
         
 
-        print '\nNew password email sent:'
-        print mail.outbox[1].body
-
 class ChangePasswordTest(TestCase):
 
     def setUp(self):
