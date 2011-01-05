@@ -97,11 +97,10 @@ function logout(callback_function) {
 
 /*
  This function send a new password for the user
- with the email or username provided.
+ with the email provided.
  
  Takes as parameters:
- username - the username of the person who need a new password (required if email is not provided)
- email - email of the person that needs a new password (required if username is not provided)
+ email - email of the person that needs a new password (required)
  callback_function - the function to be called when a response from the server
                     is received (optional)
 */
@@ -159,7 +158,12 @@ function change_password(old_password, new_password, callback_function) {
 
 /*
 This function saves the profile value pairs given
-*/
+
+It takes as parameters:
+profile_value_pairs - JSON object containing new profile values
+callback_function - a callback function that will be called when a reponse
+                    from the server is received (optional)
+**/
 function save_profile_values(profile_value_pairs, callback_function) {
     
     var params = "?user_id={{ user.id }}";
@@ -189,6 +193,11 @@ var profile_values = {};
 
 /*
 This function returns an array of profiles.
+
+It takes as parameters:
+limiter_param - query string to limit the returned profiles
+callback_function - a callback function that will be called when a reponse
+                    from the server is received (optional)
 */
 
 function get_profiles(limiter_param, callback_function) {
@@ -240,6 +249,13 @@ function get_profiles(limiter_param, callback_function) {
 
 /* FEATURE API begins*/
 
+/*
+This function saves the graphic given in GeoJSON format.
+
+It takes as parameters:
+graphic - a graphic in ESRI JSON notation
+ 
+*/
 
 function save_graphic(graphic) {
     
@@ -302,6 +318,13 @@ function save_graphic(graphic) {
     
 }
 
+/*
+This function removes a graphic.
+
+It takes as parameters:
+feature_id - id of the feature to be removed.
+ 
+*/
 function remove_graphic(feature_id) {
     dojo.xhrDelete({
 		"url": '{% url api_feature %}?id=' + feature_id,
@@ -342,6 +365,12 @@ This function gets graphics from the server
 and adds them to the map_layer given
 
 expects the layer to have a renderer of its own
+
+It takes as parameters:
+limiter_param - query string to limit the returned graphics
+map_layer - the map layer where the graphics are added
+infotemplate - an ESRI infotemplate object for the graphic
+
 */
 function get_graphics(limiter_param, map_layer, infotemplate) {
 

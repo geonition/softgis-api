@@ -174,7 +174,7 @@ def register(request):
     'username': <required>,
     'password': <required>.
     'email': <optional>,
-    'notifications': <optional>
+    'allow_notifications': <optional>
     }
 
     if email is provided it will be confirmed with an confirmation link
@@ -341,7 +341,13 @@ def new_password(request):
     
 def change_password(request):
     """
-    TODO: docstring
+    This function changes the user password.
+    
+    Returns 200 if successful
+        400 if old or new password is not provided
+        401 if current password is not correct
+        403 if user is not signed in
+
     """
     
     if not request.user.is_authenticated():
@@ -424,7 +430,7 @@ def profile(request):
         static_profile_values.birthyear = birthyear
         static_profile_values.gender = gender
         static_profile_values.email = email
-        
+
         try:
             static_profile_values.full_clean()
         except ValidationError, err:
