@@ -50,9 +50,10 @@ def login(request):
     a suitable status code
     
 
-    Returns 200 if successful
-            400 for Bad Request
-            401 for unauthorized (wrong password or username not found)
+    Returns:
+        200 if successful
+        400 for Bad Request
+        401 for unauthorized (wrong password or username not found)
 
     """
     if(request.method == "GET"):
@@ -92,7 +93,7 @@ def logout(request):
     """
     simple logout function
 
-    Returns
+    Returns:
         200 if logout successful
     """
     django_logout(request)
@@ -184,9 +185,10 @@ def register(request):
     to his/her email
     
     
-    Returns 201 if successful
-            400 for Bad Request
-            409 for Conflict
+    Returns:
+        201 if successful
+        400 for Bad Request
+        409 for Conflict
     """
     if(request.method == "GET"):    
         return HttpResponse("")
@@ -268,7 +270,8 @@ def new_password(request):
     """
     This function sends new password to the given email address.
     
-    Returns 200 if successful
+    Returns:
+        200 if successful
         400 if email address is not confirmed
         404 if email address is not found
 
@@ -343,7 +346,8 @@ def change_password(request):
     """
     This function changes the user password.
     
-    Returns 200 if successful
+    Returns:
+        200 if successful
         400 if old or new password is not provided
         401 if current password is not correct
         403 if user is not signed in
@@ -452,7 +456,24 @@ def profile(request):
         
 #Views for the geometry API
 def feature(request):
+    """
+    This function handles the feature part of the softgis REST api
     
+    On GET request this function returns a geojson featurecollection
+    matching the query string.
+    
+    On POST request this functions adds a new feature or modifies 
+    the existing feature in the database.
+    
+    On DELETE request this function removes existing feature from 
+    the database.
+    
+    Returns:
+        200 if successful and geojson featurecollection (GET, POST)
+        403 if not signed in
+        400 if bad request
+
+    """
     
     if request.method  == "GET":
         # get the definied limiting parameters
