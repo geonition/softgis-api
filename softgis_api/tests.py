@@ -255,7 +255,9 @@ class ProfileValueTest(TestCase):
                           "a faulty email value type did not " + \
                           "return a bad request response")
        
-        #email submission        
+        #email submission
+        
+        #normal email submission
         response = self.client.post(reverse('api_profile'),
                                     json.dumps({'email':'some@some.fi'}),
                                     content_type='application/json')
@@ -267,6 +269,7 @@ class ProfileValueTest(TestCase):
         
         print "CONFIRMATION EMAIL SENT SUPPOSED TO PRINT THE EMAIL:"
         print mail.outbox[0].body
+        
                 
         #change the email  
         response = self.client.post(reverse('api_profile'),
@@ -278,7 +281,22 @@ class ProfileValueTest(TestCase):
                             "email adding did not work")
         self.assertEquals(len(mail.outbox), 2)
         
+        #not unique email submission  
+        response = self.client.post(reverse('api_profile'),
+                                    json.dumps({'email':'some@other.fi'}),
+                                    content_type='application/json')
+                                    
+        self.assertEquals(response.status_code,
+                            200,
+                            "not unique email adding did not work")
         
+        #faulty email submission  
+        response = self.client.post(reverse('api_profile'),
+                                    json.dumps({'email':'some.other.fi'}),
+                                    content_type='application/json')
+        self.assertEquals(response.status_code,
+                            200,
+                            "faulty email adding did not work")
         
 class GeoApiTest(TestCase):
 
