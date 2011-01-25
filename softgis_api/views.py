@@ -14,6 +14,7 @@ from django.contrib.auth import logout as django_logout
 from django.contrib.auth import authenticate as django_authenticate
 from django.contrib.auth.models import User
 from django.db import IntegrityError
+from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ValidationError
 #from pehmogis.api.softgis_api.models import geometry
@@ -243,7 +244,20 @@ def register(request):
                 
             return HttpResponseBadRequest(message.join(error_msg))
             
-        user.save()
+        try:
+            sid = transaction.savepoint()
+            user.save()
+            transaction.savepoint_commit(sid)
+        except IntegrityError, err:
+            transaction.savepoint_rollback(sid)
+            
+            message = " "
+            error_msg = []
+
+            for desc in err.message_dict.keys():
+                error_msg.append(err.message_dict[desc][0])
+                
+            return HttpResponse(status=409, content=message.join(error_msg))
         
         #add additional profile values
         static_profile_values = StaticProfileValue(user=user)
