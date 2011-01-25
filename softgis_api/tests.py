@@ -295,7 +295,7 @@ class ProfileValueTest(TestCase):
                                     json.dumps({'email':'some.other.fi'}),
                                     content_type='application/json')
         self.assertEquals(response.status_code,
-                            200,
+                            400,
                             "faulty email adding did not work")
         
 class GeoApiTest(TestCase):
