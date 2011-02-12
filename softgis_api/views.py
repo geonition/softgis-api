@@ -32,9 +32,9 @@ from django.contrib.gis.gdal import OGRGeometry
 from openid2rp.django import auth as openid_auth
 from django.shortcuts import render_to_response
 
-import django
-import settings
 
+import django
+import api_settings as settings
 import sys
 
 if sys.version_info >= (2, 6):
