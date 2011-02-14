@@ -392,6 +392,7 @@ class FeatureDBTest(TestCase):
     def test_feature(self):
         feat1 = Feature(geometry = self.point,
                        user = self.user)
+        
         #save and check create_time
         feat1.save()
         self.assertNotEqual(feat1.create_time,
