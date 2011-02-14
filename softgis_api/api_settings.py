@@ -1,0 +1,5 @@
+import settings
+
+USE_MONGODB = False
+
+SPATIAL_REFERENCE_SYSTEM_ID = 3067

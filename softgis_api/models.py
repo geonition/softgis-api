@@ -12,7 +12,7 @@ from django.core.signals import request_finished
 from django.db import IntegrityError
 
 import django
-import settings
+import api_settings as settings
 import datetime
 
 import sys
