@@ -459,8 +459,10 @@ def profile(request):
         #confirm email TODO should use own version of confirmation
         if not email == "" and not email == None:
             email_addr = EmailAddress.objects.add_email(request.user, email)
+            print "here"
             if email_addr == None:
-                django.db.connection.close()
+                print "none"
+                #django.db.connection.close()
                 
         new_profile_value = ProfileValue(user = request.user,
                                         json_string = json.dumps(values))

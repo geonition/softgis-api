@@ -207,7 +207,7 @@ function get_profiles(limiter_param, callback_function) {
         limiter_param === null) {
         limiter_param = '';
     }
-
+    
     if(profile_values[limiter_param] === undefined) {
 
         dojo.xhrGet({

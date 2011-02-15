@@ -25,8 +25,7 @@ else:
 if settings.USE_MONGODB:
     from pymongo import Connection
 
-_ = translation.ugettext
-    
+_ = translation.ugettext    
 
 class StaticProfileValue(models.Model):
     """
@@ -53,33 +52,28 @@ class StaticProfileValue(models.Model):
     birthyear = models.IntegerField(blank=True,
                                     null=True,
                                     choices = BIRTHYEAR_CHOICES)
-
-    email = models.EmailField(blank=True,
-                              null=True)
+    
     email_confirmed = models.BooleanField(default=False)
+    
 
 
 #signal handler for profile creation
-#def profile_handler(sender, instance, created, **kwargs):
+def profile_handler(sender, instance, created, **kwargs):
     """
     This function makes sure that the extension profile values
     the StaticProfileValue is created for each user.
 
     it is connected to the post_save() signal of the user model
     """
- #   print sender
-  #  print instance
- #   print created
- #   if created == True:
- #       try:
-            #associate_profile = StaticProfileValue(user=instance)
-            #associate_profile.save()
- #           pass
- #       except IntegrityError:
-            #django.db.connection.close()
- #           pass
+    if created == True:
+        try:
+            associate_profile = StaticProfileValue(user=instance)
+            associate_profile.save()
+        except IntegrityError:
+            django.db.connection.close()
 
-#post_save.connect(profile_handler, sender=User)
+
+post_save.connect(profile_handler, sender=User)
 
 class ProfileValue(models.Model):
     """
@@ -189,6 +183,7 @@ def get_user_profile(user):
                                             .gender
         profile_dict['email'] = StaticProfileValue.objects\
                                             .get(user__exact = user)\
+                                            .user\
                                             .email
         profile_dict['birthyear'] = StaticProfileValue.objects\
                                             .get(user__exact = user)\
