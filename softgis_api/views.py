@@ -29,12 +29,12 @@ from django.core.mail import BadHeaderError
 from random import Random
 from django.utils import translation
 from django.contrib.gis.gdal import OGRGeometry
-from openid2rp.django import auth as openid_auth
+#from openid2rp.django import auth as openid_auth
 from django.shortcuts import render_to_response
 
-import django
-import settings
 
+import django
+import api_settings as settings
 import sys
 
 if sys.version_info >= (2, 6):
