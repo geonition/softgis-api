@@ -7,9 +7,11 @@ import settings
 def javascript_api(request):
     """
     This function returns the javascript client
-    that was requester.
+    that was requested.
     
-    At the moment only returns the dojo client.
+    The client will be a combination of the
+    other installed softgis_* applications and
+    the <app_name>.js templates they provide.
     """
     # get the templates
     softgis_templates = []
