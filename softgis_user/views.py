@@ -7,6 +7,7 @@ from django.db import IntegrityError
 from django.db import transaction
 from django.http import HttpResponse
 from django.http import HttpResponseBadRequest
+from django.http import HttpResponseForbidden
 from django.utils import translation
 
 import json
