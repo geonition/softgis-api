@@ -1,11 +1,23 @@
-SoftGIS is a set of applications made for mapping residents'
-perceptions on their living environment. 
+The softGIS api provides django apps to set up a REST API
+for saving and retrieval of geographical information.
 
-The softGIS API is made to support the development of 
-applications that has the purpose of collecting resident 
-generated geographical data. The API also enables the
-analyzis and presentation of the collected data.
+To install all the applications you need to install geodjango and:
 
-More information of the SoftGIS research project can be found
-at www.pehmogis.fi
+1. Add the softgis application name to INSTALLED_APPS
+
+INSTALLED_APPS = (
+    'softgis_feature'
+    'softgis_user'
+    ....
+)
+
+2. Set a url in the urls for the installed application e.g.
+
+urlpatterns = patterns('',
+    (r'^client/', include('api.softgis_client.urls')),
+    (r'^user/', include('api.softgis_user.urls')),
+    (r'^profile/', include('api.softgis_profile.urls')),
+    (r'^feature/', include('api.softgis_feature.urls')),
+    ....
+)
 
