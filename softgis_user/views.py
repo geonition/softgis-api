@@ -1,8 +1,18 @@
-# Create your views here.
+from django.contrib.auth import logout as django_logout
+from django.contrib.auth import login as django_login
+from django.contrib.auth import authenticate as django_authenticate
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
+from django.db import transaction
+from django.http import HttpResponse
+from django.http import HttpResponseBadRequest
+from django.utils import translation
 
-# Create your views here.
+import json
 
-
+# set the ugettext _ shortcut
+_ = translation.ugettext
 
    
 def login(request):
@@ -76,9 +86,7 @@ def register(request):
     The post should include
     {
     'username': <required>,
-    'password': <required>.
-    'email': <optional>,
-    'allow_notifications': <optional>
+    'password': <required>
     }
 
     if email is provided it will be confirmed with an confirmation link
@@ -111,8 +119,6 @@ def register(request):
 
         username = values.pop('username', None)
         password = values.pop('password', None)
-        email = values.pop('email', None)
-        allow_notifications = values.pop('allow_notifications', False)
         
         if(username == None or username == ""):
             return HttpResponseBadRequest(_(u"You have to provide a username"))
@@ -122,7 +128,6 @@ def register(request):
         
         #create user for django auth
         user = User(username = username,
-                    email = "",
                     password = password)
         user.set_password(password)
         
@@ -158,15 +163,6 @@ def register(request):
                 
             return HttpResponse(status=409, content=message.join(error_msg))
         
-        #add additional profile values
-        static_profile_values = StaticProfileValue(user=user)
-        static_profile_values.allow_notifications = allow_notifications
-        static_profile_values.email = email
-        static_profile_values.save()
-                
-        if not email == '' and not email == None:
-            EmailAddress.objects.add_email(user, email)
-            
         #authenticate and login
         user = django_authenticate(username=username,
                                     password=password)

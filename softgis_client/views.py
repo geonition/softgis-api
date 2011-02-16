@@ -1,15 +1,41 @@
 from django.shortcuts import render_to_response
+from django.template.loader import render_to_string
 from django.template import RequestContext
-from django.http import HttpResponse
+from django.template import TemplateDoesNotExist
+import settings
 
 def javascript_api(request):
-    context_dict = {}
+    """
+    This function returns the javascript client
+    that was requester.
     
-    template = loader.get_template('javascript/softgis.js')
-    context = RequestContext(request, context_dict)
-
-    return HttpResponse(template.render(context),
-                        mimetype="application/javascript")
+    At the moment only returns the dojo client.
+    """
+    # get the templates
+    softgis_templates = []
+    for app in settings.INSTALLED_APPS:
+        ind = app.find("softgis_")
+        if ind != -1:
+            softgis_templates.append(app[ind:] + ".js")
+    
+    # render the clients to strings
+    softgis_clients = []
+    for template in softgis_templates:
+        try:
+            softgis_clients.append(
+                render_to_string(
+                    template,
+                    RequestContext(request)
+                ))
+        except TemplateDoesNotExist:
+            print "template does not exist"
+            print template
+            pass
+    
+    # return the clients in one file
+    return render_to_response("javascript/softgis.js",
+                              {'softgis_clients': softgis_clients},
+                              mimetype="application/javascript")
 
 
 def test_api(request):

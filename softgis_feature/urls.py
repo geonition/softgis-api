@@ -2,7 +2,7 @@
 from django.conf.urls.defaults import patterns
 from django.conf.urls.defaults import url
 
-urlpatterns = patterns('softgis_gis.views',
+urlpatterns = patterns('softgis_feature.views',
                        
             #feature rest
             url(r'^',
