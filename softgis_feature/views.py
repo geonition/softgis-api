@@ -1,4 +1,5 @@
-# Create your views here.
+from django.http import HttpResponseForbidden
+
 import settings
 
 
