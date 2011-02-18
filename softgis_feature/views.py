@@ -1,4 +1,5 @@
 # Create your views here.
+import settings
 
 
        

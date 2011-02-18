@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.gis.db import models as gis_models
+from django.contrib.auth.models import User
+import settings
 
 # Create your models here.
 
