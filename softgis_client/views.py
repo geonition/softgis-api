@@ -30,8 +30,6 @@ def javascript_api(request):
                     RequestContext(request)
                 ))
         except TemplateDoesNotExist:
-            print "template does not exist"
-            print template
             pass
     
     # return the clients in one file
