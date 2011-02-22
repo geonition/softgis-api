@@ -1,7 +1,17 @@
 from django.db import models
 from django.contrib.gis.db import models as gis_models
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
+
+
 import settings
+
+import sys
+
+if sys.version_info >= (2, 6):
+    import json
+else:
+    import simplejson as json
 
 # Create your models here.
 

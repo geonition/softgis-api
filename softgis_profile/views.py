@@ -1,6 +1,24 @@
 # Create your views here.
+from django.http import HttpResponse
+from django.http import HttpResponseBadRequest
+from django.http import HttpResponseForbidden
+from django.utils import translation
 
+from softgis_profile.models import ProfileValue
+from softgis_profile.models import StaticProfileValue
+from softgis_profile.models import get_profiles
 
+import settings
+
+import sys
+
+if sys.version_info >= (2, 6):
+    import json
+else:
+    import simplejson as json
+
+# set the ugettext _ shortcut
+_ = translation.ugettext
     
 def profile(request):
     """

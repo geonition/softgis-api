@@ -15,7 +15,8 @@ function save_profile_values(profile_value_pairs, callback_function) {
         "url": "{% url api_profile %}" + params,
         "handleAs": "json",
         "postData": encodeURIComponent(dojo.toJson(profile_value_pairs)),
-        "headers": {"Content-Type":"application/json"},
+        "headers": {"Content-Type":"application/json",
+                    "X-CSRFToken": dojo.cookie('csrftoken')},
         "failOk": true,
 	    
         "handle": function(response, ioArgs) {
@@ -56,7 +57,8 @@ function get_profiles(limiter_param, callback_function) {
             "url": '{% url api_profile %}' + limiter_param,
             "handleAs": "json",
             "failOk": true,
-            "headers": {"Content-Type":"application/json"},
+            "headers": {"Content-Type":"application/json",
+                    "X-CSRFToken": dojo.cookie('csrftoken')},
 
             // The LOAD function will be called on a successful response.
             "load": function(response, ioArgs) {
