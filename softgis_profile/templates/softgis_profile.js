@@ -37,7 +37,7 @@ var profile_values = {};
 This function returns an array of profiles.
 
 It takes as parameters:
-limiter_param - query string to limit the returned profiles
+limiter_param - query string to limit the returned profiles e.g. "?latest=true&age=12"
 callback_function - a callback function that will be called when a reponse
                     from the server is received (optional)
 */
