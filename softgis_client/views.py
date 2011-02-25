@@ -12,14 +12,23 @@ def javascript_api(request):
     
     The client will be a combination of the
     other installed softgis_* applications and
-    the <app_name>.js templates they provide.
+    the <app_name>.<lib>.js templates they provide.
+    
+    To get the right kind of javascript functions
+    define a GET parameter:
+    ?lib=esri --> returns the esri suitable javascript functions
+    ?lib=jquery --> returns the jquery geojson functions
     """
+    
+    #default lib is esri
+    lib = request.GET.get("lib", "esri")
+    
     # get the templates
     softgis_templates = []
     for app in settings.INSTALLED_APPS:
         ind = app.find("softgis_")
         if ind != -1:
-            softgis_templates.append(app[ind:] + ".js")
+            softgis_templates.append(app[ind:] + "." + lib + ".js")
     
     # render the clients to strings
     softgis_clients = []
@@ -34,7 +43,7 @@ def javascript_api(request):
             pass
     
     # return the clients in one file
-    return render_to_response("javascript/softgis.js",
+    return render_to_response("javascript/softgis."+ lib + ".js",
                               {'softgis_clients': softgis_clients},
                               mimetype="application/javascript")
 
