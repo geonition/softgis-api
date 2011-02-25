@@ -4,6 +4,15 @@ from django.db.models.signals import post_save
 
 import datetime
 
+import settings
+
+import sys
+
+if sys.version_info >= (2, 6):
+    import json
+else:
+    import simplejson as json
+
 
 class StaticProfileValue(models.Model):
     """

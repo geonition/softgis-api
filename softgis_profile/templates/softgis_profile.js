@@ -23,7 +23,8 @@ function save_profile_values(profile_value_pairs, callback_function) {
         "url": "{% url api_profile %}" + params,
         "handleAs": "json",
         "postData": encodeURIComponent(dojo.toJson(profile_value_pairs)),
-        "headers": {"Content-Type":"application/json"},
+        "headers": {"Content-Type":"application/json",
+                    "X-CSRFToken": dojo.cookie('csrftoken')},
         "failOk": true,
 	    
         "handle": function(response, ioArgs) {
@@ -45,7 +46,7 @@ var profile_values = {};
 This function returns an array of profiles.
 
 It takes as parameters:
-limiter_param - query string to limit the returned profiles
+limiter_param - query string to limit the returned profiles e.g. "?latest=true&age=12"
 callback_function - a callback function that will be called when a reponse
                     from the server is received (optional)
 */
@@ -64,7 +65,8 @@ function get_profiles(limiter_param, callback_function) {
             "url": '{% url api_profile %}' + limiter_param,
             "handleAs": "json",
             "failOk": true,
-            "headers": {"Content-Type":"application/json"},
+            "headers": {"Content-Type":"application/json",
+                    "X-CSRFToken": dojo.cookie('csrftoken')},
 
             // The LOAD function will be called on a successful response.
             "load": function(response, ioArgs) {
