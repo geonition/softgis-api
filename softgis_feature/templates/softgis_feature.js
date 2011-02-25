@@ -51,7 +51,7 @@ function save_graphic(graphic) {
         "handleAs": "json",
         "postData": encodeURIComponent(dojo.toJson(geojson_feature)),
         "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": dojo.cookie('csrftoken')},
+                    "X-CSRFToken": "{{ csrf_token }}"},
         "load": function(response, ioArgs) {
                     if(djConfig.isDebug) {
                         console.log(ioArgs);
@@ -82,7 +82,7 @@ function remove_graphic(feature_id) {
 		"url": '{% url api_feature %}?id=' + feature_id,
 		"handleAs": "text",
         "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": dojo.cookie('csrftoken')},
+                    "X-CSRFToken": "{{ csrf_token }}"},
 		"failOk": true,
 		"load": function(response, ioArgs) {
 					if(djConfig.isDebug) {
@@ -144,7 +144,7 @@ function get_graphics(limiter_param, map_layer, infotemplate) {
         "handleAs": "json",
         "sync": false,
         "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": dojo.cookie('csrftoken')},
+                    "X-CSRFToken": "{{ csrf_token }}"},
 
         // The LOAD function will be called on a successful response.
         "load": function(response, ioArgs) {
