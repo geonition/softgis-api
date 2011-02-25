@@ -2,6 +2,7 @@ from django.shortcuts import render_to_response
 from django.template.loader import render_to_string
 from django.template import RequestContext
 from django.template import TemplateDoesNotExist
+from django.http import HttpResponse
 import settings
 
 def javascript_api(request):
@@ -46,3 +47,14 @@ def test_api(request):
     """
     return render_to_response("test/test_dojo.html",
                               context_instance = RequestContext(request))
+    
+    
+def csrf(request):
+    """
+    This view returns a csrf token which can be used to send
+    other POST requests to the REST api directly without using any
+    Javascript library provided.
+    """
+    return render_to_response("csrf.txt",
+                              context_instance = RequestContext(request),
+                              mimetype="text/plain")
