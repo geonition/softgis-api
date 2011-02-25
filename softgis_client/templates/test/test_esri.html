@@ -1,0 +1,30 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+    <head>
+        <title>SoftGIS API test</title>
+        <script src="http://ajax.googleapis.com/ajax/libs/dojo/1.5/dojo/dojo.xd.js" type="text/javascript"></script>
+        <script type="text/javascript" src="{% url api_javascript %}"></script>
+    </head>
+    <body>
+        <p>
+            This page loaded the softgis dojo javascript api,
+            
+            you can test it further in a javascript console.
+        </p>
+        <div id="results" style="color:red"></div>
+        <script>
+            //callback to show the http response
+            function show_response(response) {
+                dojo.byId("results").innerHTML += response.status_code + " ";
+                dojo.byId("results").innerHTML += response.message + "<br />";
+            }
+            //example modify the way you want
+            //logout
+            logout();
+            //login
+            login('test','test', show_response);
+            //register
+            register('test','test', show_response);
+        </script>
+    </body>
+</html>

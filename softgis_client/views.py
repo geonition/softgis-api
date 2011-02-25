@@ -54,7 +54,7 @@ def test_api(request):
     dojo api and the softgis.js so that the API javascript
     functions can be tested from a javascript console.
     """
-    return render_to_response("test/test_dojo.html",
+    return render_to_response("test/test_esri.html",
                               context_instance = RequestContext(request))
     
     
