@@ -1,23 +1,8 @@
 The softGIS api provides django apps to set up a REST API
 for saving and retrieval of geographical information.
 
-To install all the applications you need to install geodjango and:
+The applications contain both javascript functions and
+REST functionallity implemented on top of geodjango.
 
-1. Add the softgis application name to INSTALLED_APPS
-
-INSTALLED_APPS = (
-    'softgis_feature'
-    'softgis_user'
-    ....
-)
-
-2. Set a url in the urls for the installed application e.g.
-
-urlpatterns = patterns('',
-    (r'^client/', include('api.softgis_client.urls')),
-    (r'^user/', include('api.softgis_user.urls')),
-    (r'^profile/', include('api.softgis_profile.urls')),
-    (r'^feature/', include('api.softgis_feature.urls')),
-    ....
-)
-
+At the moment this project is developing in a fast pace and
+you cannot expect it to be stable.
