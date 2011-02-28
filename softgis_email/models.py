@@ -20,8 +20,9 @@ class EmailAddressManager(models.Manager):
 
     def add_email(self, user, email):
         try:
-            email_address = self.create(user=user, email=email)
-            test = EmailConfirmation.objects.send_confirmation(email_address)
+            #creates an object EmailAddress and sends the confirmation key
+	    email_address = self.create(user=user, email=email)
+            EmailConfirmation.objects.send_confirmation(email_address)
             return email_address
         except IntegrityError:
             return None

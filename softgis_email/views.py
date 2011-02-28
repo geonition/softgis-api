@@ -22,6 +22,9 @@ def confirm_email(request, confirmation_key):
     
     
     email_address = EmailConfirmation.objects.confirm_email(confirmation_key)
+    
+    #the template will handle the invalid confirmation key
+    # if the confirmation key was invalid the email_address object is None
     return render_to_response("emailconfirmation/confirm_email.html", {
         "email_address": email_address,
     }, context_instance=RequestContext(request))
@@ -33,14 +36,14 @@ def email(request):
     """
     This function handles the email managing part of the softgis REST api
     
-    On GET request this function returns the email for a userid
-    matching the query string.
+    On GET request this function returns the email of the logged in user
     
-    On POST request this functions adds a new email or modifies 
-    the existing email in the database for the specified user.
+    On POST request this function sends a confirmation email
+    to the logged in user. The user will have to follow the link in the
+    email in order to activate that email address
     
     On DELETE request this function removes existing email from 
-    the database for a specified user.
+    the database for the logged in user.
     
     Returns:
         200 if successful and user exists
@@ -53,9 +56,6 @@ def email(request):
         return HttpResponseForbidden(_(u"You haven't signed in."))
     
     user = request.user
-    
-    
-    
         
     if(request.method == "GET"):
         #return user email in json format
@@ -99,16 +99,6 @@ def email(request):
 
         EmailAddress.objects.filter(user = user).delete()
     
-        #EmailConfirmation.objects.filter(email_address in emailAddersses).delete()
-        #EmailAddress.objects.filter(user = user).delete()
-        
-        #should delete user's coresponding EmailAddress and EmailConfirmation models
-        """if (not user.EmailAddress == None) and (not user.EmailAddress.EmailConfirmation == None):
-            user.EmailAddress.EmailConfirmation.delete()
-            
-        if not user.EmailAddress == None:
-            user.EmailAddress.delete()
-        """
         #save changes
         user.save()
         
