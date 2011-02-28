@@ -15,5 +15,9 @@ urlpatterns = patterns('softgis_client.views',
             url(r'^test.html',
                 'test_api',
                 name="api_test"),
-
+            
+            #get a csfr token for REST clients
+            url(r'^csrf',
+                'csrf',
+                name="api_csrf"),
         )

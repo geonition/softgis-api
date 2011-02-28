@@ -137,7 +137,7 @@ def register(request):
         except ValidationError, err:
             message = " "
             error_msg = []
-
+    
             for desc in err.message_dict.keys():
                 error_msg.append(err.message_dict[desc][0])
                 

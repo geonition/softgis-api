@@ -1,6 +1,21 @@
-# Create your views here.
+from django.http import HttpResponse
+from django.http import HttpResponseForbidden
+from django.http import HttpResponseBadRequest
+
+from django.contrib.gis.gdal import OGRGeometry
+
+from softgis_feature.models import Feature
+from softgis_feature.models import Property
+
+
 import settings
 
+import sys
+
+if sys.version_info >= (2, 6):
+    import json
+else:
+    import simplejson as json
 
        
 #Views for the geometry API
@@ -127,8 +142,8 @@ def feature(request):
             properties = feature_json['properties']
             category = feature_json['properties']['category']
         except KeyError:
-            return HttpResponseBadRequest("json requires properties"  + \
-                                            "and geometry, and the" + \
+            return HttpResponseBadRequest("json requires properties "  + \
+                                            "and geometry, and the " + \
                                             "properties a category value")
           
         try:
