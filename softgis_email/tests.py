@@ -1,23 +1,125 @@
+# -*- coding: utf-8 -*-
 """
-This file demonstrates two different styles of tests (one doctest and one
-unittest). These will both pass when you run "manage.py test".
+This file includes all the tests to test the api functionallity.
 
-Replace these with more appropriate tests for your application.
 """
 
 from django.test import TestCase
+from django.test.client import Client
+from django.core.urlresolvers import reverse
+from django.contrib.auth.models import User
+from django.contrib.gis.geos import GEOSGeometry
+from django.core import mail
+from softgis_email.models import EmailConfirmation
+from softgis_email.models import EmailAddress
 
-class SimpleTest(TestCase):
-    def test_basic_addition(self):
+import sys
+
+if sys.version_info >= (2, 6):
+    import json
+else:
+    import simplejson as json
+    
+class EmailTest(TestCase):
+
+    def setUp(self):
+        self.client = Client()
+        #register a user
+        post_content = {'username':'cristian1000',
+                        'password':'cristi'}
+                        
+        response = self.client.post(reverse('api_register'),
+                                    json.dumps(post_content),
+                                    content_type='application/json')
+
+    
+    def test_email_update(self):
         """
-        Tests that 1 + 1 always equals 2.
+        Test registering new email
         """
-        self.failUnlessEqual(1 + 1, 2)
+        
+        #case 1 - no email sent
+        post_content = {"email" : ""}
+        
+        response = self.client.post(reverse('api_manage_email'),
+                                    json.dumps(post_content),
+                                    content_type='application/json')
+        
+	self.assertEqual(response.status_code,
+			    400,
+			    "trying to set empty email address")
 
-__test__ = {"doctest": """
-Another way to test that 1 + 1 is equal to 2.
+    def test_email_update_with_data(self):
+	post_content = {"email" : "test@aalto.fi"}
+        
+        response = self.client.post(reverse('api_manage_email'),
+                                    json.dumps(post_content),
+                                    content_type='application/json')
 
->>> 1 + 1 == 2
-True
-"""}
+        #Test if confirmation email is sent
+        self.assertEquals(len(mail.outbox), 1, "Confirmation email not sent")
 
+
+        
+        """
+        #logout
+        self.client.logout()
+        
+        # Test with correct but not confirmed email
+        response = self.client.post(reverse('api_new_password'),
+                                    json.dumps({'email':'some@some.fi'}),
+                                    content_type='application/json')
+                                    
+                                    
+        self.assertEquals(response.status_code,
+                            400,
+                            "not sending non-confirmed email did not work")
+
+        
+        self.assertEquals(len(mail.outbox), 1,
+                          "Mail sent even not confirmed email address")
+        
+        # Test with non-existing email 
+        response = self.client.post(reverse('api_new_password'),
+                                    json.dumps({'email':'example@example.com'}),
+                                    content_type='application/json')
+                                    
+        self.assertEquals(response.status_code,
+                            404,
+                            "test with non-existing email did not work")
+ 
+        self.assertEquals(len(mail.outbox),
+                          1,
+                          "Mail sent to non-existing email address")
+
+        #confirm the email
+        key = EmailConfirmation.objects.get(
+                email_address__email__exact = 'some@some.fi').confirmation_key
+        url = '/confirm_email/' + key + '/'
+        self.client.get(url)
+        
+        #Test with confirmed email
+        response = self.client.post(reverse('api_new_password'),
+                            json.dumps({'email':'some@some.fi'}),
+                            content_type='application/json')
+                            
+        self.assertEquals(response.status_code, 
+                          200,
+                          "Test with confirmed email failed")
+
+        self.assertEquals(len(mail.outbox), 2, "new password email not sent")
+        
+        #test login with new password
+        #parse new password, this will be broken if mail body is changed
+        new_password = mail.outbox[1].body.rpartition(' ')[2]
+        
+        post_content = {'username':'testuser-1', 'password': new_password}
+        response = self.client.post(reverse('api_login'),
+                                    json.dumps(post_content), 
+                                    content_type='application/json')
+        
+        self.assertEquals(response.status_code,
+                          200,
+                          'login with new password did not work')
+        
+        """
