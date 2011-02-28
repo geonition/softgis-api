@@ -3,10 +3,9 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.db import IntegrityError
 
+import django
 import datetime
-
 import settings
-
 import sys
 
 if sys.version_info >= (2, 6):

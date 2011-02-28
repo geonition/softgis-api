@@ -1,3 +1,5 @@
+
+
 /*
 This function saves the profile value pairs given
 
@@ -8,15 +10,21 @@ callback_function - a callback function that will be called when a reponse
 **/
 function save_profile_values(profile_value_pairs, callback_function) {
     
+
+    {% if user.id %}
     var params = "?user_id={{ user.id }}";
     profile_value_pairs.user_id = {{ user.id }};
+    {% else %}
+    var params = "?user_id=0";
+    profile_value_pairs.user_id = 0;
+    {% endif %}
     
     dojo.xhrPost({
         "url": "{% url api_profile %}" + params,
         "handleAs": "json",
         "postData": encodeURIComponent(dojo.toJson(profile_value_pairs)),
         "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": dojo.cookie('csrftoken')},
+                    "X-CSRFToken": "{{ csrf_token }}"},
         "failOk": true,
 	    
         "handle": function(response, ioArgs) {
@@ -58,7 +66,7 @@ function get_profiles(limiter_param, callback_function) {
             "handleAs": "json",
             "failOk": true,
             "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": dojo.cookie('csrftoken')},
+                    "X-CSRFToken": "{{ csrf_token }}"},
 
             // The LOAD function will be called on a successful response.
             "load": function(response, ioArgs) {
