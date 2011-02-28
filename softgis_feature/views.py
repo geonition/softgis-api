@@ -1,6 +1,7 @@
 from django.http import HttpResponse
 from django.http import HttpResponseForbidden
 from django.http import HttpResponseBadRequest
+from django.core.exceptions import ObjectDoesNotExist
 
 from django.contrib.gis.gdal import OGRGeometry
 

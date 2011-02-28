@@ -44,8 +44,7 @@ function save_graphic(graphic) {
         
         params += "&id=" + geojson_feature.id;
     }
-    // Testing the questionary
-    console.log(dojo.toJson(geojson_feature));
+
     dojo.xhrPost({
         "url": "{% url api_feature %}" + params,
         "handleAs": "json",
@@ -138,7 +137,7 @@ function get_graphics(limiter_param, map_layer, infotemplate) {
     } else {
         QUERIED_PARAM[limiter_param] = true;
     }
-    
+
     dojo.xhrGet({
         "url": '{% url api_feature %}' + limiter_param,
         "handleAs": "json",
