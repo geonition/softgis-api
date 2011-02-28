@@ -46,7 +46,7 @@ function validate_email(email_address)
 }
 
 
-function save_email(email_address)
+function save_email(email_address, callback)
 {
 	//TO DO
 	//move all validations into a file
@@ -68,7 +68,7 @@ function save_email(email_address)
 	  data: email_address,
 	  success: function(data)
 			{
-			    alert(data);
+			    callback(data);
 			},
 	  error: function(e) { alert(e); }, 
 	  dataType: "text"
@@ -82,7 +82,7 @@ Default: 'GET'
 The type of request to make ("POST" or "GET"), default is "GET". 
 Note: Other HTTP request methods, such as PUT and DELETE, can also be used here, but they are not supported by all browsers.
 */
-function delete_email()
+function delete_email(callback)
 {
 	$.ajax({
 	  url: '{% url api_manage_email %}',
@@ -90,7 +90,7 @@ function delete_email()
 	  data: {},
 	  success: function(data)
 			{
-			    alert(data);
+			    callback(data);
 			},
 	  error: function(e) { alert(e); }, 
 	  dataType: "text"

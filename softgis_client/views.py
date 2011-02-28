@@ -42,6 +42,7 @@ def javascript_api(request):
         except TemplateDoesNotExist:
             pass
     
+    print softgis_clients
     # return the clients in one file
     return render_to_response("javascript/softgis."+ lib + ".js",
                               {'softgis_clients': softgis_clients},
@@ -54,7 +55,12 @@ def test_api(request):
     dojo api and the softgis.js so that the API javascript
     functions can be tested from a javascript console.
     """
-    return render_to_response("test/test_esri.html",
+    
+    #default lib is esri
+    lib = request.GET.get("lib", "esri")
+    
+    return render_to_response("test/test.html",
+                              {'lib' : lib},
                               context_instance = RequestContext(request))
     
     
