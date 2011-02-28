@@ -64,15 +64,9 @@ def email(request):
                 
     elif(request.method == "POST"):
 
-        print request.POST
-        print request.POST.keys()[0]
-        
-        #email = request.POST.get("email", "")
         email = json.loads(request.POST.keys()[0]).get("email", "")
-        
-        print email
-        #print request.POST.keys()[0]
-        
+  
+       
         #check if email was provided
         if (email == "" or email == None):
             return HttpResponseBadRequest(

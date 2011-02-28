@@ -24,6 +24,8 @@ class EmailTest(TestCase):
 
     def setUp(self):
         self.client = Client()
+	self.user = None
+	
         #register a user
         post_content = {'username':'cristian1000',
                         'password':'cristi'}
@@ -45,7 +47,7 @@ class EmailTest(TestCase):
                                     json.dumps(post_content),
                                     content_type='application/json')
         
-	self.assertEqual(response.status_code,
+	self.assertEquals(response.status_code,
 			    400,
 			    "trying to set empty email address")
 
@@ -59,8 +61,38 @@ class EmailTest(TestCase):
         #Test if confirmation email is sent
         self.assertEquals(len(mail.outbox), 1, "Confirmation email not sent")
 
-
+        #confirm the email
+	
+	emailAddress = EmailAddress.objects.get(email = "test@aalto.fi")
+	emailConfirmation = EmailConfirmation.objects.get(email_address = emailAddress)
         
+	print emailConfirmation
+	
+	response = self.client.get(reverse('api_emailconfirmation', args=[emailConfirmation.confirmation_key]))	
+        
+	self.assertEquals(response.status_code,
+			    200,
+			    "the email address confirmation url is not working")
+	
+	response = self.client.get(reverse('api_manage_email'))
+	responsejson = json.loads(response.content)
+        
+	print responsejson.get('email')
+	
+	self.assertEquals(responsejson.get('email'), "test@aalto.fi", "The email obtain using get is not ok")
+	
+	#delete the email and test again the GET
+	response = self.client.delete(reverse('api_manage_email'))
+	
+        self.assertEquals(response.status_code,
+			    200,
+			    "the email address delete not working")
+        
+	response = json.loads(self.client.get(reverse('api_manage_email')).content)
+	
+	self.assertEquals(response.get('email'), "", "The email obtain using GET after delete is not an empty string")
+	
+	
         """
         #logout
         self.client.logout()
