@@ -52,8 +52,7 @@ class EmailTest(TestCase):
 			    "trying to set empty email address")
 
     def test_email_update_with_data(self):
-	post_content = {"email" : "test@aalto.fi"}
-        
+        post_content = {"email" : "test@aalto.fi"}
         response = self.client.post(reverse('api_manage_email'),
                                     json.dumps(post_content),
                                     content_type='application/json')
@@ -62,23 +61,17 @@ class EmailTest(TestCase):
         self.assertEquals(len(mail.outbox), 1, "Confirmation email not sent")
 
         #confirm the email
-	
+
 	emailAddress = EmailAddress.objects.get(email = "test@aalto.fi")
 	emailConfirmation = EmailConfirmation.objects.get(email_address = emailAddress)
-        
-	print emailConfirmation
 	
 	response = self.client.get(reverse('api_emailconfirmation', args=[emailConfirmation.confirmation_key]))	
-        
-	self.assertEquals(response.status_code,
-			    200,
-			    "the email address confirmation url is not working")
-	
-	response = self.client.get(reverse('api_manage_email'))
+        self.assertEquals(response.status_code,
+            200,
+            "the email address confirmation url is not working")
+        response = self.client.get(reverse('api_manage_email'))
 	responsejson = json.loads(response.content)
-        
-	print responsejson.get('email')
-	
+
 	self.assertEquals(responsejson.get('email'), "test@aalto.fi", "The email obtain using get is not ok")
 	
 	#delete the email and test again the GET
