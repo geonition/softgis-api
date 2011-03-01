@@ -42,7 +42,6 @@ def javascript_api(request):
         except TemplateDoesNotExist:
             pass
     
-    print softgis_clients
     # return the clients in one file
     return render_to_response("javascript/softgis."+ lib + ".js",
                               {'softgis_clients': softgis_clients},
