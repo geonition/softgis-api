@@ -92,6 +92,72 @@ function logout(callback_function) {
     });
 }
 
+
+/*
+This method creates a session for an anonymous user
+so that the anonymoususer can save features and
+profile values to other softgis apps.
+*/
+function create_session(callback_function) {
+    dojo.xhrPost({
+        "url": '{% url api_session %}', 
+        "handleAs": "text",
+        "failOk": true,
+        "headers": {"Content-Type":"application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"},
+	    
+        "handle": function(response, ioArgs) {
+            if(callback_function !== undefined) {
+                callback_function({"response": response,
+                                    "ioArgs": ioArgs
+                                    });
+            }
+        }
+    });
+}
+
+/*
+This method deletes the anonymoususers session
+*/
+function delete_session(callback_function) {
+    dojo.xhrDelete({
+        "url": '{% url api_session %}', 
+        "handleAs": "text",
+        "failOk": true,
+        "headers": {"Content-Type":"application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"},
+	    
+        "handle": function(response, ioArgs) {
+            if(callback_function !== undefined) {
+                callback_function({"response": response,
+                                    "ioArgs": ioArgs
+                                    });
+            }
+        }
+    });
+}
+
+/*
+This method gets the session key for this user
+*/
+function get_session(callback_function) {
+    dojo.xhrGet({
+        "url": '{% url api_session %}', 
+        "handleAs": "text",
+        "failOk": true,
+        "headers": {"Content-Type":"application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"},
+	    
+        "handle": function(response, ioArgs) {
+            if(callback_function !== undefined) {
+                callback_function({"response": response,
+                                    "ioArgs": ioArgs
+                                    });
+            }
+        }
+    });
+}
+
 /*
  This function send a new password for the user
  with the given email.

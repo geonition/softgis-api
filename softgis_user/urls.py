@@ -20,4 +20,9 @@ urlpatterns = patterns('softgis_user.views',
             url(r'^logout/$',
                 'logout',
                 name="api_logout"),
+            
+            #url to create a session for anonymous user
+            url(r'^session/$',
+                'session',
+                name="api_session"),
         )

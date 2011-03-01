@@ -174,6 +174,45 @@ def register(request):
         return HttpResponse(status=201)
         
 
+def session(request):
+    """
+    This function creates a user with
+    no password set. This enables the user
+    to stay anonymous but still save values
+    in other softgis apps.
+    
+    GET request returns the session
+    POST request creates a session for anonymous user
+    DELETE request ends the session
+    """
+    if request.method == "GET":
+        return HttpResponse(request.session.session_key)
+        
+    elif request.method == "POST":
+        if request.user.is_authenticated():
+            return HttpResponse(_(u"session already created"))
+            
+        new_user_id = User.objects.all().count() + 1
+        
+        user = None
+        create_user = True
+        while(create_user):
+            try:
+                User.objects.create_user(str(new_user_id),'', 'passwd')
+                user = django_authenticate(username=str(new_user_id), password='passwd')
+                django_login(request, user)
+                user.set_unusable_password()
+                create_user = False
+            except IntegrityError:
+                pass
+            
+        return HttpResponse(_(u"session created"))
+
+    elif request.method == "DELETE":
+        django_logout(request)
+        return HttpResponse(_(u"session end"))
+        
+        
 def new_password(request):
     """
     This function sends new password to the given email address.
