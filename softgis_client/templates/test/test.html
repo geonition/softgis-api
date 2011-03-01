@@ -23,19 +23,7 @@
         <script>
         
         {% ifequal lib "esri" %}
-            
-            //callback to show the http response
-            function show_response(response) {
-                dojo.byId("results").innerHTML += response.status_code + " ";
-                dojo.byId("results").innerHTML += response.message + "<br />";
-            }
-            //example modify the way you want
-            //logout
-            logout();
-            //login
-            login('test','test', show_response);
-            //register
-            register('test','test', show_response);
+            // collect the esri javascript api tests here
             
         {% endifequal %}
         
