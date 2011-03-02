@@ -1,7 +1,11 @@
 from django.http import HttpResponse
 from django.http import HttpResponseForbidden
 from django.http import HttpResponseBadRequest
+from django.http import HttpResponseNotFound
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import translation
+from django.utils.encoding import smart_unicode
+import urllib2
 
 from django.contrib.gis.gdal import OGRGeometry
 
@@ -18,7 +22,9 @@ if sys.version_info >= (2, 6):
 else:
     import simplejson as json
 
-       
+_ = translation.ugettext
+
+
 #Views for the geometry API
 def feature(request):
     """
@@ -27,11 +33,13 @@ def feature(request):
     On GET request this function returns a geojson featurecollection
     matching the query string.
     
-    On POST request this functions adds a new feature or modifies 
-    the existing feature in the database.
+    On POST request this function adds a new feature to the database.
+    
+    On PUT request this function will update a feature that has
+    a given id.
     
     On DELETE request this function removes existing feature from 
-    the database.
+    the database with the given id.
     
     Returns:
         200 if successful and geojson featurecollection (GET, POST)
@@ -41,42 +49,35 @@ def feature(request):
     """
     
     if request.method  == "GET":
+        
         # get the definied limiting parameters
         limiting_param = request.GET.items()
         
         feature_collection = {"type":"FeatureCollection", "features": []}
         
-        if not request.user.is_authenticated():
-            return HttpResponseForbidden("")
-
         feature_queryset = None
 
         #filter according to permissions
         if(request.user.has_perm('softgis_api.can_view_all')):
             feature_queryset = Feature.objects.all()
 
-        elif(request.user.has_perm('softgis_api.can_view_non_confidential')):
-            #this has to be made better at some point
-            feature_queryset = Feature.objects.exclude(category__exact = 'home')
-        else:
+        elif(request.user.is_authenticated()):
             #else the user can only view his/her own features
             feature_queryset = \
                     Feature.objects.filter(user__exact = request.user)
+        else:
+            feature_queryset = Feature.objects.none()
 
-        # transform geometries to the correct SpatialReferenceSystem
-        #feature_queryset.transform(3067)
-
-        #filter according to limiting_params
         property_queryset = Property.objects.all()
-
+        
+        #filter according to limiting_params
         for key, value in limiting_param:
             if(key == "user_id"):
-                feature_queryset = \
-                                feature_queryset.filter(user__exact = value)
-
-            elif(key == "category"):
-                feature_queryset = \
-                                feature_queryset.filter(category__exact = value)
+                feature_queryset.objects.filter(user__exact = value)
+            elif(key == "time"):
+                # value in the form 'yyyy-mm-dd' ?
+                feature_queryset.objects.filter(create_time__lte = value)
+                feature_queryset.objects.filter(expire_time__gte = value)
             else:
                 property_queryset = property_queryset.filter(value_name = key,
                                                             value = value)
@@ -85,9 +86,8 @@ def feature(request):
         #filter the features with wrong properties
         feature_id_list = property_queryset.values_list('feature_id', flat=True)
 
-        # Not in use and gives database error in sqlite3
-        # feature_queryset =
-        #       feature_queryset.filter(id__in = list(feature_id_list))
+        # gives database error in sqlite3 ?
+        feature_queryset = feature_queryset.filter(id__in = list(feature_id_list))
         
         for feature in feature_queryset:
             feature_collection['features'].append(feature.geojson())
@@ -103,90 +103,97 @@ def feature(request):
         crs_object =  {"type": "EPSG", "properties": {"code": srid}}
         feature_collection['crs'] = crs_object
         
-        return HttpResponse(json.dumps(feature_collection))
+        return HttpResponse(json.dumps(feature_collection),
+                            mimetype="application/json")
         
             
-    elif request.method  == "DELETE":
-        
-        feature_id = request.GET['id']
-        
-        feature_queryset = Feature.objects.filter(
-                                                id__exact = feature_id,
-                                                user__exact = request.user)
-
-        if feature_queryset:
-            feature_queryset.delete()
-            return HttpResponse("")
-        else:
-            return HttpResponseBadRequest()
-        
-        
     elif request.method == "POST":
-            
-        feature_json = None
-        
+        #supports saving geojson Features
         feature_json = json.loads(request.POST.keys()[0])
-        try:
-            feature_json = json.loads(request.POST.keys()[0])
-        except ValueError:
-            return HttpResponseBadRequest(
-                        "mime type should be application/json")
-
-        
-        identifier = None
-        geometry = []
+        geometry = None
         properties = None
-        category = None
         
         try:
             geometry = feature_json['geometry']
             properties = feature_json['properties']
-            category = feature_json['properties']['category']
         except KeyError:
-            return HttpResponseBadRequest("json requires properties "  + \
-                                            "and geometry, and the " + \
-                                            "properties a category value")
-          
+            return HttpResponseBadRequest("geojson feature requires " + \
+                                        "properties "  + \
+                                        "and geometry")
+            
+            
+        #geos = GEOSGeometry(json.dumps(geometry))
+        # Have to make OGRGeometry as GEOSGeometry
+        # does not support spatial reference systems
+        geos = OGRGeometry(json.dumps(geometry)).geos
+        
+        #save the feature
+        new_feature = Feature(geometry=geos,
+                            user=request.user)
+        new_feature.save()
+
+        #add the id to the feature json
+        identifier = new_feature.id
+        feature_json['id'] = identifier
+
+        #save the properties of the new feature
+        new_property = Property(feature=new_feature,
+                                json_string=json.dumps(properties))
+        new_property.save()
+            
+        return HttpResponse(json.dumps(feature_json))
+        
+    elif request.method == "PUT":
+        
+        #supports updating geojson Features
+        feature_json = json.loads(urllib2.unquote(request.raw_post_data.encode('utf-8')).decode('utf-8'))
+        geometry = None
+        properties = None
+        feature_id = None
+        
         try:
-            identifier = feature_json['id']
+            geometry = feature_json['geometry']
+            properties = feature_json['properties']
+            feature_id = feature_json['id']
         except KeyError:
-            pass
+            return HttpResponseBadRequest("geojson feature requires " + \
+                                        "properties, "  + \
+                                        "geometry " + \
+                                        "and id for updating")
             
-        if identifier == None:
-            #save a new feature if id is None
             
-            #geos = GEOSGeometry(json.dumps(geometry))
-            # Have to make OGRGeometry as GEOSGeometry
-            # does not support spatial reference systems
-            geos = OGRGeometry(json.dumps(geometry)).geos
-            new_feature = None
-            new_feature = Feature(geometry=geos,
-                                    user=request.user,
-                                    category=category)
-            new_feature.save()
-
-            #add the id to the feature json
-            identifier = new_feature.id
-            feature_json['id'] = identifier
-
+        #geos = GEOSGeometry(json.dumps(geometry))
+        # Have to make OGRGeometry as GEOSGeometry
+        # does not support spatial reference systems
+        geos = OGRGeometry(json.dumps(geometry)).geos
+        
+        #get the feature to be updated
+        feature_queryset = Feature.objects.filter(id__exact = feature_id,
+                                                user__exact = request.user)
+        
+        if len(feature_queryset) == 1:
+            feature = feature_queryset[0]
+            feature.geos = geos;
+            feature.save()
+            
             #save the properties of the new feature
-            new_property = None
-            new_property = Property(feature=new_feature,
+            new_property = Property(feature=feature,
                                     json_string=json.dumps(properties))
             new_property.save()
             
+            return HttpResponse(_(u"Feature with id %s was updated" % feature_id))
         else:
-            #update old feature if id is given
-            #only the feature properties is updated otherwise a
-            #completely new feature should be added
-            try:
-                new_feature = Feature.objects.get(id__exact = identifier)
-                new_property = Property(feature = new_feature,
-                                        json_string = json.dumps(properties))
-                new_property.save()
-                
-            except ObjectDoesNotExist:
-                return HttpResponseBadRequest(
-                            "no feature with the given id found")
+            return HttpResponseNotFound(_(u"Feature with id %s was not found" % feature_id))       
 
-        return HttpResponse(json.dumps(feature_json))
+    elif request.method  == "DELETE":
+        
+        feature_id = request.GET.get('id', -1)
+        
+        feature_queryset = Feature.objects.filter(id__exact = feature_id,
+                                                user__exact = request.user)
+
+        if len(feature_queryset) > 0:
+            feature_queryset.delete()
+            return HttpResponse(_(u"Feature with id %s deleted" % feature_id))
+        else:
+            return HttpResponseNotFound(_(u"Feature with given id was not found"))
