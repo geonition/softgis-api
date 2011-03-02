@@ -1,14 +1,104 @@
+/*
+ get_features retrieves features according to the limiting params
 
+the limit_params is a GET string starting with a "?"
+
+reserved keys for the limiting parameter include the
+following:
+
+user_id = id of user
+time = time when the feature was valid
+
+*/
+function get_features(limit_params, callback_function) {
+    dojo.xhrGet({
+        "url": '{% url api_feature %}' + limit_params,
+        "handleAs": "json",
+        "headers": {"Content-Type":"application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"},
+        "handle": function(response, ioArgs) {
+            if(callback_function !== undefined) {
+                callback_function({"response": response,
+                                  "ioArgs": ioArgs})
+            }
+        }
+    }); 
+}
+
+/*
+ create_feature function saves a new feature to the database
+*/
+function create_feature(feature, callback_function) {
+    dojo.xhrPost({
+        "url": "{% url api_feature %}",
+        "handleAs": "json",
+        "postData": encodeURIComponent(dojo.toJson(feature)),
+        "headers": {"Content-Type":"application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"},
+        "handle": function(response, ioArgs) {
+            if(callback_function !== undefined) {
+                callback_function({"response": response,
+                                  "ioArgs": ioArgs})
+            }
+        }
+    });
+}
+
+/*
+ update_feature, updates the a feature with and id
+*/
+function update_feature(feature, callback_function) {
+    dojo.xhrPut({
+        "url": "{% url api_feature %}",
+        "handleAs": "text",
+        "postData": encodeURIComponent(dojo.toJson(feature)),
+        "headers": {"Content-Type":"application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"},
+        "handle": function(response, ioArgs) {
+            if(callback_function !== undefined) {
+                callback_function({"response": response,
+                                  "ioArgs": ioArgs})
+            }
+        }
+    });
+}
+
+/*
+ delete_feature, deletes a feature with the given id
+*/
+function delete_feature(feature, callback_function) {
+    dojo.xhrDelete({
+        "url": '{% url api_feature %}',
+        "handleAs": "text",
+        "postData": encodeURIComponent(dojo.toJson(feature)),
+        "headers": {"Content-Type":"application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"},
+        "handle": function(response, ioArgs) {
+            if(callback_function !== undefined) {
+                callback_function({"response": response,
+                                  "ioArgs": ioArgs})
+            }
+        }
+    });   
+}
+
+
+/*
+ THE FUNCTIONS BELOW IS DEPRACATED AND SHOULD NOT BE USED
+ THEY ARE TO BE REMOVED BUT IT IS NOT DEFINED WHEN..
+*/
 /*
 This function saves the graphic given in GeoJSON format.
 
 It takes as parameters:
 graphic - a graphic in ESRI JSON notation
- 
+
+Brings functionality to handle differences with ESRI JSON
+and GeoJSON
 */
 
-function save_graphic(graphic) {
-    
+function save_graphic(graphic, callback_function) {
+    console.log("DEPRACATED save_graphic");
     var properties = graphic.attributes;
     
     //transform to geojson format
@@ -36,38 +126,14 @@ function save_graphic(graphic) {
     // add crs to the geometry
     geojson_feature.geometry.crs = {"type": "EPSG",
                                     "properties": {"code": graphic.geometry.spatialReference.wkid}};
-
-    //add the parameters from the properties
-    var params = "?category=" + geojson_feature.properties.category;
-    if(geojson_feature.id !== undefined &&
-        geojson_feature.id !== null) {
-        
-        params += "&id=" + geojson_feature.id;
+     
+    if(graphic.id !== undefined && graphic.id !== null) {
+        update_feature(geojson_feature, callback_function);
+    } else {
+        create_feature(geojson_feature, callback_function);
     }
-
-    dojo.xhrPost({
-        "url": "{% url api_feature %}" + params,
-        "handleAs": "json",
-        "postData": encodeURIComponent(dojo.toJson(geojson_feature)),
-        "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"},
-        "load": function(response, ioArgs) {
-                    if(djConfig.isDebug) {
-                        console.log(ioArgs);
-                        console.log(response);
-                        console.log(response.id);
-                    }
-                    graphic.id = response.id;
-                    graphic.attributes.graphicId = response.id;
-		            
-                    return graphic;
-                },
-        "error": function(response,ioArgs) {
-                        console.log(response);
-                }
-        });
-    
 }
+
 
 /*
 This function removes a graphic.
@@ -76,24 +142,10 @@ It takes as parameters:
 feature_id - id of the feature to be removed.
  
 */
-function remove_graphic(feature_id) {
-    dojo.xhrDelete({
-		"url": '{% url api_feature %}?id=' + feature_id,
-		"handleAs": "text",
-        "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"},
-		"failOk": true,
-		"load": function(response, ioArgs) {
-					if(djConfig.isDebug) {
-						console.log(ioArgs);
-						console.log(response);
-						console.log(response.id);
-					}
-				},
-		"error": function(response,ioArgs) {
-		            console.log(response);
-			}
-	});
+function remove_graphic(feature_id, callback_function) {
+    console.log("DEPRACATED remove_graphic");
+    var feature = {'id': feature_id}
+    delete_feature(feature, callback_function);
 }
 
 /*
@@ -124,8 +176,9 @@ map_layer - the map layer where the graphics are added
 infotemplate - an ESRI infotemplate object for the graphic
 
 */
-function get_graphics(limiter_param, map_layer, infotemplate) {
-
+function get_graphics(limiter_param, map_layer, infotemplate, callback_function) {
+    console.log("DEPRACATED get_graphics");
+    
     if(limiter_param === undefined ||
         limiter_param === null) {
         limiter_param = '';
@@ -193,6 +246,12 @@ function get_graphics(limiter_param, map_layer, infotemplate) {
                 console.error("HTTP status code: ", ioArgs.xhr.status);
             }
             return response;
+        },
+        "handle": function(response, ioArgs) {
+            if(callback_function !== undefined) {
+                callback_function({"response": response,
+                                  "ioArgs": ioArgs})
+            }
         }
     });
 }
