@@ -27,7 +27,6 @@ class Feature(gis_models.Model):
     geometry = gis_models\
                 .GeometryField(srid=settings.SPATIAL_REFERENCE_SYSTEM_ID)
     user = models.ForeignKey(User)
-    category = models.CharField(max_length=100)
     
     create_time = models.DateTimeField(auto_now_add=True, null=True)
     expire_time = models.DateTimeField(null=True)
@@ -53,10 +52,6 @@ class Feature(gis_models.Model):
             properties_dict = {}
             
         feature_json = {}
-        
-        #set the default property values
-        properties_dict['id'] = self.id
-        properties_dict['user_id'] = self.user.id
         
         feature_json = {"id": self.id,
                         "geometry": json.loads(self.geometry.json),
