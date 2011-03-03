@@ -64,13 +64,13 @@ function update_feature(feature, callback_function) {
 }
 
 /*
- delete_feature, deletes a feature with the given id
+ delete_feature, deletes a feature with the given feature_id
 */
-function delete_feature(feature, callback_function) {
+function delete_feature(feature_id, callback_function) {
+    
     dojo.xhrDelete({
-        "url": '{% url api_feature %}',
+        "url": '{% url api_feature %}?id=' + feature_id,
         "handleAs": "text",
-        "postData": encodeURIComponent(dojo.toJson(feature)),
         "headers": {"Content-Type":"application/json",
                     "X-CSRFToken": "{{ csrf_token }}"},
         "handle": function(response, ioArgs) {
