@@ -40,12 +40,6 @@ def feature(request):
     
     On DELETE request this function removes existing feature from 
     the database with the given id.
-    
-    Returns:
-        200 if successful and geojson featurecollection (GET, POST)
-        403 if not signed in
-        400 if bad request
-
     """
     
     if request.method  == "GET":
@@ -186,7 +180,6 @@ def feature(request):
             return HttpResponseNotFound(_(u"Feature with id %s was not found" % feature_id))       
 
     elif request.method  == "DELETE":
-        
         feature_id = request.GET.get('id', -1)
         
         feature_queryset = Feature.objects.filter(id__exact = feature_id,
