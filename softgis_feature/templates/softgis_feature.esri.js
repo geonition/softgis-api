@@ -145,7 +145,7 @@ feature_id - id of the feature to be removed.
 function remove_graphic(feature_id, callback_function) {
     console.log("DEPRACATED remove_graphic");
     var feature = {'id': feature_id}
-    delete_feature(feature, callback_function);
+    delete_feature(feature_id, callback_function);
 }
 
 /*
