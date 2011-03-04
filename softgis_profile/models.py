@@ -198,7 +198,7 @@ def get_profiles(limit_param, profile_queryset):
     db = None
     profiles = None
 
-    if(settings.USE_MONGODB):
+    if(getattr(settings, "USE_MONGODB", False)):
         con = Connection()
         db = con.softgis
         profiles = db.profiles

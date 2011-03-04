@@ -180,13 +180,20 @@ def feature(request):
             return HttpResponseNotFound(_(u"Feature with id %s was not found" % feature_id))       
 
     elif request.method  == "DELETE":
-        feature_id = request.GET.get('id', -1)
-        
-        feature_queryset = Feature.objects.filter(id__exact = feature_id,
+
+        """
+        Get the array with the feature ids for delete
+        """
+        feature_ids = json.loads(request.POST.keys()[0])
+
+        if (type(feature_ids) != type([])):
+            return HttpResponseBadRequest(_(u"The post request didn't have an array of ids"))
+
+        feature_queryset = Feature.objects.filter(id__in = feature_ids,
                                                 user__exact = request.user)
 
         if len(feature_queryset) > 0:
             feature_queryset.delete()
-            return HttpResponse(_(u"Feature with id %s deleted" % feature_id))
+            return HttpResponse(_(u"Features with ids %s deleted" % feature_ids))
         else:
-            return HttpResponseNotFound(_(u"Feature with given id was not found"))
+            return HttpResponseNotFound(_(u"Features with given ids were not found"))

@@ -75,14 +75,81 @@ class FeatureTest(TestCase):
         
         #delete the feature
         id = response_dict.get('id')
-        response = self.client.delete(reverse('api_feature') + "?id=" + str(id))
+        geojson_feature = {"type": "Feature",
+                           "id": id}
+        response = self.client.delete(reverse('api_feature'),
+                                      json.dumps(geojson_feature),
+                                      content_type='application/json')
         self.assertEquals(response.status_code,
                           200,
                           "deletion of feature with id %i did not work" % id)
         
         #delete not existing feature
-        response = self.client.delete(reverse('api_feature') + "?id=1")
+        response = self.client.delete(reverse('api_feature'),
+                                      json.dumps(geojson_feature),
+                                      content_type='application/json')
+        
         self.assertEquals(response.status_code,
                           404,
                           "deletion of a non existing feature did not return NotFound")
+        """
+        store the inserted IDs
+        """
+        ids = []
+        
+        geojson_feature = {"type": "Feature",
+                            "geometry": {"type":"Point",
+                                        "coordinates":[100, 200]},
+                            "properties": {"some_prop":"value"}}
+        
+        response = self.client.post(reverse('api_feature'),
+                                    json.dumps(geojson_feature),
+                                    content_type='application/json')
+        
+        response_dict = json.loads(response.content)
+        
+        self.assertNotEquals(response_dict.get('id',-1),
+                    -1,
+                    "The returned feature from a post did not contain an identifier(id)")
+        
+        ids.append(response_dict.get('id'))
+        
+        #2nd ID
+        geojson_feature = {"type": "Feature",
+                    "geometry": {"type":"Point",
+                                "coordinates":[200, 200]},
+                    "properties": {"some_prop":"value"}}
+        
+        response = self.client.post(reverse('api_feature'),
+                                    json.dumps(geojson_feature),
+                                    content_type='application/json')
+        
+        response_dict = json.loads(response.content)
+        
+        self.assertNotEquals(response_dict.get('id',-1),
+                    -1,
+                    "The returned feature from a post did not contain an identifier(id)")
+        
+        ids.append(response_dict.get('id'))
+        
+        #3rd ID
+        geojson_feature = {"type": "Feature",
+                    "geometry": {"type":"Point",
+                                "coordinates":[300, 300]},
+                    "properties": {"some_prop":"value"}}
+        
+        response = self.client.post(reverse('api_feature'),
+                                    json.dumps(geojson_feature),
+                                    content_type='application/json')
+        
+        response_dict = json.loads(response.content)
+        
+        self.assertNotEquals(response_dict.get('id',-1),
+                    -1,
+                    "The returned feature from a post did not contain an identifier(id)")
+        
+        ids.append(response_dict.get('id'))
+        
+        
+        
         
