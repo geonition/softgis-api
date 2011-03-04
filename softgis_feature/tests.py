@@ -77,17 +77,17 @@ class FeatureTest(TestCase):
         id = response_dict.get('id')
         geojson_feature = {"type": "Feature",
                            "id": id}
-        response = self.client.delete(reverse('api_feature'),
-                                      json.dumps(geojson_feature),
-                                      content_type='application/json')
+        ids = []
+        ids.append(id)        
+        
+        response = self.client.delete(reverse('api_feature')+"?ids="+json.dumps(ids))
+        
         self.assertEquals(response.status_code,
                           200,
                           "deletion of feature with id %i did not work" % id)
         
         #delete not existing feature
-        response = self.client.delete(reverse('api_feature'),
-                                      json.dumps(geojson_feature),
-                                      content_type='application/json')
+        response = self.client.delete(reverse('api_feature')+"?ids="+json.dumps(ids))
         
         self.assertEquals(response.status_code,
                           404,
@@ -150,6 +150,36 @@ class FeatureTest(TestCase):
         
         ids.append(response_dict.get('id'))
         
+        #delete a FeatureCollection once
+        response = self.client.delete(reverse('api_feature')+"?ids="+json.dumps(ids))
         
+        self.assertEquals(response.status_code,
+                          200,
+                          "deletion of feature collection with ids " + str(ids) +" did not work")
         
+        idn = []
+        idn.append(ids[0])
+        
+        #test if deleted
+        response = self.client.delete(reverse('api_feature')+"?ids="+json.dumps(idn))
+        
+        self.assertEquals(response.status_code,
+                          404,
+                          "deletion of feature previous feature did not work")
+        idn = []
+        idn.append(ids[1])
+        
+        response = self.client.delete(reverse('api_feature')+"?ids="+json.dumps(idn))
+        
+        self.assertEquals(response.status_code,
+                          404,
+                          "deletion of feature previous feature did not work")
+        idn = []
+        idn.append(ids[2])
+        
+        response = self.client.delete(reverse('api_feature')+"?ids="+json.dumps(idn))
+        
+        self.assertEquals(response.status_code,
+                          404,
+                          "deletion of feature previous feature did not work")
         

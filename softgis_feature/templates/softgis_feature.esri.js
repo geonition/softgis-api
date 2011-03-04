@@ -82,8 +82,11 @@ function delete_feature(feature_or_feature_collection, callback_function) {
     }
     else if (type === "FeatureCollection")
     {
-        for(var i=0; feature_or_feature_collection.features.length; i++)
+        
+        for(var i=0; i < feature_or_feature_collection.features.length; i++)
         {
+        
+            
             if (feature_or_feature_collection.features[i].id !== undefined)
             {
                 feature_ids_array.push(feature_or_feature_collection.features[i].id);
@@ -94,8 +97,7 @@ function delete_feature(feature_or_feature_collection, callback_function) {
 
 
     dojo.xhrDelete({
-        "url": '{% url api_feature %},
-	"postData" : dojo.toJson(feature_ids_array),
+        "url": '{% url api_feature %}?ids='+ dojo.toJson(feature_ids_array),
         "handleAs": "text",
         "headers": {"Content-Type":"application/json",
                     "X-CSRFToken": "{{ csrf_token }}"},

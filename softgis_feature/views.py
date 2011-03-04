@@ -38,9 +38,10 @@ def feature(request):
     On PUT request this function will update a feature that has
     a given id.
     
-    On DELETE request this function removes existing feature from 
-    the database with the given id.
+    On DELETE request this function removes existing feature/feature collection from 
+    the database.
     """
+    
     
     if request.method  == "GET":
         
@@ -184,7 +185,8 @@ def feature(request):
         """
         Get the array with the feature ids for delete
         """
-        feature_ids = json.loads(request.POST.keys()[0])
+        feature_ids = json.loads(request.GET.get("ids",""))
+        
 
         if (type(feature_ids) != type([])):
             return HttpResponseBadRequest(_(u"The post request didn't have an array of ids"))
