@@ -139,3 +139,16 @@ class AuthenticationTest(TestCase):
                          200,
                          "The session deletion through the session url did not work")
         
+        
+        #check that the session created is the same for all gets even if post in between
+        session_key_anonymous_user = self.client.get(reverse('api_session')).content
+        self.assertNotEqual(session_key_anonymous_user,
+                            session_key_anonymous,
+                            "The post to session url did not create a new session for second anonymous user")
+        
+        #only one session can be created per anonymous user
+        response = self.client.post(reverse('api_session'))
+        self.assertEqual(response.status_code,
+                         200,
+                         "The session creation through the session url did not work second time")
+        

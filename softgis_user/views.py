@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.db import transaction
+from django.db.models import Max
 from django.http import HttpResponse
 from django.http import HttpResponseBadRequest
 from django.http import HttpResponseForbidden
@@ -192,19 +193,15 @@ def session(request):
         if request.user.is_authenticated():
             return HttpResponse(_(u"session already created"))
             
-        new_user_id = User.objects.all().count() + 1
+        new_user_id = User.objects.aggregate(Max('id'))
         
-        user = None
-        create_user = True
-        while(create_user):
-            try:
-                User.objects.create_user(str(new_user_id),'', 'passwd')
-                user = django_authenticate(username=str(new_user_id), password='passwd')
-                django_login(request, user)
-                user.set_unusable_password()
-                create_user = False
-            except IntegrityError:
-                pass
+        if(new_user_id['id__max'] == None):
+            new_user_id['id__max'] = 1 
+        
+        User.objects.create_user(str(new_user_id),'', 'passwd')
+        user = django_authenticate(username=str(new_user_id), password='passwd')
+        django_login(request, user)
+        user.set_unusable_password()
             
         return HttpResponse(_(u"session created"))
 
