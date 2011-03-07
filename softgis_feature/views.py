@@ -5,16 +5,12 @@ from django.http import HttpResponseNotFound
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import translation
 from django.utils.encoding import smart_unicode
-import urllib2
-
 from django.contrib.gis.gdal import OGRGeometry
-
 from softgis_feature.models import Feature
 from softgis_feature.models import Property
 
-
 import settings
-
+import urllib2
 import sys
 
 if sys.version_info >= (2, 6):
