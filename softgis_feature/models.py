@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.gis.db import models as gis_models
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+from pymongo import Connection
+from managers import MongoDBManager
 
 import datetime
 
@@ -120,7 +122,7 @@ def get_features(limit_param, feature_queryset):
     
 
     for key, value in limit_param:
-        if(settings.USE_MONGODB):
+        if(getattr(settings, "USE_MONGODB", False)):
             try:
                 value_name = key.split("__")[0]
                 query_type = key.split("__")[1]
@@ -143,7 +145,7 @@ def get_features(limit_param, feature_queryset):
                 
 
     #close connection to mongodb
-    if(settings.USE_MONGODB):
+    if(getattr(settings, "USE_MONGODB", False)):
         con.disconnect()
 
     feature_list = []
@@ -164,6 +166,9 @@ class Property(models.Model):
     create_time = models.DateTimeField(auto_now_add=True, null=True)
     expire_time = models.DateTimeField(null=True)
     
+    objects = models.Manager()
+    mongodb = MongoDBManager() #manager for querying json
+    
     def save(self, *args, **kwargs):
         
         current_property = None
@@ -173,7 +178,7 @@ class Property(models.Model):
         if current_property.count() == 0:
             super(Property, self).save(*args, **kwargs)
 
-            if(settings.USE_MONGODB):
+            if(getattr(settings, "USE_MONGODB", False)):
                 self.save_json_to_mongodb()
             
         else:
@@ -186,12 +191,12 @@ class Property(models.Model):
 
                 super(Property, self).save(*args, **kwargs)
 
-                if(settings.USE_MONGODB):
+                if(getattr(settings, "USE_MONGODB", False)):
                     self.save_json_to_mongodb()
                 
     def save_json_to_mongodb(self):
         """
-        This function saves the JSON to the mongodb
+        This function saves the JSON to mongodb
         """
         insert_json = json.loads(self.json_string)
         insert_json['feature_id'] = int(self.feature.id)
@@ -201,7 +206,6 @@ class Property(models.Model):
         db = con.softgis
         feature_properties = db.feature_properties
         obj_id = feature_properties.insert(insert_json)
-
         con.disconnect()
         
         
