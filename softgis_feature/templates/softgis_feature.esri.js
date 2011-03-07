@@ -64,12 +64,40 @@ function update_feature(feature, callback_function) {
 }
 
 /*
- delete_feature, deletes a feature with the given feature_id
+ delete_feature(s), deletes the feature(s) with the given feature_id(s)
 */
-function delete_feature(feature_id, callback_function) {
+function delete_feature(feature_or_feature_collection, callback_function) {
     
+    /*
+	ensure the backwords compatibility
+	New logic expects an array of ids
+	If just one id is sent make it an array of length one
+    */
+    var feature_ids_array = [];
+    var type = feature_or_feature_collection.type;
+    
+    if (type === "Feature")
+    {
+	feature_ids_array[0] = feature_or_feature_collection.id;
+    }
+    else if (type === "FeatureCollection")
+    {
+        
+        for(var i=0; i < feature_or_feature_collection.features.length; i++)
+        {
+        
+            
+            if (feature_or_feature_collection.features[i].id !== undefined)
+            {
+                feature_ids_array.push(feature_or_feature_collection.features[i].id);
+            }
+        }
+    }
+
+
+
     dojo.xhrDelete({
-        "url": '{% url api_feature %}?id=' + feature_id,
+        "url": '{% url api_feature %}?ids='+ dojo.toJson(feature_ids_array),
         "handleAs": "text",
         "headers": {"Content-Type":"application/json",
                     "X-CSRFToken": "{{ csrf_token }}"},
@@ -144,8 +172,10 @@ feature_id - id of the feature to be removed.
 */
 function remove_graphic(feature_id, callback_function) {
     console.log("DEPRACATED remove_graphic");
-    var feature = {'id': feature_id}
-    delete_feature(feature_id, callback_function);
+    var feature = {
+        'type' : 'Feature',
+        'id': feature_id}
+    delete_feature(feature, callback_function);
 }
 
 /*

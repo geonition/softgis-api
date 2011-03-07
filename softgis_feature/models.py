@@ -2,13 +2,11 @@ from django.db import models
 from django.contrib.gis.db import models as gis_models
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from pymongo import Connection
 from managers import MongoDBManager
+from pymongo import Connection
 
 import datetime
-
 import settings
-
 import sys
 
 if sys.version_info >= (2, 6):
@@ -16,10 +14,8 @@ if sys.version_info >= (2, 6):
 else:
     import simplejson as json
 
-# Create your models here.
-
-   
-#GEOMETRY MODELS
+# Create your models herelas   
+# GEOMETRY MODELS
 class Feature(gis_models.Model):
     """
     A Feature is defined by structure as a geojson feature
@@ -70,7 +66,6 @@ class Feature(gis_models.Model):
     class Meta:
         permissions = (
             ("can_view_all", "Can view all features"),
-
             ("can_view_non_confidential",
             "Can view the non confidential features"),)
 
@@ -167,7 +162,7 @@ class Property(models.Model):
     expire_time = models.DateTimeField(null=True)
     
     objects = models.Manager()
-    mongodb = MongoDBManager() #manager for querying json
+    #mongodb = MongoDBManager() #manager for querying json
     
     def save(self, *args, **kwargs):
         
