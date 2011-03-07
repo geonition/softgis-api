@@ -5,8 +5,11 @@ from django.contrib.auth.models import User
 from django.contrib.auth import logout as django_logout
 from django.contrib.auth import login as django_login
 from django.contrib.auth import authenticate as django_authenticate
+from models import Feature
+from models import Property
 
 import sys
+import settings
 
 if sys.version_info >= (2, 6):
     import json
@@ -85,4 +88,18 @@ class FeatureTest(TestCase):
         self.assertEquals(response.status_code,
                           404,
                           "deletion of a non existing feature did not return NotFound")
+        
+    def test_mongodb(self):
+        USE_MONGODB = getattr(settings, "USE_MONGODB", False)
+        
+        #if mongodb is not in use do not run the tests
+        if not USE_MONGODB: 
+            return None
+        
+        
+        #save some features and properties for testing
+        
+        
+                
+        
         
