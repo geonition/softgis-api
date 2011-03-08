@@ -162,7 +162,9 @@ class Property(models.Model):
     expire_time = models.DateTimeField(null=True)
     
     objects = models.Manager()
-    #mongodb = MongoDBManager() #manager for querying json
+    
+    mongodb_collection_name = 'feature_properties'
+    mongodb = MongoDBManager() #manager for querying json
     
     def save(self, *args, **kwargs):
         
@@ -182,26 +184,23 @@ class Property(models.Model):
             if(current_property.json_string == self.json_string):
                 pass
             else:
+                #delete current property
                 current_property.delete()
 
-                super(Property, self).save(*args, **kwargs)
+            #save this new property
+            super(Property, self).save(*args, **kwargs)
 
-                if(getattr(settings, "USE_MONGODB", False)):
-                    self.save_json_to_mongodb()
+            if(getattr(settings, "USE_MONGODB", False)):
+                self.save_json_to_mongodb()
                 
     def save_json_to_mongodb(self):
         """
         This function saves the JSON to mongodb
         """
         insert_json = json.loads(self.json_string)
-        insert_json['feature_id'] = int(self.feature.id)
-        insert_json['property_id'] = int(self.id)
-
-        con = Connection()
-        db = con.softgis
-        feature_properties = db.feature_properties
-        obj_id = feature_properties.insert(insert_json)
-        con.disconnect()
+        Property.mongodb.connect(self.mongodb_collection_name)
+        Property.mongodb.save(insert_json, self.id)
+        Property.mongodb.disconnect()
         
         
     def delete(self, *args, **kwargs):

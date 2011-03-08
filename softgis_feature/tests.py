@@ -16,6 +16,9 @@ if sys.version_info >= (2, 6):
 else:
     import simplejson as json
 
+#change the collection name so that the production will not be polluted
+Property.mongodb_collection_name = 'test'
+        
 class FeatureTest(TestCase):
     """
     This class test the feature application.
@@ -106,8 +109,8 @@ class FeatureTest(TestCase):
                           404,
                           "deletion of a non existing feature did not return NotFound")
         """
-store the inserted IDs
-"""
+        store the inserted IDs
+        """
         ids = []
         
         geojson_feature = {"type": "Feature",
@@ -211,9 +214,61 @@ store the inserted IDs
             return None
         
         
-        #save some features and properties for testing
+        self.client.login(username='testuser', password='passwd')
+        #save some values into the database
+        geojson_feature = {"type": "Feature",
+                    "geometry": {"type":"Point",
+                                "coordinates":[200, 200]},
+                    "properties": {"some_prop":"value"}}
+        
+        response = self.client.post(reverse('api_feature'),
+                                    json.dumps(geojson_feature),
+                                    content_type='application/json')
+        
+        geojson_feature = {"type": "Feature",
+                    "geometry": {"type":"Point",
+                                "coordinates":[200, 200]},
+                    "properties": {"some_prop": 40}}
+        
+        response = self.client.post(reverse('api_feature'),
+                                    json.dumps(geojson_feature),
+                                    content_type='application/json')
+        geojson_feature = {"type": "Feature",
+                    "geometry": {"type":"Point",
+                                "coordinates":[200, 200]},
+                    "properties": {"some_prop": 40}}
+        
+        response = self.client.post(reverse('api_feature'),
+                                    json.dumps(geojson_feature),
+                                    content_type='application/json')
+        geojson_feature = {"type": "Feature",
+                    "geometry": {"type":"Point",
+                                "coordinates":[200, 200]},
+                    "properties": {"some_prop": 42}}
+        
+        response = self.client.post(reverse('api_feature'),
+                                    json.dumps(geojson_feature),
+                                    content_type='application/json')
+        
+        #find should return 2 results
+        self.assertEquals(Property.mongodb.find({'some_prop': 40}).count(),
+                          2,
+                          "The mongodb find did not return 2 objects")
         
         
-                
+        #range should return 3
+        self.assertEquals(Property.mongodb.find_range('some_prop', 39, 41).count(),
+                          2,
+                          "The mongodb find_ramge did not return 2 objects")
+        
+        
+        #range should return 1
+        self.assertEquals(Property.mongodb.find_range('some_prop', 41, 43).count(),
+                          1,
+                          "The mongodb find_ramge did not return 1 object")
+        
+        Property.mongodb.disconnect()
+        
+        
         
         
