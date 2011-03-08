@@ -181,7 +181,7 @@ def feature(request):
         """
         Get the array with the feature ids for delete
         """
-        feature_ids = json.loads(request.GET.get("ids",""))
+        feature_ids = json.loads(request.GET.get("ids","[]"))
         
 
         if (type(feature_ids) != type([])):

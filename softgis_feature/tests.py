@@ -75,19 +75,133 @@ class FeatureTest(TestCase):
         self.assertEquals(response.status_code,
                           200,
                           "Updating a feature did not work")
+               
+        #update a property of the feature
+        geojson_feature['id'] = 1
+        geojson_feature['properties']['some_prop'] = 'new value'
+        response = self.client.put(reverse('api_feature'),
+                                   json.dumps(geojson_feature),
+                                   content_type="application/json")
+        self.assertEquals(response.status_code,
+                          200,
+                          "Updating a feature did not work")
         
         #delete the feature
         id = response_dict.get('id')
-        response = self.client.delete(reverse('api_feature') + "?id=" + str(id))
+        geojson_feature = {"type": "Feature",
+                           "id": id}
+        ids = []
+        ids.append(id)
+        
+        response = self.client.delete(reverse('api_feature')+"?ids="+json.dumps(ids))
+        
         self.assertEquals(response.status_code,
                           200,
                           "deletion of feature with id %i did not work" % id)
         
         #delete not existing feature
-        response = self.client.delete(reverse('api_feature') + "?id=1")
+        response = self.client.delete(reverse('api_feature')+"?ids="+json.dumps(ids))
+        
         self.assertEquals(response.status_code,
                           404,
                           "deletion of a non existing feature did not return NotFound")
+        """
+store the inserted IDs
+"""
+        ids = []
+        
+        geojson_feature = {"type": "Feature",
+                            "geometry": {"type":"Point",
+                                        "coordinates":[100, 200]},
+                            "properties": {"some_prop":"value"}}
+        
+        response = self.client.post(reverse('api_feature'),
+                                    json.dumps(geojson_feature),
+                                    content_type='application/json')
+        
+        response_dict = json.loads(response.content)
+        
+        self.assertNotEquals(response_dict.get('id',-1),
+                    -1,
+                    "The returned feature from a post did not contain an identifier(id)")
+        
+        ids.append(response_dict.get('id'))
+        
+        #2nd ID
+        geojson_feature = {"type": "Feature",
+                    "geometry": {"type":"Point",
+                                "coordinates":[200, 200]},
+                    "properties": {"some_prop":"value"}}
+        
+        response = self.client.post(reverse('api_feature'),
+                                    json.dumps(geojson_feature),
+                                    content_type='application/json')
+        
+        response_dict = json.loads(response.content)
+        
+        self.assertNotEquals(response_dict.get('id',-1),
+                    -1,
+                    "The returned feature from a post did not contain an identifier(id)")
+        
+        ids.append(response_dict.get('id'))
+        
+        #3rd ID
+        geojson_feature = {"type": "Feature",
+                    "geometry": {"type":"Point",
+                                "coordinates":[300, 300]},
+                    "properties": {"some_prop":"value"}}
+        
+        response = self.client.post(reverse('api_feature'),
+                                    json.dumps(geojson_feature),
+                                    content_type='application/json')
+        
+        response_dict = json.loads(response.content)
+        
+        self.assertNotEquals(response_dict.get('id',-1),
+                    -1,
+                    "The returned feature from a post did not contain an identifier(id)")
+        
+        ids.append(response_dict.get('id'))
+        
+        #delete a FeatureCollection once
+        response = self.client.delete(reverse('api_feature')+"?ids="+json.dumps(ids))
+        
+        self.assertEquals(response.status_code,
+                          200,
+                          "deletion of feature collection with ids " + str(ids) +" did not work")
+        
+        idn = []
+        idn.append(ids[0])
+        
+        #test if deleted
+        response = self.client.delete(reverse('api_feature')+"?ids="+json.dumps(idn))
+        
+        self.assertEquals(response.status_code,
+                          404,
+                          "deletion of feature previous feature did not work")
+        idn = []
+        idn.append(ids[1])
+        
+        response = self.client.delete(reverse('api_feature')+"?ids="+json.dumps(idn))
+        
+        self.assertEquals(response.status_code,
+                          404,
+                          "deletion of feature previous feature did not work")
+        idn = []
+        idn.append(ids[2])
+        
+        response = self.client.delete(reverse('api_feature')+"?ids="+json.dumps(idn))
+        
+        self.assertEquals(response.status_code,
+                          404,
+                          "deletion of feature previous feature did not work")
+        
+        #send delete without ids
+        response = self.client.delete(reverse('api_feature'))
+        
+        self.assertEquals(response.status_code,
+                          404,
+                          "feature deletion without id did not return 404 not found")
         
     def test_mongodb(self):
         USE_MONGODB = getattr(settings, "USE_MONGODB", False)
