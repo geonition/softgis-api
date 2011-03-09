@@ -69,6 +69,10 @@ def csrf(request):
     other POST requests to the REST api directly without using any
     Javascript library provided.
     """
+ #this function gives recursion depth exeeded,, check it out later
+ #   return HttpResponse(csrf(request)['csrf_token'],
+  #                      mimetype="text/plain")
+   
     return render_to_response("csrf.txt",
                               context_instance = RequestContext(request),
                               mimetype="text/plain")
