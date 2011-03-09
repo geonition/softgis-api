@@ -12,6 +12,8 @@ from softgis_feature.models import Property
 import settings
 import urllib2
 import sys
+import time
+import datetime
 
 if sys.version_info >= (2, 6):
     import json
@@ -20,6 +22,7 @@ else:
 
 _ = translation.ugettext
 
+USE_MONGODB = getattr(settings, "USE_MONGODB", False)
 
 #Views for the geometry API
 def feature(request):
@@ -37,7 +40,37 @@ def feature(request):
     On DELETE request this function removes existing feature/feature collection from 
     the database.
     """
-    
+    def parse_time(time_string):
+        """
+        Helper function to parse a POST or GET time
+        from the following format:
+        yyyy-mm-dd-HH-MM-SS
+        
+        yyyy - year
+        mm - month
+        dd - day
+        HH - hour
+        MM - minute
+        SS - second
+        
+        The less accurate time value have to be given before any less
+        accurate time value.
+        
+        returns a datetime.datetime instance
+        """
+        time_accuracy = time_string.count('-')
+        if time_accuracy == 0:
+            return datetime.datetime.strptime(time_string, "%Y")
+        elif time_accuracy == 1:
+            return datetime.datetime.strptime(time_string, "%Y-%m")
+        elif time_accuracy == 2:
+            return datetime.datetime.strptime(time_string, "%Y-%m-%d")
+        elif time_accuracy == 3:
+            return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H")
+        elif time_accuracy == 4:
+            return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H-%M")
+        elif time_accuracy == 5:
+            return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H-%M-%S")
     
     if request.method  == "GET":
         
@@ -60,25 +93,70 @@ def feature(request):
             feature_queryset = Feature.objects.none()
 
         property_queryset = Property.objects.all()
+        mongo_query = {}
         
         #filter according to limiting_params
         for key, value in limiting_param:
             if(key == "user_id"):
-                feature_queryset.objects.filter(user__exact = value)
-            elif(key == "time"):
-                # value in the form 'yyyy-mm-dd' ?
-                feature_queryset.objects.filter(create_time__lte = value)
-                feature_queryset.objects.filter(expire_time__gte = value)
-            else:
-                property_queryset = property_queryset.filter(value_name = key,
-                                                            value = value)
-
+                feature_queryset.filter(user__exact = value)
+            
+            elif(key == "create_time__lt"):
+                dt = parse_time(value)
+                feature_queryset.filter(create_time__lt = dt)
+                property_queryset.filter(create_time__lt = dt)
+                
+            elif(key == "create_time__gt"):
+                dt = parse_time(value)
+                feature_queryset.filter(create_time__gt = dt)
+                property_queryset.filter(create_time__gt = dt)
+                
+            elif(key == "create_time__latest" and value == "true"):
+                feature_queryset.latest('create_time')
+                property_queryset.latest('create_time')
+                print feature_queryset
+            
+            elif(key == "expire_time__lt"):
+                dt = parse_time(value)
+                feature_queryset.filter(expire_time__lt = dt)
+                property_queryset.filter(expire_time__lt = dt)
+            
+            elif(key == "expire_time__gt"):
+                dt = parse_time(value)
+                feature_queryset.filter(expire_time__gt = dt)
+                property_queryset.filter(expire_time__gt = dt)
+                
+            elif(key == "expire_time__latest" and value == "true"):
+                feature_queryset.latest('expire_time')
+                property_queryset.latest('expire_time')
+            
+            #mongodb queries should be built here
+            elif USE_MONGODB:
+                key = str(key)
+                if value.isnumeric():
+                    value = int(value)
+                elif value == "true":
+                    value = True
+                elif value == "false":
+                    value = False
+                    
+                mongo_query[key] = value
         
-        #filter the features with wrong properties
-        feature_id_list = property_queryset.values_list('feature_id', flat=True)
+        #filter the features with wrong properties, and add the result to the
+        #id set
+        feature_id_set = set()
+        feature_id_set = feature_id_set.union(set(property_queryset.values_list('feature_id', flat=True)))
+        
+        #filter the queries acccording to the json
+        if len(mongo_query) > 0:
+            #connect to collection,,
+            Property.mongodb.connect(Property.mongodb_collection_name)
+            qs = Property.mongodb.find(mongo_query)
+            Property.mongodb.disconnect()
+            feature_id_set = feature_id_set.intersection(set(qs.values_list('feature_id', flat=True)))
+        
 
         # gives database error in sqlite3 ?
-        feature_queryset = feature_queryset.filter(id__in = list(feature_id_list))
+        feature_queryset = feature_queryset.filter(id__in = list(feature_id_set))
         
         for feature in feature_queryset:
             feature_collection['features'].append(feature.geojson())
@@ -109,7 +187,8 @@ def feature(request):
             return HttpResponseBadRequest(_("geojson did not inclue a type." + \
                                           " Accepted types are " + \
                                           "'FeatureCollection' and 'Feature'."))
-            
+        
+        #inner function to save one feature
         if geojson_type == "Feature":
             geometry = None
             properties = None
@@ -149,6 +228,7 @@ def feature(request):
                 "type": "FeatureCollection",
                 "features": []
             }
+            
             for feat in features:
                 geometry = None
                 properties = None
@@ -181,7 +261,7 @@ def feature(request):
                                         json_string=json.dumps(properties))
                 new_property.save()
                 
-                ret_featurecollection['features'].append(json.dumps(feat))
+                ret_featurecollection['features'].append(feat)
                 
             return HttpResponse(json.dumps(ret_featurecollection))
             
@@ -194,39 +274,86 @@ def feature(request):
         feature_id = None
         
         try:
-            geometry = feature_json['geometry']
-            properties = feature_json['properties']
-            feature_id = feature_json['id']
+            geojson_type = feature_json['type']
         except KeyError:
-            return HttpResponseBadRequest("geojson feature requires " + \
-                                        "properties, "  + \
-                                        "geometry " + \
-                                        "and id for updating")
+            return HttpResponseBadRequest(_("geojson did not inclue a type." + \
+                                          " Accepted types are " + \
+                                          "'FeatureCollection' and 'Feature'."))
+        if geojson_type == "Feature":
             
+            try:
+                geometry = feature_json['geometry']
+                properties = feature_json['properties']
+                feature_id = feature_json['id']
+            except KeyError:
+                return HttpResponseBadRequest("geojson feature requires " + \
+                                            "properties, "  + \
+                                            "geometry " + \
+                                            "and id for updating")
+                
+            #geos = GEOSGeometry(json.dumps(geometry))
+            # Have to make OGRGeometry as GEOSGeometry
+            # does not support spatial reference systems
+            geos = OGRGeometry(json.dumps(geometry)).geos
             
-        #geos = GEOSGeometry(json.dumps(geometry))
-        # Have to make OGRGeometry as GEOSGeometry
-        # does not support spatial reference systems
-        geos = OGRGeometry(json.dumps(geometry)).geos
+            #get the feature to be updated
+            feature_queryset = Feature.objects.filter(id__exact = feature_id,
+                                                    user__exact = request.user)
+            
+            if len(feature_queryset) == 1:
+                feature = feature_queryset[0]
+                feature.geos = geos;
+                feature.save()
+                
+                #save the properties of the new feature
+                new_property = Property(feature=feature,
+                                        json_string=json.dumps(properties))
+                new_property.save()
+                
+                return HttpResponse(_(u"Feature with id %s was updated" % feature_id))
+            else:
+                return HttpResponseNotFound(_(u"Feature with id %s was not found" % feature_id))
         
-        #get the feature to be updated
-        feature_queryset = Feature.objects.filter(id__exact = feature_id,
-                                                user__exact = request.user)
-        
-        if len(feature_queryset) == 1:
-            feature = feature_queryset[0]
-            feature.geos = geos;
-            feature.save()
+        elif geojson_type == "FeatureCollection":
+                
+            features = feature_json['features']
             
-            #save the properties of the new feature
-            new_property = Property(feature=feature,
-                                    json_string=json.dumps(properties))
-            new_property.save()
+            for feat in features:  
             
-            return HttpResponse(_(u"Feature with id %s was updated" % feature_id))
-        else:
-            return HttpResponseNotFound(_(u"Feature with id %s was not found" % feature_id))       
-
+                try:
+                    geometry = feat['geometry']
+                    properties = feat['properties']
+                    feature_id = feat['id']
+                except KeyError:
+                    return HttpResponseBadRequest("geojson feature requires " + \
+                                                "properties, "  + \
+                                                "geometry " + \
+                                                "and id for updating")
+                
+                #geos = GEOSGeometry(json.dumps(geometry))
+                # Have to make OGRGeometry as GEOSGeometry
+                # does not support spatial reference systems
+                geos = OGRGeometry(json.dumps(geometry)).geos
+                
+                #get the feature to be updated
+                feature_queryset = Feature.objects.filter(id__exact = feature_id,
+                                                        user__exact = request.user)
+                
+                if len(feature_queryset) == 1:
+                    feature = feature_queryset[0]
+                    feature.geos = geos;
+                    feature.save()
+                    
+                    #save the properties of the new feature
+                    new_property = Property(feature=feature,
+                                            json_string=json.dumps(properties))
+                    new_property.save()
+                else:
+                    return HttpResponseNotFound(_(u"Feature with id %s was not found" % feature_id))
+                    
+            
+            return HttpResponse(_(u"Features updated"))
+                    
     elif request.method  == "DELETE":
 
         """
