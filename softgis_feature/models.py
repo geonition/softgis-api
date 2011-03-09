@@ -14,6 +14,10 @@ if sys.version_info >= (2, 6):
 else:
     import simplejson as json
 
+#this can be used instead of writing getattr everywhere
+USE_MONGODB = getattr(settings, "USE_MONGODB", False)
+
+
 # Create your models herelas   
 # GEOMETRY MODELS
 class Feature(gis_models.Model):
@@ -110,14 +114,14 @@ def get_features(limit_param, feature_queryset):
     db = None
     feature_properties = None
 
-    if(settings.USE_MONGODB):
+    if USE_MONGODB:
         con = Connection()
         db = con.softgis
         feature_properties = db.feature_properties
     
 
     for key, value in limit_param:
-        if(getattr(settings, "USE_MONGODB", False)):
+        if USE_MONGODB:
             try:
                 value_name = key.split("__")[0]
                 query_type = key.split("__")[1]
@@ -140,7 +144,7 @@ def get_features(limit_param, feature_queryset):
                 
 
     #close connection to mongodb
-    if(getattr(settings, "USE_MONGODB", False)):
+    if USE_MONGODB:
         con.disconnect()
 
     feature_list = []
@@ -173,25 +177,24 @@ class Property(models.Model):
             Property.objects.filter(feature__exact = self.feature)
         
         if current_property.count() == 0:
+            #save this new property
             super(Property, self).save(*args, **kwargs)
 
-            if(getattr(settings, "USE_MONGODB", False)):
+            if USE_MONGODB:
                 self.save_json_to_mongodb()
             
         else:
             current_property = current_property.latest('create_time')
-            
-            if(current_property.json_string == self.json_string):
-                pass
-            else:
+            if(current_property.json_string != self.json_string):
                 #delete current property
                 current_property.delete()
-
-            #save this new property
-            super(Property, self).save(*args, **kwargs)
-
-            if(getattr(settings, "USE_MONGODB", False)):
-                self.save_json_to_mongodb()
+    
+                #save this new property
+                super(Property, self).save(*args, **kwargs)
+    
+                if USE_MONGODB:
+                    self.save_json_to_mongodb()
+                    
                 
     def save_json_to_mongodb(self):
         """
