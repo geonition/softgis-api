@@ -72,88 +72,6 @@ class Feature(gis_models.Model):
             ("can_view_all", "Can view all features"),
             ("can_view_non_confidential",
             "Can view the non confidential features"),)
-
-
-def get_user_features(user):
-
-    feature_collection = {"type":"FeatureCollection", "features": []}
-
-    if not user.is_authenticated():
-        return feature_collection
-        
-    feature_queryset = Feature.objects.filter(user__exact = user,
-                                              expire_time__isnull = True)
-
-    for feature in feature_queryset:
-        feature_collection['features'].append(feature.geojson())
-
-    # According to GeoJSON specification crs member should be on the
-    # top-level GeoJSON object get srid from the first feature in the collection
-    if feature_queryset.exists():
-        srid = feature_queryset[0].geometry.srid
-    else:
-        srid = 3067
-        
-    crs_object =  {"type": "EPSG", "properties": {"code": srid}}
-    feature_collection['crs'] = crs_object
-
-    return feature_collection
-
-def get_features(limit_param, feature_queryset):
-    """
-    This method returns a list of features that fits the limiting param
-    and is from th given feature_queryset
-    """
-    if(feature_queryset == None):
-        feature_queryset = Feature.objects.all()
-
-    feature_id_list = feature_queryset.values_list('id', flat=True)
-
-    #open connection to mongodb
-    con = None
-    db = None
-    feature_properties = None
-
-    if USE_MONGODB:
-        con = Connection()
-        db = con.softgis
-        feature_properties = db.feature_properties
-    
-
-    for key, value in limit_param:
-        if USE_MONGODB:
-            try:
-                value_name = key.split("__")[0]
-                query_type = key.split("__")[1]
-            except IndexError:
-                query_type = None
-
-            if(query_type == None):
-
-                feature_ids = []
-                
-                for feature_property in feature_properties.find({key:value,
-                                                                "feature_id":
-                                                                {"$in":
-                                                                feature_id_list
-                                                                }}):
-                                                                    
-                    feature_ids.append(feature_property['feature_id'])
-
-                feature_queryset = feature_queryset.filter(id__in = feature_ids)
-                
-
-    #close connection to mongodb
-    if USE_MONGODB:
-        con.disconnect()
-
-    feature_list = []
-
-    for feature in feature_queryset:
-        feature_list.append(json.loads(feature.json_string))
-        
-    return feature_list
-
    
 class Property(models.Model):
     """
@@ -167,8 +85,9 @@ class Property(models.Model):
     
     objects = models.Manager()
     
-    mongodb_collection_name = 'feature_properties'
-    mongodb = MongoDBManager() #manager for querying json
+    if USE_MONGODB:
+        mongodb_collection_name = 'feature_properties'
+        mongodb = MongoDBManager() #manager for querying json
     
     def save(self, *args, **kwargs):
         
@@ -180,8 +99,7 @@ class Property(models.Model):
             #save this new property
             super(Property, self).save(*args, **kwargs)
 
-            if USE_MONGODB:
-                self.save_json_to_mongodb()
+            self.save_json_to_mongodb()
             
         else:
             current_property = current_property.latest('create_time')
@@ -191,19 +109,20 @@ class Property(models.Model):
     
                 #save this new property
                 super(Property, self).save(*args, **kwargs)
-    
-                if USE_MONGODB:
-                    self.save_json_to_mongodb()
+                
+                self.save_json_to_mongodb()
                     
                 
     def save_json_to_mongodb(self):
         """
         This function saves the JSON to mongodb
         """
-        insert_json = json.loads(self.json_string)
-        Property.mongodb.connect(self.mongodb_collection_name)
-        Property.mongodb.save(insert_json, self.id)
-        Property.mongodb.disconnect()
+        #do nothing if USE_MONGODB False
+        if USE_MONGODB:
+            insert_json = json.loads(self.json_string)
+            Property.mongodb.connect(self.mongodb_collection_name)
+            Property.mongodb.save(insert_json, self.id)
+            Property.mongodb.disconnect()
         
         
     def delete(self, *args, **kwargs):
