@@ -101,39 +101,90 @@ def feature(request):
     elif request.method == "POST":
         #supports saving geojson Features
         feature_json = json.loads(request.POST.keys()[0])
-        geometry = None
-        properties = None
+        geojson_type = None
         
         try:
-            geometry = feature_json['geometry']
-            properties = feature_json['properties']
+            geojson_type = feature_json['type']
         except KeyError:
-            return HttpResponseBadRequest("geojson feature requires " + \
-                                        "properties "  + \
-                                        "and geometry")
+            return HttpResponseBadRequest(_("geojson did not inclue a type." + \
+                                          " Accepted types are " + \
+                                          "'FeatureCollection' and 'Feature'."))
             
+        if geojson_type == "Feature":
+            geometry = None
+            properties = None
+            try:
+                geometry = feature_json['geometry']
+                properties = feature_json['properties']
+            except KeyError:
+                return HttpResponseBadRequest("geojson type 'Feature' " + \
+                                            "requires properties "  + \
+                                            "and geometry")
+                
+                
+            #geos = GEOSGeometry(json.dumps(geometry))
+            # Have to make OGRGeometry as GEOSGeometry
+            # does not support spatial reference systems
+            geos = OGRGeometry(json.dumps(geometry)).geos
             
-        #geos = GEOSGeometry(json.dumps(geometry))
-        # Have to make OGRGeometry as GEOSGeometry
-        # does not support spatial reference systems
-        geos = OGRGeometry(json.dumps(geometry)).geos
-        
-        #save the feature
-        new_feature = Feature(geometry=geos,
-                            user=request.user)
-        new_feature.save()
-
-        #add the id to the feature json
-        identifier = new_feature.id
-        feature_json['id'] = identifier
-
-        #save the properties of the new feature
-        new_property = Property(feature=new_feature,
-                                json_string=json.dumps(properties))
-        new_property.save()
+            #save the feature
+            new_feature = Feature(geometry=geos,
+                                user=request.user)
+            new_feature.save()
+    
+            #add the id to the feature json
+            identifier = new_feature.id
+            feature_json['id'] = identifier
+    
+            #save the properties of the new feature
+            new_property = Property(feature=new_feature,
+                                    json_string=json.dumps(properties))
+            new_property.save()
+                
+            return HttpResponse(json.dumps(feature_json))
             
-        return HttpResponse(json.dumps(feature_json))
-        
+        elif geojson_type == "FeatureCollection":
+            features = feature_json['features']
+            ret_featurecollection = {
+                "type": "FeatureCollection",
+                "features": []
+            }
+            for feat in features:
+                geometry = None
+                properties = None
+                try:
+                    geometry = feat['geometry']
+                    properties = feat['properties']
+                except KeyError:
+                    return HttpResponseBadRequest("geojson type 'Feature' " + \
+                                                "requires properties "  + \
+                                                "and geometry in " + \
+                                                "FeatureCollection")
+                
+                
+                #geos = GEOSGeometry(json.dumps(geometry))
+                # Have to make OGRGeometry as GEOSGeometry
+                # does not support spatial reference systems
+                geos = OGRGeometry(json.dumps(geometry)).geos
+            
+                #save the feature
+                new_feature = Feature(geometry=geos,
+                                    user=request.user)
+                new_feature.save()
+    
+                #add the id to the feature json
+                identifier = new_feature.id
+                feat['id'] = identifier
+    
+                #save the properties of the new feature
+                new_property = Property(feature=new_feature,
+                                        json_string=json.dumps(properties))
+                new_property.save()
+                
+                ret_featurecollection['features'].append(json.dumps(feat))
+                
+            return HttpResponse(json.dumps(ret_featurecollection))
+            
     elif request.method == "PUT":
         
         #supports updating geojson Features

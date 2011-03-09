@@ -1,5 +1,5 @@
 /*
- get_features retrieves features according to the limiting params
+get_features retrieves features according to the limiting params
 
 the limit_params is a GET string starting with a "?"
 
@@ -26,13 +26,14 @@ function get_features(limit_params, callback_function) {
 }
 
 /*
- create_feature function saves a new feature to the database
+ create_feature function saves a new feature of features from a feature
+ collection to the database
 */
-function create_feature(feature, callback_function) {
+function create_feature(feature_or_feature_collection, callback_function) {
     dojo.xhrPost({
         "url": "{% url api_feature %}",
         "handleAs": "json",
-        "postData": encodeURIComponent(dojo.toJson(feature)),
+        "postData": encodeURIComponent(dojo.toJson(feature_or_feature_collection)),
         "headers": {"Content-Type":"application/json",
                     "X-CSRFToken": "{{ csrf_token }}"},
         "handle": function(response, ioArgs) {
@@ -45,13 +46,15 @@ function create_feature(feature, callback_function) {
 }
 
 /*
- update_feature, updates the a feature with and id
+ update_feature, updates a feature with and id or a set of
+ features in a featurecollection. All features in the collection
+ should already have been saved once and should contain an id.
 */
-function update_feature(feature, callback_function) {
+function update_feature(feature_or_feature_collection, callback_function) {
     dojo.xhrPut({
         "url": "{% url api_feature %}",
         "handleAs": "text",
-        "postData": encodeURIComponent(dojo.toJson(feature)),
+        "postData": encodeURIComponent(dojo.toJson(feature_or_feature_collection)),
         "headers": {"Content-Type":"application/json",
                     "X-CSRFToken": "{{ csrf_token }}"},
         "handle": function(response, ioArgs) {
