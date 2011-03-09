@@ -206,69 +206,104 @@ class FeatureTest(TestCase):
                           404,
                           "feature deletion without id did not return 404 not found")
         
+        #save featurecollection
+        featurecollection = {
+            "type": "FeatureCollection",
+            "features": []
+        }
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[200, 200]},
+            "properties": {"some_prop":"value"}})
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[300, 250]},
+            "properties": {"some_prop":40}})
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[100, 300]},
+            "properties": {"some_prop": True}})
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[100, 300]},
+            "properties": {"some_prop": None}})
+        
+        response = self.client.post(reverse('api_feature'),
+                                    json.dumps(featurecollection),
+                                    content_type='application/json')
+        
+        #all returned feature should have an id
+        for feature in json.loads(response.content)['features']:
+            feature = json.loads(feature)
+            self.assertTrue(feature.has_key('id'),
+                            "The returned feature in FeatureCollection " + \
+                            "did not have an id")
+        
     def test_mongodb(self):
         USE_MONGODB = getattr(settings, "USE_MONGODB", False)
         
         #if mongodb is not in use do not run the tests
-        if not USE_MONGODB: 
-            return None
-        
-        
-        self.client.login(username='testuser', password='passwd')
-        #save some values into the database
-        geojson_feature = {"type": "Feature",
-                    "geometry": {"type":"Point",
-                                "coordinates":[200, 200]},
-                    "properties": {"some_prop":"value"}}
-        
-        response = self.client.post(reverse('api_feature'),
-                                    json.dumps(geojson_feature),
-                                    content_type='application/json')
-        
-        geojson_feature = {"type": "Feature",
-                    "geometry": {"type":"Point",
-                                "coordinates":[200, 200]},
-                    "properties": {"some_prop": 40}}
-        
-        response = self.client.post(reverse('api_feature'),
-                                    json.dumps(geojson_feature),
-                                    content_type='application/json')
-        geojson_feature = {"type": "Feature",
-                    "geometry": {"type":"Point",
-                                "coordinates":[200, 200]},
-                    "properties": {"some_prop": 40}}
-        
-        response = self.client.post(reverse('api_feature'),
-                                    json.dumps(geojson_feature),
-                                    content_type='application/json')
-        geojson_feature = {"type": "Feature",
-                    "geometry": {"type":"Point",
-                                "coordinates":[200, 200]},
-                    "properties": {"some_prop": 42}}
-        
-        response = self.client.post(reverse('api_feature'),
-                                    json.dumps(geojson_feature),
-                                    content_type='application/json')
-        
-        #find should return 2 results
-        self.assertEquals(Property.mongodb.find({'some_prop': 40}).count(),
-                          2,
-                          "The mongodb find did not return 2 objects")
-        
-        
-        #range should return 3
-        self.assertEquals(Property.mongodb.find_range('some_prop', 39, 41).count(),
-                          2,
-                          "The mongodb find_ramge did not return 2 objects")
-        
-        
-        #range should return 1
-        self.assertEquals(Property.mongodb.find_range('some_prop', 41, 43).count(),
-                          1,
-                          "The mongodb find_ramge did not return 1 object")
-        
-        Property.mongodb.disconnect()
-        
+        if USE_MONGODB:
+            
+            self.client.login(username='testuser', password='passwd')
+            #save some values into the database
+            geojson_feature = {"type": "Feature",
+                     "geometry": {"type":"Point",
+                                 "coordinates":[200, 200]},
+                     "properties": {"some_prop":"value"}}
+            
+            response = self.client.post(reverse('api_feature'),
+                                     json.dumps(geojson_feature),
+                                     content_type='application/json')
+            
+            geojson_feature = {"type": "Feature",
+                     "geometry": {"type":"Point",
+                                 "coordinates":[200, 200]},
+                     "properties": {"some_prop": 40}}
+            
+            response = self.client.post(reverse('api_feature'),
+                                     json.dumps(geojson_feature),
+                                     content_type='application/json')
+            geojson_feature = {"type": "Feature",
+                     "geometry": {"type":"Point",
+                                 "coordinates":[200, 200]},
+                     "properties": {"some_prop": 40}}
+            
+            response = self.client.post(reverse('api_feature'),
+                                     json.dumps(geojson_feature),
+                                     content_type='application/json')
+            geojson_feature = {"type": "Feature",
+                     "geometry": {"type":"Point",
+                                 "coordinates":[200, 200]},
+                     "properties": {"some_prop": 42}}
+            
+            response = self.client.post(reverse('api_feature'),
+                                     json.dumps(geojson_feature),
+                                     content_type='application/json')
+            
+            #find should return 2 results
+            self.assertEquals(Property.mongodb.find({'some_prop': 40}).count(),
+                           2,
+                           "The mongodb find did not return 2 objects")
+            
+            
+            #range should return 3
+            self.assertEquals(Property.mongodb.find_range('some_prop', 39, 41).count(),
+                           2,
+                           "The mongodb find_ramge did not return 2 objects")
+            
+            
+            #range should return 1
+            self.assertEquals(Property.mongodb.find_range('some_prop', 41, 43).count(),
+                           1,
+                           "The mongodb find_ramge did not return 1 object")
+            
+            Property.mongodb.disconnect()
+
         
         
         
