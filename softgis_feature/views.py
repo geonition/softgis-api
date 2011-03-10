@@ -148,10 +148,7 @@ def feature(request):
         
         #filter the queries acccording to the json
         if len(mongo_query) > 0:
-            #connect to collection,,
-            Property.mongodb.connect(Property.mongodb_collection_name)
             qs = Property.mongodb.find(mongo_query)
-            Property.mongodb.disconnect()
             feature_id_set = feature_id_set.intersection(set(qs.values_list('feature_id', flat=True)))
         
 

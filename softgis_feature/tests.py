@@ -298,8 +298,6 @@ class FeatureTest(TestCase):
                            1,
                            "The mongodb find_ramge did not return 1 object")
             
-            Property.mongodb.disconnect()
-            
             #test GET queries
             response = self.client.get(reverse('api_feature'))
             response_dict = json.loads(response.content)

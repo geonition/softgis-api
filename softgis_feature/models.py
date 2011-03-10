@@ -86,8 +86,7 @@ class Property(models.Model):
     objects = models.Manager()
     
     if USE_MONGODB:
-        mongodb_collection_name = 'feature_properties'
-        mongodb = MongoDBManager() #manager for querying json
+        mongodb = MongoDBManager(collection_name='feature_properties') #manager for querying json
     
     def save(self, *args, **kwargs):
         
@@ -120,9 +119,7 @@ class Property(models.Model):
         #do nothing if USE_MONGODB False
         if USE_MONGODB:
             insert_json = json.loads(self.json_string)
-            Property.mongodb.connect(self.mongodb_collection_name)
             Property.mongodb.save(insert_json, self.id)
-            Property.mongodb.disconnect()
         
         
     def delete(self, *args, **kwargs):

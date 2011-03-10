@@ -1,5 +1,6 @@
 from pymongo import Connection
 from django.db.models import Manager
+from query import MongoDBQuerySet
 
 import settings
 
@@ -10,9 +11,20 @@ class MongoDBManager(Manager):
     It combines the django model queries with
     information in mongodb.
     """
+
+    used_for_related_fields = True
     
+    
+    def __init__(self, collection_name = 'collection'):
+        super(MongoDBManager, self).__init__()
+        
+        self.collection_name = collection_name
+        
+    def get_query_set(self):
+        return MongoDBQuerySet(self.model, using=self._db)
+
     #general connect and disconnect functions
-    def connect(self,
+    def _connect(self,
                 collection_name = 'collection'):
         """
         This function connects to MongoDB as set in
@@ -31,9 +43,9 @@ class MongoDBManager(Manager):
 
         self.connection = Connection(database_host, database_port)
         self.database = self.connection[database_name]
-        self.collection = self.database[collection_name]
+        self.collection = self.database[self.collection_name]
         
-    def disconnect(self):
+    def _disconnect(self):
         """
         This function disconnects from the mongodb database.
         """
@@ -45,8 +57,10 @@ class MongoDBManager(Manager):
         This function saves the jsondict and gives
         it the given identifier.
         """
+        self._connect(collection_name=self.collection_name)
         json_dict['_id'] = identifier
         self.collection.save(json_dict)
+        self._disconnect()
     
     #MongoDB remove functions
     def remove(self, identifier):
@@ -54,28 +68,16 @@ class MongoDBManager(Manager):
         This functions removes the document with the given
         identifier from the collection.
         """
+        self._connect(collection_name=self.collection_name)
         self.collection.remove(identifier)
+        self._disconnect()
         
     #MongoDB query
     def find(self, spec=None):
-        """
-        This function returns a queryset including
-        those objects that has the given key value pair.
-        
-        The spec is moved directly to mongodb for querying.
-        """
-        mdb_cursor = self.collection.find(spec)
-        ids = []
-        for json_obj in mdb_cursor:
-            
-            if(json_obj != None):
-                ids.append(json_obj['_id'])
-        
-        return super(MongoDBManager, self).get_query_set().filter(id__in = ids)
+        return self.get_query_set().find(spec)
         
     def find_range(self, key, min, max):
-        """
-        This functions returns a queryset with the objects that
-        includes a key with a value between min and max.
-        """
         return self.find({key: {"$gte": min, "$lte": max}})
+        
+        
+        
