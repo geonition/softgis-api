@@ -251,6 +251,7 @@ class FeatureTest(TestCase):
         if USE_MONGODB:
             
             self.client.login(username='testuser', password='passwd')
+            
             #save some values into the database
             geojson_feature = {
                 "type": "FeatureCollection",
@@ -282,40 +283,8 @@ class FeatureTest(TestCase):
                                      json.dumps(geojson_feature),
                                      content_type='application/json')
             
-            #find should return 2 results
-            self.assertEquals(Property.mongodb.find({'some_prop': 40}).count(),
-                           2,
-                           "The mongodb find did not return 2 objects")
             
-            #range should return 3
-            self.assertEquals(Property.mongodb.find_range('some_prop', 39, 41).count(),
-                           2,
-                           "The mongodb find_ramge did not return 2 objects")
-            
-            
-            #range should return 1
-            self.assertEquals(Property.mongodb.find_range('some_prop', 41, 43).count(),
-                           1,
-                           "The mongodb find_ramge did not return 1 object")
-            
-            #test GET queries
-            response = self.client.get(reverse('api_feature'))
-            response_dict = json.loads(response.content)
-            self.assertEquals(len(response_dict['features']),
-                              5,
-                              "The retrieval of all features with mongodb did not work")
-            
-            response = self.client.get(reverse('api_feature') + "?some_prop=40")
-            response_dict = json.loads(response.content)
-            self.assertEquals(len(response_dict['features']),
-                              2,
-                              "The retrieval of some features with number as value did not work")
-            
-            response = self.client.get(reverse('api_feature') + "?some_prop=true")
-            response_dict = json.loads(response.content)
-            self.assertEquals(len(response_dict['features']),
-                              1,
-                              "The retrieval of some features with boolean as value did not work")
+            #TODO write tests to test the REST
             
     
     def test_history(self):
@@ -349,31 +318,44 @@ class FeatureTest(TestCase):
                 ]
         }
         
+        
         submit_time_gt = datetime.datetime.now()
+        
+        time.sleep(1) #wait a second to get smart queries
+        
         response = self.client.post(reverse('api_feature'),
                                 json.dumps(geojson_feature),
                                 content_type='application/json')
         
         response_dict = json.loads(response.content)
-        submit_time_lt = datetime.datetime.now()
         
-        time.sleep(1) #make sure it will be another second before update
+        #wait a little bit to get difference
+        time.sleep(1)
+        submit_time_lt = datetime.datetime.now()
         
         response_dict['features'][0]['properties']['good'] = 33
         
         submit2_time_gt = datetime.datetime.now()
+        time.sleep(1) # wait to get smart query
+        
         response = self.client.put(reverse('api_feature'),
                                 json.dumps(response_dict),
                                 content_type='application/json')
         
+        
+        #wait a little bit more
+        time.sleep(1)
         submit2_time_lt = datetime.datetime.now()
         
         
         #start querying
         
+        #print "create_time__gt query with"
+        #print submit_time_gt
+        
         #should return all features just saved
         response = self.client.get(reverse('api_feature') + \
-                                   "?expire_time__gt=%i-%i-%i-%i-%i-%i" % (submit_time_gt.year,
+                                   "?create_time__gt=%i-%i-%i-%i-%i-%i" % (submit_time_gt.year,
                                                                         submit_time_gt.month,
                                                                         submit_time_gt.day,
                                                                         submit_time_gt.hour,
@@ -383,11 +365,17 @@ class FeatureTest(TestCase):
         response_dict = json.loads(response.content) 
         
         #print response_dict
+        #print "should return 5"
         #print len(response_dict['features'])
+        
+        
+        
+        #print "create_time__lt query with"
+        #print submit_time_lt
         
         #should return only the new features
         response = self.client.get(reverse('api_feature') + \
-                                   "?create_time__gt=%i-%i-%i-%i-%i-%i" % (submit_time_lt.year,
+                                   "?create_time__lt=%i-%i-%i-%i-%i-%i" % (submit_time_lt.year,
                                                                         submit_time_lt.month,
                                                                         submit_time_lt.day,
                                                                         submit_time_lt.hour,
@@ -397,6 +385,7 @@ class FeatureTest(TestCase):
         response_dict = json.loads(response.content) 
         
         #print response_dict
+        #print "should return 1"
         #print len(response_dict['features'])
         
         #should only return the new features
