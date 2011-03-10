@@ -102,11 +102,17 @@ def feature(request):
             
             elif(key == "create_time__lt"):
                 dt = parse_time(value)
+                #print key
+                #print value
+                #print dt
                 feature_queryset.filter(create_time__lt = dt)
                 property_queryset.filter(create_time__lt = dt)
                 
             elif(key == "create_time__gt"):
                 dt = parse_time(value)
+                #print key
+                #print value
+                #print dt
                 feature_queryset.filter(create_time__gt = dt)
                 property_queryset.filter(create_time__gt = dt)
                 
@@ -117,11 +123,13 @@ def feature(request):
             
             elif(key == "expire_time__lt"):
                 dt = parse_time(value)
+                #print dt
                 feature_queryset.filter(expire_time__lt = dt)
                 property_queryset.filter(expire_time__lt = dt)
             
             elif(key == "expire_time__gt"):
                 dt = parse_time(value)
+                #print dt
                 feature_queryset.filter(expire_time__gt = dt)
                 property_queryset.filter(expire_time__gt = dt)
                 
@@ -298,18 +306,26 @@ def feature(request):
                                                     user__exact = request.user)
             
             if len(feature_queryset) == 1:
-                feature = feature_queryset[0]
-                feature.geos = geos;
-                feature.save()
+                feature_old = feature_queryset[0]
+                feature = feature_old.update(geometry = geos)
                 
                 #save the properties of the new feature
-                new_property = Property(feature=feature,
+                cur_property = Property.objects.latest('create_time')
+                
+                if feature_old.id == feature.id:
+                    new_property = cur_property.update(json.dumps(properties))
+                    
+                else:
+                    cur_property.delete()
+                    new_property = Property(feature=feature,
                                         json_string=json.dumps(properties))
-                new_property.save()
+                    new_property.save()
                 
                 return HttpResponse(_(u"Feature with id %s was updated" % feature_id))
             else:
-                return HttpResponseNotFound(_(u"Feature with id %s was not found" % feature_id))
+                return HttpResponseNotFound(_(u"Feature with id %s was not " + \
+                                              "found or you do not have" + \
+                                              " permission to update feature" % feature_id))
         
         elif geojson_type == "FeatureCollection":
                 
@@ -337,14 +353,20 @@ def feature(request):
                                                         user__exact = request.user)
                 
                 if len(feature_queryset) == 1:
-                    feature = feature_queryset[0]
-                    feature.geos = geos;
-                    feature.save()
+                    feature_old = feature_queryset[0]
+                    feature = feature_old.update(geometry = geos)
                     
                     #save the properties of the new feature
-                    new_property = Property(feature=feature,
+                    cur_property = Property.objects.latest('create_time')
+                    
+                    if feature_old.id == feature.id:
+                        new_property = cur_property.update(json.dumps(properties))
+                        
+                    else:
+                        cur_property.delete()
+                        new_property = Property(feature=feature,
                                             json_string=json.dumps(properties))
-                    new_property.save()
+                        new_property.save()
                 else:
                     return HttpResponseNotFound(_(u"Feature with id %s was not found" % feature_id))
                     
