@@ -10,6 +10,8 @@ from models import Property
 
 import sys
 import settings
+import datetime
+import time
 
 if sys.version_info >= (2, 6):
     import json
@@ -238,7 +240,6 @@ class FeatureTest(TestCase):
         
         #all returned feature should have an id
         for feature in json.loads(response.content)['features']:
-            feature = json.loads(feature)
             self.assertTrue(feature.has_key('id'),
                             "The returned feature in FeatureCollection " + \
                             "did not have an id")
@@ -251,35 +252,31 @@ class FeatureTest(TestCase):
             
             self.client.login(username='testuser', password='passwd')
             #save some values into the database
-            geojson_feature = {"type": "Feature",
+            geojson_feature = {
+                "type": "FeatureCollection",
+                "features": [
+                    {"type": "Feature",
+                    "geometry": {"type":"Point",
+                                "coordinates":[200, 200]},
+                    "properties": {"some_prop":"value"}},
+                    {"type": "Feature",
+                    "geometry": {"type":"Point",
+                                "coordinates":[200, 200]},
+                    "properties": {"some_prop": 40}},
+                    {"type": "Feature",
+                    "geometry": {"type":"Point",
+                                "coordinates":[200, 200]},
+                    "properties": {"some_prop": 40}},
+                    {"type": "Feature",
                      "geometry": {"type":"Point",
-                                 "coordinates":[200, 200]},
-                     "properties": {"some_prop":"value"}}
-            
-            response = self.client.post(reverse('api_feature'),
-                                     json.dumps(geojson_feature),
-                                     content_type='application/json')
-            
-            geojson_feature = {"type": "Feature",
+                                "coordinates":[200, 200]},
+                     "properties": {"some_prop": True}},
+                    {"type": "Feature",
                      "geometry": {"type":"Point",
-                                 "coordinates":[200, 200]},
-                     "properties": {"some_prop": 40}}
-            
-            response = self.client.post(reverse('api_feature'),
-                                     json.dumps(geojson_feature),
-                                     content_type='application/json')
-            geojson_feature = {"type": "Feature",
-                     "geometry": {"type":"Point",
-                                 "coordinates":[200, 200]},
-                     "properties": {"some_prop": 40}}
-            
-            response = self.client.post(reverse('api_feature'),
-                                     json.dumps(geojson_feature),
-                                     content_type='application/json')
-            geojson_feature = {"type": "Feature",
-                     "geometry": {"type":"Point",
-                                 "coordinates":[200, 200]},
+                                "coordinates":[200, 200]},
                      "properties": {"some_prop": 42}}
+                    ]
+            }
             
             response = self.client.post(reverse('api_feature'),
                                      json.dumps(geojson_feature),
@@ -289,7 +286,6 @@ class FeatureTest(TestCase):
             self.assertEquals(Property.mongodb.find({'some_prop': 40}).count(),
                            2,
                            "The mongodb find did not return 2 objects")
-            
             
             #range should return 3
             self.assertEquals(Property.mongodb.find_range('some_prop', 39, 41).count(),
@@ -303,7 +299,117 @@ class FeatureTest(TestCase):
                            "The mongodb find_ramge did not return 1 object")
             
             Property.mongodb.disconnect()
-
+            
+            #test GET queries
+            response = self.client.get(reverse('api_feature'))
+            response_dict = json.loads(response.content)
+            self.assertEquals(len(response_dict['features']),
+                              5,
+                              "The retrieval of all features with mongodb did not work")
+            
+            response = self.client.get(reverse('api_feature') + "?some_prop=40")
+            response_dict = json.loads(response.content)
+            self.assertEquals(len(response_dict['features']),
+                              2,
+                              "The retrieval of some features with number as value did not work")
+            
+            response = self.client.get(reverse('api_feature') + "?some_prop=true")
+            response_dict = json.loads(response.content)
+            self.assertEquals(len(response_dict['features']),
+                              1,
+                              "The retrieval of some features with boolean as value did not work")
+            
+    
+    def test_history(self):
+        #features to save
+        
+        self.client.login(username='testuser', password='passwd')
+        #save some values into the database
+        geojson_feature = {
+            "type": "FeatureCollection",
+            "features": [
+                {"type": "Feature",
+                "geometry": {"type":"Point",
+                            "coordinates":[200, 200]},
+                "properties": {"some_prop":"history_value"}},
+                {"type": "Feature",
+                "geometry": {"type":"Point",
+                            "coordinates":[200, 200]},
+                "properties": {"some_prop": 40}},
+                {"type": "Feature",
+                "geometry": {"type":"Point",
+                            "coordinates":[200, 200]},
+                "properties": {"some_prop": 40}},
+                {"type": "Feature",
+                 "geometry": {"type":"Point",
+                            "coordinates":[200, 200]},
+                 "properties": {"some_prop": True}},
+                {"type": "Feature",
+                 "geometry": {"type":"Point",
+                            "coordinates":[200, 200]},
+                 "properties": {"some_prop": 42}}
+                ]
+        }
+        
+        submit_time_gt = datetime.datetime.now()
+        response = self.client.post(reverse('api_feature'),
+                                json.dumps(geojson_feature),
+                                content_type='application/json')
+        
+        response_dict = json.loads(response.content)
+        submit_time_lt = datetime.datetime.now()
+        
+        time.sleep(1) #make sure it will be another second before update
+        
+        response_dict['features'][0]['properties']['good'] = 33
+        
+        submit2_time_gt = datetime.datetime.now()
+        response = self.client.put(reverse('api_feature'),
+                                json.dumps(response_dict),
+                                content_type='application/json')
+        
+        submit2_time_lt = datetime.datetime.now()
+        
+        
+        #start querying
+        
+        #should return all features just saved
+        response = self.client.get(reverse('api_feature') + \
+                                   "?expire_time__gt=%i-%i-%i-%i-%i-%i" % (submit_time_gt.year,
+                                                                        submit_time_gt.month,
+                                                                        submit_time_gt.day,
+                                                                        submit_time_gt.hour,
+                                                                        submit_time_gt.minute,
+                                                                        submit_time_gt.second))
+        
+        response_dict = json.loads(response.content) 
+        
+        print response_dict
+        print len(response_dict['features'])
+        
+        #should return only the new features
+        response = self.client.get(reverse('api_feature') + \
+                                   "?create_time__gt=%i-%i-%i-%i-%i-%i" % (submit_time_lt.year,
+                                                                        submit_time_lt.month,
+                                                                        submit_time_lt.day,
+                                                                        submit_time_lt.hour,
+                                                                        submit_time_lt.minute,
+                                                                        submit_time_lt.second))
+        
+        response_dict = json.loads(response.content) 
+        
+        #print response_dict
+        #print len(response_dict['features'])
+        
+        #should only return the new features
+        response = self.client.get(reverse('api_feature') + \
+                                   "?create_time__latest=true")
+        
+        response_dict = json.loads(response.content) 
+        
+        #print response_dict
+        #print len(response_dict['features'])
+        
         
         
         
