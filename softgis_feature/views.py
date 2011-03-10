@@ -113,7 +113,7 @@ def feature(request):
             elif(key == "create_time__latest" and value == "true"):
                 feature_queryset.latest('create_time')
                 property_queryset.latest('create_time')
-                print feature_queryset
+                #print feature_queryset
             
             elif(key == "expire_time__lt"):
                 dt = parse_time(value)

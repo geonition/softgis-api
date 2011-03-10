@@ -384,8 +384,8 @@ class FeatureTest(TestCase):
         
         response_dict = json.loads(response.content) 
         
-        print response_dict
-        print len(response_dict['features'])
+        #print response_dict
+        #print len(response_dict['features'])
         
         #should return only the new features
         response = self.client.get(reverse('api_feature') + \
