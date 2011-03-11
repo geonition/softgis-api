@@ -66,6 +66,7 @@ class Feature(gis_models.Model):
         self.expire_time = datetime.datetime.today()
         
         super(Feature, self).save(*args, **kwargs)
+        
         return None
     
     def update(self, geometry=None, *args, **kwargs):
@@ -83,14 +84,18 @@ class Feature(gis_models.Model):
             super(Feature, self).save(*args, **kwargs)
         
             #save the new feature
-            new_feature = Feature(user = self.user, geometry = geometry)
+            new_feature = Feature(user = self.user,
+                                  geometry = geometry)
             new_feature.save()
             return new_feature
         
         return self   
         
     def geojson(self):
-
+        """
+        Returns a geojson object of with the latest properties
+        belonging to this feature.
+        """
         properties = None
         properties_dict = None
         
@@ -150,7 +155,7 @@ class Property(models.Model):
     >>> type(p1.expire_time)
     <type 'datetime.datetime'>
     """
-    feature = models.ForeignKey(Feature)
+    feature = models.ForeignKey(Feature, related_name='properties')
     json_string = models.TextField()
 
     create_time = models.DateTimeField(auto_now_add=True, null=True)
@@ -200,6 +205,17 @@ class Property(models.Model):
             return new_property
         
         return self
+    
+    def geojson(self):
+        """
+        Returns a geojson Feature with these(this) properties.
+        """
+        feature_dict = {"id": self.feature.id,
+                        "geometry": json.loads(self.feature.geometry.json),
+                        "properties": json.loads(self.json_string)}
         
+        return feature_dict
+    
+    
     def __unicode__(self):
         return self.json_string

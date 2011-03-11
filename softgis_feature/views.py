@@ -104,9 +104,22 @@ def feature(request):
             elif(key == "time"):
                 dt = parse_time(value)
                 
-                property_queryset = property_queryset.filter(create_time__lt = dt)
-                property_queryset = property_queryset.filter(expire_time__gt = dt)
+                property_qs_expired = property_queryset.filter(create_time__lt = dt)
+                property_qs_expired = property_qs_expired.filter(expire_time__gt = dt)
                 
+                property_qs_not_exp = property_queryset.filter(create_time__lt = dt)
+                property_qs_not_exp = property_qs_not_exp.filter(expire_time = None)
+                property_qs_not_exp = property_qs_not_exp.exclude(id__in = property_qs_expired)
+                
+                property_queryset = property_qs_not_exp | property_qs_expired
+                
+                #do the same for features
+                feature_ids = property_queryset.values_list('feature_id', )
+                feature_queryset = feature_queryset.filter(id__in = feature_ids)
+                feature_qs_expired = feature_queryset.filter(expire_time__gt = dt)
+                feature_qs_expired = feature_qs_expired.filter(create_time__lt = dt)
+                feature_qs_not_expired = feature_queryset.filter(expire_time = None)
+                feature_queryset = feature_qs_not_expired | feature_qs_expired 
                 
             #mongodb queries should be built here
             elif USE_MONGODB:
@@ -120,29 +133,22 @@ def feature(request):
                     
                 mongo_query[key] = value
         
-        
-        #filter the features with wrong properties, and add the result to the
-        #id set
-        feature_id_set = set()
-        feature_id_set = set(property_queryset.values_list('feature_id', flat=True))
+        #filter the properties not belonging to feature_queryset
+        property_queryset = property_queryset.filter(feature__in = feature_queryset)
         
         #filter the queries acccording to the json
         if len(mongo_query) > 0:
             qs = Property.mongodb.find(mongo_query)
-            feature_id_set = feature_id_set.intersection(set(qs.values_list('feature_id', flat=True)))
         
 
-        # gives database error in sqlite3 ?
-        feature_queryset = feature_queryset.filter(id__in = list(feature_id_set))
-        
-        for feature in feature_queryset:
-            feature_collection['features'].append(feature.geojson())
+        for prop in property_queryset:
+            feature_collection['features'].append(prop.geojson())
 
         # According to GeoJSON specification crs member
         # should be on the top-level GeoJSON object
         # get srid from the first feature in the collection
-        if feature_queryset.exists():
-            srid = feature_queryset[0].geometry.srid
+        if property_queryset.exists():
+            srid = property_queryset[0].feature.geometry.srid
         else:
             srid = 3067
 
@@ -169,6 +175,7 @@ def feature(request):
         if geojson_type == "Feature":
             geometry = None
             properties = None
+            
             try:
                 geometry = feature_json['geometry']
                 properties = feature_json['properties']
@@ -191,7 +198,7 @@ def feature(request):
             #add the id to the feature json
             identifier = new_feature.id
             feature_json['id'] = identifier
-    
+            
             #save the properties of the new feature
             new_property = Property(feature=new_feature,
                                     json_string=json.dumps(properties))
@@ -231,13 +238,12 @@ def feature(request):
     
                 #add the id to the feature json
                 identifier = new_feature.id
-                feat['id'] = identifier
-    
+                feat['id'] = int(identifier)
+                
                 #save the properties of the new feature
                 new_property = Property(feature=new_feature,
                                         json_string=json.dumps(properties))
                 new_property.save()
-                
                 ret_featurecollection['features'].append(feat)
                 
             return HttpResponse(json.dumps(ret_featurecollection))
@@ -267,38 +273,42 @@ def feature(request):
                                             "properties, "  + \
                                             "geometry " + \
                                             "and id for updating")
-                
+             
+            #get the feature to be updated
+            feature_old = None
+            try:
+                feature_old = Feature.objects.get(id__exact = feature_id)
+            except DoesNotExist:
+                return HttpResponseNotFound("The feature with id %i was not " +\
+                                            "found" % feature_id)
+            
+            if feature_old.user != request.user:
+                return HttpResponseForbidden("You do not have permission to" + \
+                                             " update feature %i" % feature_id)   
+            
+            
             #geos = GEOSGeometry(json.dumps(geometry))
             # Have to make OGRGeometry as GEOSGeometry
             # does not support spatial reference systems
             geos = OGRGeometry(json.dumps(geometry)).geos
             
-            #get the feature to be updated
-            feature_queryset = Feature.objects.filter(id__exact = feature_id,
-                                                    user__exact = request.user)
+            feature = feature_old.update(geometry = geos)
             
-            if len(feature_queryset) == 1:
-                feature_old = feature_queryset[0]
-                feature = feature_old.update(geometry = geos)
-                
-                #save the properties of the new feature
-                cur_property = Property.objects.latest('create_time')
-                
-                if feature_old.id == feature.id:
-                    new_property = cur_property.update(json.dumps(properties))
-                    
-                else:
-                    cur_property.delete()
-                    new_property = Property(feature=feature,
-                                        json_string=json.dumps(properties))
-                    new_property.save()
-                
-                return HttpResponse(_(u"Feature with id %s was updated" % feature_id))
-            else:
-                return HttpResponseNotFound(_(u"Feature with id %s was not " + \
-                                              "found or you do not have" + \
-                                              " permission to update feature" % feature_id))
-        
+            #save the properties of the new feature
+            cur_property = Property.objects\
+                            .filter(feature = feature_old)\
+                            .latest('create_time')
+            
+            if feature_old.id == feature.id: #if there was nothing updated
+                new_property = cur_property.update(json.dumps(properties))
+            else: #feature was updated so new property created
+                cur_property.delete()
+                new_property = Property(feature=feature,
+                                    json_string=json.dumps(properties))
+                new_property.save()
+            
+            return HttpResponse(_(u"Feature with id %s was updated" % feature_id))
+    
         elif geojson_type == "FeatureCollection":
                 
             features = feature_json['features']
@@ -314,34 +324,39 @@ def feature(request):
                                                 "properties, "  + \
                                                 "geometry " + \
                                                 "and id for updating")
+             
+                #get the feature to be updated
+                feature_old = None
+                try:
+                    feature_old = Feature.objects.get(id__exact = feature_id)
+                except DoesNotExist:
+                    return HttpResponseNotFound("The feature with id %i was not " +\
+                                                "found" % feature_id)
+                
+                if feature_old.user != request.user:
+                    return HttpResponseForbidden("You do not have permission to" + \
+                                                 " update feature %i" % feature_id)   
+                
                 
                 #geos = GEOSGeometry(json.dumps(geometry))
                 # Have to make OGRGeometry as GEOSGeometry
                 # does not support spatial reference systems
                 geos = OGRGeometry(json.dumps(geometry)).geos
                 
-                #get the feature to be updated
-                feature_queryset = Feature.objects.filter(id__exact = feature_id,
-                                                        user__exact = request.user)
+                feature = feature_old.update(geometry = geos)
                 
-                if len(feature_queryset) == 1:
-                    feature_old = feature_queryset[0]
-                    feature = feature_old.update(geometry = geos)
-                    
-                    #save the properties of the new feature
-                    cur_property = Property.objects.latest('create_time')
-                    
-                    if feature_old.id == feature.id:
-                        new_property = cur_property.update(json.dumps(properties))
-                        
-                    else:
-                        cur_property.delete()
-                        new_property = Property(feature=feature,
-                                            json_string=json.dumps(properties))
-                        new_property.save()
-                else:
-                    return HttpResponseNotFound(_(u"Feature with id %s was not found" % feature_id))
-                    
+                #save the properties of the new feature
+                cur_property = Property.objects\
+                                .filter(feature = feature_old)\
+                                .latest('create_time')
+                
+                if feature_old.id == feature.id: #if there was nothing updated
+                    new_property = cur_property.update(json.dumps(properties))
+                else: #feature was updated so new property created
+                    cur_property.delete()
+                    new_property = Property(feature=feature,
+                                        json_string=json.dumps(properties))
+                    new_property.save()
             
             return HttpResponse(_(u"Features updated"))
                     

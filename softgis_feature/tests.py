@@ -297,29 +297,34 @@ class FeatureTest(TestCase):
             "features": [
                 {"type": "Feature",
                 "geometry": {"type":"Point",
-                            "coordinates":[200, 200]},
-                "properties": {"some_prop":"history_value"}},
+                            "coordinates":[100, 200]},
+                "properties": {"some_prop":"history_value",
+                               "id": 1}},
                 {"type": "Feature",
                 "geometry": {"type":"Point",
                             "coordinates":[200, 200]},
-                "properties": {"some_prop": 40}},
+                "properties": {"some_prop": 40,
+                               "id": 2}},
                 {"type": "Feature",
                 "geometry": {"type":"Point",
-                            "coordinates":[200, 200]},
-                "properties": {"some_prop": 40}},
+                            "coordinates":[300, 200]},
+                "properties": {"some_prop": 40,
+                               "id": 3}},
                 {"type": "Feature",
                  "geometry": {"type":"Point",
-                            "coordinates":[200, 200]},
-                 "properties": {"some_prop": True}},
+                            "coordinates":[400, 200]},
+                 "properties": {"some_prop": True,
+                               "id": 4}},
                 {"type": "Feature",
                  "geometry": {"type":"Point",
-                            "coordinates":[200, 200]},
-                 "properties": {"some_prop": 42}}
+                            "coordinates":[500, 200]},
+                 "properties": {"some_prop": 42,
+                               "id": 5}}
                 ]
         }
         
         
-        submit_before = datetime.datetime.now()
+        before_create = datetime.datetime.now()
         
         time.sleep(1) #wait a second to get smart queries
         
@@ -331,137 +336,113 @@ class FeatureTest(TestCase):
         
         #wait a little bit to get difference
         time.sleep(1)
-        submit_after = datetime.datetime.now()
-        
+        after_create = datetime.datetime.now()
+        time.sleep(1)
         response_dict['features'][0]['properties']['good'] = 33
-        
-        submit2_before = datetime.datetime.now()
-        time.sleep(1) # wait to get smart query
-        
+        updated_feature_id = response_dict['features'][0]['id']
+                
         response = self.client.put(reverse('api_feature'),
-                                json.dumps(response_dict),
+                                json.dumps(response_dict['features'][0]),
                                 content_type='application/json')
         
         
         #wait a little bit more
         time.sleep(1)
-        submit2_after = datetime.datetime.now()
+        after_update = datetime.datetime.now()
         
-        submit3_before = datetime.datetime.now()
-        time.sleep(1) # wait to get smart query
         ids = []
         for feat in response_dict['features']:
             ids.append(feat['id'])
-        
+            
         response = self.client.delete(reverse('api_feature') + "?ids=%s" % json.dumps(ids))
         
         
         #wait a little bit more
         time.sleep(1)
-        submit3_after = datetime.datetime.now()
+        after_delete = datetime.datetime.now()
         
         
         
         #start querying
         
-        #print "create_time__gt query with"
-        #print submit_time_gt
-        
-        #should return all features just saved
+        #before first post there should be nothing
         response = self.client.get(reverse('api_feature') + \
-                                   "?time=%i-%i-%i-%i-%i-%i" % (submit_before.year,
-                                                            submit_before.month,
-                                                            submit_before.day,
-                                                            submit_before.hour,
-                                                            submit_before.minute,
-                                                            submit_before.second))
+                                   "?time=%i-%i-%i-%i-%i-%i" % (before_create.year,
+                                                            before_create.month,
+                                                            before_create.day,
+                                                            before_create.hour,
+                                                            before_create.minute,
+                                                            before_create.second))
         
-        response_dict = json.loads(response.content) 
+        response_dict = json.loads(response.content)
+        self.assertTrue(len(response_dict['features']) == 0,
+                        "Query with time before first post did not return an empty FeatureCollection")
         
-        #print response_dict
-        print "should return 0"
-        print len(response_dict['features'])
-        
-        
-        
-        #print "create_time__lt query with"
-        #print submit_time_lt
-        
-        #should return only the new features
+        #query after first post
         response = self.client.get(reverse('api_feature') + \
-                                   "?time=%i-%i-%i-%i-%i-%i" % (submit_after.year,
-                                                                submit_after.month,
-                                                                submit_after.day,
-                                                                submit_after.hour,
-                                                                submit_after.minute,
-                                                                submit_after.second))
+                                   "?time=%i-%i-%i-%i-%i-%i" % (after_create.year,
+                                                            after_create.month,
+                                                            after_create.day,
+                                                            after_create.hour,
+                                                            after_create.minute,
+                                                            after_create.second))
         
-        response_dict = json.loads(response.content) 
+        response_dict = json.loads(response.content)
+        amount_of_features = len(response_dict['features'])
         
-        #print response_dict
-        print "should return 5"
-        print len(response_dict['features'])
+        for feat in response_dict['features']:
+            if feat['id'] == updated_feature_id:
+                self.assertEquals(feat['properties'],
+                                  {"some_prop":"history_value",
+                                   "id": 1},
+                                  "The feature retrieves does not seem to have correct properties" + \
+                                  " querying time before an update")
         
-        #should return only the new features
+        
+        self.assertTrue(amount_of_features == 5,
+                        "Query with time after first post did not return 5 " + \
+                        "geojson Features. It returned %i" % amount_of_features)
+        
+        
+        #query after update
         response = self.client.get(reverse('api_feature') + \
-                                   "?time=%i-%i-%i-%i-%i-%i" % (submit2_before.year,
-                                                                submit2_before.month,
-                                                                submit2_before.day,
-                                                                submit2_before.hour,
-                                                                submit2_before.minute,
-                                                                submit2_before.second))
+                                   "?time=%i-%i-%i-%i-%i-%i" % (after_update.year,
+                                                            after_update.month,
+                                                            after_update.day,
+                                                            after_update.hour,
+                                                            after_update.minute,
+                                                            after_update.second))
         
-        response_dict = json.loads(response.content) 
+        response_dict = json.loads(response.content)
+        for feat in response_dict['features']:
+            if feat['id'] == updated_feature_id:
+                self.assertEquals(feat['properties']['good'],
+                                  33,
+                                  "The feature updated does not seem to have correct properties" + \
+                                  " querying time after an update")
         
-        #print response_dict
-        print "should return 5"
-        print len(response_dict['features'])
+        amount_of_features = len(response_dict['features'])
+        self.assertTrue(amount_of_features == 5,
+                        "Query with time after update did not return 5 " + \
+                        "geojson Features. It returned %i" % amount_of_features)
         
-        #should return only the new features
+        
+        #query after deletion
         response = self.client.get(reverse('api_feature') + \
-                                   "?time=%i-%i-%i-%i-%i-%i" % (submit2_after.year,
-                                                                submit2_after.month,
-                                                                submit2_after.day,
-                                                                submit2_after.hour,
-                                                                submit2_after.minute,
-                                                                submit2_after.second))
+                                   "?time=%i-%i-%i-%i-%i-%i" % (after_delete.year,
+                                                            after_delete.month,
+                                                            after_delete.day,
+                                                            after_delete.hour,
+                                                            after_delete.minute,
+                                                            after_delete.second))
         
-        response_dict = json.loads(response.content) 
+        response_dict = json.loads(response.content)
         
-        #print response_dict
-        print "should return 5"
-        print len(response_dict['features'])
         
-        #should return only the new features
-        response = self.client.get(reverse('api_feature') + \
-                                   "?time=%i-%i-%i-%i-%i-%i" % (submit3_after.year,
-                                                                submit3_after.month,
-                                                                submit3_after.day,
-                                                                submit3_after.hour,
-                                                                submit3_after.minute,
-                                                                submit3_after.second))
-        
-        response_dict = json.loads(response.content) 
-        
-        #print response_dict
-        print "should return 5"
-        print len(response_dict['features'])
-        
-        #should return only the new features
-        response = self.client.get(reverse('api_feature') + \
-                                   "?time=%i-%i-%i-%i-%i-%i" % (submit3_after.year,
-                                                                submit3_after.month,
-                                                                submit3_after.day,
-                                                                submit3_after.hour,
-                                                                submit3_after.minute,
-                                                                submit3_after.second))
-        
-        response_dict = json.loads(response.content) 
-        
-        #print response_dict
-        print "should return 0"
-        print len(response_dict['features'])
-        
+        amount_of_features = len(response_dict['features'])
+        self.assertTrue(amount_of_features == 0,
+                        "Query with time after delete did not return 0 " + \
+                        "geojson Features. It returned %i" % amount_of_features)
         
         
         
