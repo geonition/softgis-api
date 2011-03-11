@@ -13,7 +13,6 @@ if sys.version_info >= (2, 6):
 else:
     import simplejson as json
 
-
 class StaticProfileValue(models.Model):
     """
     This model contains all the information of a user that
@@ -62,7 +61,6 @@ def profile_handler(sender, instance, created, **kwargs):
 post_save.connect(profile_handler, sender=User)
 
 
-   
 class ProfileValue(models.Model):
     """
     additional possibly changing values to connect to

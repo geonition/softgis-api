@@ -78,6 +78,6 @@ class MongoDBManager(Manager):
         
     def find_range(self, key, min, max):
         return self.find({key: {"$gte": min, "$lte": max}})
-        
-        
+
+
         
