@@ -319,7 +319,7 @@ class FeatureTest(TestCase):
         }
         
         
-        submit_time_gt = datetime.datetime.now()
+        submit_before = datetime.datetime.now()
         
         time.sleep(1) #wait a second to get smart queries
         
@@ -331,11 +331,11 @@ class FeatureTest(TestCase):
         
         #wait a little bit to get difference
         time.sleep(1)
-        submit_time_lt = datetime.datetime.now()
+        submit_after = datetime.datetime.now()
         
         response_dict['features'][0]['properties']['good'] = 33
         
-        submit2_time_gt = datetime.datetime.now()
+        submit2_before = datetime.datetime.now()
         time.sleep(1) # wait to get smart query
         
         response = self.client.put(reverse('api_feature'),
@@ -345,7 +345,21 @@ class FeatureTest(TestCase):
         
         #wait a little bit more
         time.sleep(1)
-        submit2_time_lt = datetime.datetime.now()
+        submit2_after = datetime.datetime.now()
+        
+        submit3_before = datetime.datetime.now()
+        time.sleep(1) # wait to get smart query
+        ids = []
+        for feat in response_dict['features']:
+            ids.append(feat['id'])
+        
+        response = self.client.delete(reverse('api_feature') + "?ids=%s" % json.dumps(ids))
+        
+        
+        #wait a little bit more
+        time.sleep(1)
+        submit3_after = datetime.datetime.now()
+        
         
         
         #start querying
@@ -355,18 +369,18 @@ class FeatureTest(TestCase):
         
         #should return all features just saved
         response = self.client.get(reverse('api_feature') + \
-                                   "?create_time__gt=%i-%i-%i-%i-%i-%i" % (submit_time_gt.year,
-                                                                        submit_time_gt.month,
-                                                                        submit_time_gt.day,
-                                                                        submit_time_gt.hour,
-                                                                        submit_time_gt.minute,
-                                                                        submit_time_gt.second))
+                                   "?time=%i-%i-%i-%i-%i-%i" % (submit_before.year,
+                                                            submit_before.month,
+                                                            submit_before.day,
+                                                            submit_before.hour,
+                                                            submit_before.minute,
+                                                            submit_before.second))
         
         response_dict = json.loads(response.content) 
         
         #print response_dict
-        #print "should return 5"
-        #print len(response_dict['features'])
+        print "should return 0"
+        print len(response_dict['features'])
         
         
         
@@ -375,27 +389,78 @@ class FeatureTest(TestCase):
         
         #should return only the new features
         response = self.client.get(reverse('api_feature') + \
-                                   "?create_time__lt=%i-%i-%i-%i-%i-%i" % (submit_time_lt.year,
-                                                                        submit_time_lt.month,
-                                                                        submit_time_lt.day,
-                                                                        submit_time_lt.hour,
-                                                                        submit_time_lt.minute,
-                                                                        submit_time_lt.second))
+                                   "?time=%i-%i-%i-%i-%i-%i" % (submit_after.year,
+                                                                submit_after.month,
+                                                                submit_after.day,
+                                                                submit_after.hour,
+                                                                submit_after.minute,
+                                                                submit_after.second))
         
         response_dict = json.loads(response.content) 
         
         #print response_dict
-        #print "should return 1"
-        #print len(response_dict['features'])
+        print "should return 5"
+        print len(response_dict['features'])
         
-        #should only return the new features
+        #should return only the new features
         response = self.client.get(reverse('api_feature') + \
-                                   "?create_time__latest=true")
+                                   "?time=%i-%i-%i-%i-%i-%i" % (submit2_before.year,
+                                                                submit2_before.month,
+                                                                submit2_before.day,
+                                                                submit2_before.hour,
+                                                                submit2_before.minute,
+                                                                submit2_before.second))
         
         response_dict = json.loads(response.content) 
         
         #print response_dict
-        #print len(response_dict['features'])
+        print "should return 5"
+        print len(response_dict['features'])
+        
+        #should return only the new features
+        response = self.client.get(reverse('api_feature') + \
+                                   "?time=%i-%i-%i-%i-%i-%i" % (submit2_after.year,
+                                                                submit2_after.month,
+                                                                submit2_after.day,
+                                                                submit2_after.hour,
+                                                                submit2_after.minute,
+                                                                submit2_after.second))
+        
+        response_dict = json.loads(response.content) 
+        
+        #print response_dict
+        print "should return 5"
+        print len(response_dict['features'])
+        
+        #should return only the new features
+        response = self.client.get(reverse('api_feature') + \
+                                   "?time=%i-%i-%i-%i-%i-%i" % (submit3_after.year,
+                                                                submit3_after.month,
+                                                                submit3_after.day,
+                                                                submit3_after.hour,
+                                                                submit3_after.minute,
+                                                                submit3_after.second))
+        
+        response_dict = json.loads(response.content) 
+        
+        #print response_dict
+        print "should return 5"
+        print len(response_dict['features'])
+        
+        #should return only the new features
+        response = self.client.get(reverse('api_feature') + \
+                                   "?time=%i-%i-%i-%i-%i-%i" % (submit3_after.year,
+                                                                submit3_after.month,
+                                                                submit3_after.day,
+                                                                submit3_after.hour,
+                                                                submit3_after.minute,
+                                                                submit3_after.second))
+        
+        response_dict = json.loads(response.content) 
+        
+        #print response_dict
+        print "should return 0"
+        print len(response_dict['features'])
         
         
         
