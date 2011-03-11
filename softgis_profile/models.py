@@ -58,7 +58,7 @@ def profile_handler(sender, instance, created, **kwargs):
             django.db.connection.close()   
  
  
-post_save.connect(profile_handler, sender=User)
+#post_save.connect(profile_handler, sender=User)
 
 
 class ProfileValue(models.Model):

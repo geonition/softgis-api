@@ -97,46 +97,17 @@ def feature(request):
         
         #filter according to limiting_params
         for key, value in limiting_param:
+            
             if(key == "user_id"):
-                feature_queryset.filter(user__exact = value)
+                feature_queryset = feature_queryset.filter(user__exact = value)
             
-            elif(key == "create_time__lt"):
+            elif(key == "time"):
                 dt = parse_time(value)
-                #print key
-                #print value
-                #print dt
-                feature_queryset.filter(create_time__lt = dt)
-                property_queryset.filter(create_time__lt = dt)
                 
-            elif(key == "create_time__gt"):
-                dt = parse_time(value)
-                #print key
-                #print value
-                #print dt
-                feature_queryset.filter(create_time__gt = dt)
-                property_queryset.filter(create_time__gt = dt)
+                property_queryset = property_queryset.filter(create_time__lt = dt)
+                property_queryset = property_queryset.filter(expire_time__gt = dt)
                 
-            elif(key == "create_time__latest" and value == "true"):
-                feature_queryset.latest('create_time')
-                property_queryset.latest('create_time')
-                #print feature_queryset
-            
-            elif(key == "expire_time__lt"):
-                dt = parse_time(value)
-                #print dt
-                feature_queryset.filter(expire_time__lt = dt)
-                property_queryset.filter(expire_time__lt = dt)
-            
-            elif(key == "expire_time__gt"):
-                dt = parse_time(value)
-                #print dt
-                feature_queryset.filter(expire_time__gt = dt)
-                property_queryset.filter(expire_time__gt = dt)
                 
-            elif(key == "expire_time__latest" and value == "true"):
-                feature_queryset.latest('expire_time')
-                property_queryset.latest('expire_time')
-            
             #mongodb queries should be built here
             elif USE_MONGODB:
                 key = str(key)
@@ -149,10 +120,11 @@ def feature(request):
                     
                 mongo_query[key] = value
         
+        
         #filter the features with wrong properties, and add the result to the
         #id set
         feature_id_set = set()
-        feature_id_set = feature_id_set.union(set(property_queryset.values_list('feature_id', flat=True)))
+        feature_id_set = set(property_queryset.values_list('feature_id', flat=True))
         
         #filter the queries acccording to the json
         if len(mongo_query) > 0:
@@ -387,8 +359,13 @@ def feature(request):
         feature_queryset = Feature.objects.filter(id__in = feature_ids,
                                                 user__exact = request.user)
 
-        if len(feature_queryset) > 0:
-            feature_queryset.delete()
-            return HttpResponse(_(u"Features with ids %s deleted" % feature_ids))
-        else:
-            return HttpResponseNotFound(_(u"Features with given ids were not found"))
+            
+        #set as expired
+        exp_time = datetime.datetime.today()
+        affected_rows = feature_queryset.update(expire_time=exp_time)
+        
+        if affected_rows != len(feature_ids):
+            return HttpResponseNotFound(_(u"Some features matching given ids was not found"))
+            
+        return HttpResponse(_(u"Features with ids %s deleted" % feature_ids))
+        
