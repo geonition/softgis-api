@@ -104,12 +104,13 @@ class FeatureTest(TestCase):
                           200,
                           "deletion of feature with id %i did not work" % id)
         
-        #delete not existing feature
+        #delete non existing feature
         response = self.client.delete(reverse('api_feature')+"?ids="+json.dumps(ids))
         
         self.assertEquals(response.status_code,
                           404,
                           "deletion of a non existing feature did not return NotFound")
+        
         """
         store the inserted IDs
         """

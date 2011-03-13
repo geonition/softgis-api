@@ -367,9 +367,8 @@ def feature(request):
         """
         feature_ids = json.loads(request.GET.get("ids","[]"))
         
-
-        if (type(feature_ids) != type([])):
-            return HttpResponseBadRequest(_(u"The post request didn't have an array of ids"))
+        if len(feature_ids) == 0:
+            return HttpResponseNotFound(_(u"You have to provide id of features to delete."))
 
         feature_queryset = Feature.objects.filter(id__in = feature_ids,
                                                 user__exact = request.user)
@@ -377,10 +376,17 @@ def feature(request):
             
         #set as expired
         exp_time = datetime.datetime.today()
-        affected_rows = feature_queryset.update(expire_time=exp_time)
+        deleted_features = []
+        for feat in feature_queryset:
+            if(feat.expire_time == None):
+                feat.expire_time = exp_time
+                feat.save()
+                deleted_features.append(feat.id)
+                
+        not_deleted = [id for id in feature_ids if id not in deleted_features]
         
-        if affected_rows != len(feature_ids):
-            return HttpResponseNotFound(_(u"Some features matching given ids was not found"))
+        if len(not_deleted) > 0:
+            return HttpResponseNotFound(_(u"Features %s not found and featured %s deleted." % (not_deleted, deleted_features)))
             
-        return HttpResponse(_(u"Features with ids %s deleted" % feature_ids))
+        return HttpResponse(_(u"Features with ids %s deleted." % deleted_features))
         
