@@ -21,7 +21,7 @@ class EmailAddressManager(models.Manager):
     def add_email(self, user, email):
         try:
             #creates an object EmailAddress and sends the confirmation key
-	    email_address = self.create(user=user, email=email)
+            email_address = self.create(user=user, email=email)
             EmailConfirmation.objects.send_confirmation(email_address)
             return email_address
         except IntegrityError:
@@ -141,7 +141,7 @@ class EmailConfirmation(models.Model):
 
     def key_expired(self):
         expiration_date = self.sent + timedelta(
-            days=settings.EMAIL_CONFIRMATION_DAYS)
+            days=getattr(settings, "EMAIL_CONFIRMATION_DAYS", 3))
         return expiration_date <= datetime.now()
     key_expired.boolean = True
 
