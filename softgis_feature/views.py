@@ -130,17 +130,41 @@ def feature(request):
                     value = True
                 elif value == "false":
                     value = False
-                    
-                mongo_query[key] = value
+                
+                key_split = key.split('__')
+                command = ""
+                if len(key_split) > 1:
+                    command = key_split[1]
+                    key = key_split[0]
+                
+                if command == "max":
+
+                    if mongo_query.has_key(key):
+                        mongo_query[key]["$lte"] = value
+                    else:
+                        mongo_query[key] = {}
+                        mongo_query[key]["$lte"] = value
+                        
+                elif command == "min":
+
+                    if mongo_query.has_key(key):
+                        mongo_query[key]["$gte"] = value
+                    else:
+                        mongo_query[key] = {}
+                        mongo_query[key]["$gte"] = value
+
+                elif command == "":
+                    mongo_query[key] = value
         
-        #filter the properties not belonging to feature_queryset
-        property_queryset = property_queryset.filter(feature__in = feature_queryset)
         
         #filter the queries acccording to the json
         if len(mongo_query) > 0:
             qs = Property.mongodb.find(mongo_query)
+            property_queryset = property_queryset.filter(id__in = qs.values_list('id', flat=True))
         
-
+        #filter the properties not belonging to feature_queryset
+        property_queryset = property_queryset.filter(feature__in = feature_queryset)
+        
         for prop in property_queryset:
             feature_collection['features'].append(prop.geojson())
 
