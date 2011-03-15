@@ -402,15 +402,22 @@ def feature(request):
         exp_time = datetime.datetime.today()
         deleted_features = []
         for feat in feature_queryset:
+            
             if(feat.expire_time == None):
                 feat.expire_time = exp_time
                 feat.save()
                 deleted_features.append(feat.id)
                 
+            elif(feat.expire_time > exp_time): # no tests written for this
+                feat.expire_time = exp_time
+                feat.save()
+                deleted_features.append(feat.id)
+                
+                
         not_deleted = [id for id in feature_ids if id not in deleted_features]
         
         if len(not_deleted) > 0:
-            return HttpResponseNotFound(_(u"Features %s not found and featured %s deleted." % (not_deleted, deleted_features)))
+            return HttpResponseNotFound(_(u"Features %s not deleted(not found or already deleted) and featured %s deleted." % (not_deleted, deleted_features)))
             
         return HttpResponse(_(u"Features with ids %s deleted." % deleted_features))
         
