@@ -299,7 +299,7 @@ class FeatureTest(TestCase):
                               0,
                               "The property query should have returned 0 features")
             
-            #retrieve one object some_prop=39
+            #retrieve one object some_prop=40
             response = self.client.get(reverse('api_feature') + "?some_prop=40")
             response_dict = json.loads(response.content)
             self.assertEquals(len(response_dict['features']),
