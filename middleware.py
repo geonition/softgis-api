@@ -6,7 +6,7 @@ class CrossSiteAccessMiddleware(object):
     to the reponse.
     """
     
-    def _set_access_headers(response):
+    def _set_access_headers(self, response):
         
         response['Access-Control-Allow-Origin'] = '*'
         response['Access-Control-Allow-Methods'] = 'POST, GET, DELETE, PUT, OPTIONS'
