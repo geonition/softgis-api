@@ -104,10 +104,10 @@ def feature(request):
             elif(key == "time"):
                 dt = parse_time(value)
                 
-                property_qs_expired = property_queryset.filter(create_time__lt = dt)
-                property_qs_expired = property_qs_expired.filter(expire_time__gt = dt)
+                property_qs_expired = property_queryset.filter(create_time__lte = dt)
+                property_qs_expired = property_qs_expired.filter(expire_time__gte = dt)
                 
-                property_qs_not_exp = property_queryset.filter(create_time__lt = dt)
+                property_qs_not_exp = property_queryset.filter(create_time__lte = dt)
                 property_qs_not_exp = property_qs_not_exp.filter(expire_time = None)
                 property_qs_not_exp = property_qs_not_exp.exclude(id__in = property_qs_expired)
                 
@@ -174,7 +174,7 @@ def feature(request):
         if property_queryset.exists():
             srid = property_queryset[0].feature.geometry.srid
         else:
-            srid = 3067
+            srid = getattr(settings, "SPATIAL_REFERENCE_SYSTEM_ID", 4326)
 
         crs_object =  {"type": "EPSG", "properties": {"code": srid}}
         feature_collection['crs'] = crs_object
@@ -402,22 +402,19 @@ def feature(request):
         exp_time = datetime.datetime.today()
         deleted_features = []
         for feat in feature_queryset:
-            
             if(feat.expire_time == None):
                 feat.expire_time = exp_time
                 feat.save()
                 deleted_features.append(feat.id)
                 
-            elif(feat.expire_time > exp_time): # no tests written for this
-                feat.expire_time = exp_time
-                feat.save()
-                deleted_features.append(feat.id)
-                
-                
+        """
+        Test if there were features already deleted (with an expiration time already set)
+        and return not found
+        """
         not_deleted = [id for id in feature_ids if id not in deleted_features]
-        
         if len(not_deleted) > 0:
-            return HttpResponseNotFound(_(u"Features %s not deleted(not found or already deleted) and featured %s deleted." % (not_deleted, deleted_features)))
-            
+            return HttpResponseNotFound(_(u"Features %s not found and featured %s deleted." % (not_deleted, deleted_features)))
+        
+    
         return HttpResponse(_(u"Features with ids %s deleted." % deleted_features))
         
