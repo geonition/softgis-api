@@ -47,7 +47,9 @@ def javascript_api(request):
     if not request.is_secure():
         pre_url = "http://"
         
-    api_full_url =  "%s%s" % (pre_url, request.get_host())
+    host = request.get_host()
+    
+    api_full_url =  "%s%s" % (pre_url, host)
     
     # return the clients in one file
     return render_to_response("javascript/softgis.%s.js" % lib,
