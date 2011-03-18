@@ -4,6 +4,7 @@ from django.template import RequestContext
 from django.template import TemplateDoesNotExist
 from django.http import HttpResponse
 import settings
+import django
 
 def javascript_api(request):
     """
@@ -28,7 +29,7 @@ def javascript_api(request):
     for app in settings.INSTALLED_APPS:
         ind = app.find("softgis_")
         if ind != -1:
-            softgis_templates.append(app[ind:] + "." + lib + ".js")
+            softgis_templates.append("%s.%s.js" % (app[ind:], lib))
     
     # render the clients to strings
     softgis_clients = []
@@ -42,9 +43,18 @@ def javascript_api(request):
         except TemplateDoesNotExist:
             pass
     
+    pre_url = "https://"
+    if not request.is_secure():
+        pre_url = "http://"
+        
+    api_full_url =  "%s%s" % (pre_url, request.get_host())
+    
+    print api_full_url
+    
     # return the clients in one file
-    return render_to_response("javascript/softgis."+ lib + ".js",
-                              {'softgis_clients': softgis_clients},
+    return render_to_response("javascript/softgis.%s.js" % lib,
+                              {'softgis_clients': softgis_clients,
+                               'api_full_url': api_full_url},
                               mimetype="application/javascript")
 
 
