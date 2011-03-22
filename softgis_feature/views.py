@@ -417,4 +417,3 @@ def feature(request):
         
     
         return HttpResponse(_(u"Features with ids %s deleted." % deleted_features))
-        

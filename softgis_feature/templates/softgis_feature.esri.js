@@ -11,6 +11,11 @@ time = time when the feature was valid
 
 */
 function get_features(limit_params, callback_function) {
+    
+    if(limit_params === undefined) {
+        limit_params = "";
+    }
+    
     dojo.xhrGet({
         "url": api_full_url + '{% url api_feature %}' + limit_params,
         "handleAs": "json",
