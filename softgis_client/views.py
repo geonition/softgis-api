@@ -51,12 +51,11 @@ def javascript_api(request):
 
     host = request.get_host()
 
-    api_full_url = "%s%s" % (pre_url, host)
-
     # return the clients in one file
     return render_to_response("javascript/softgis.%s.js" % lib,
                               {'softgis_clients': softgis_clients,
-                               'api_full_url': api_full_url},
+                               'host': host,
+                               'method': pre_url},
                               mimetype="application/javascript")
 
 
