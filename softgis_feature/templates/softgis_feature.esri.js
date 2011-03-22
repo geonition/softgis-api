@@ -168,7 +168,6 @@ function save_graphic(graphic, callback_function) {
     } else {
         create_feature(geojson_feature, callback_function);
     }
-<<<<<<< HEAD:softgis_feature/templates/softgis_feature.js
     
     dojo.xhrPost({
         "url": "{% url api_feature %}" + params,
@@ -191,8 +190,6 @@ function save_graphic(graphic, callback_function) {
                 }
         });
     
-=======
->>>>>>> f197aaead9c4ff738e7d33258abd86897c2212e9:softgis_feature/templates/softgis_feature.esri.js
 }
 
 
@@ -203,32 +200,13 @@ It takes as parameters:
 feature_id - id of the feature to be removed.
  
 */
-<<<<<<< HEAD:softgis_feature/templates/softgis_feature.js
-function remove_graphic(feature_id) {
-    dojo.xhrDelete({
-		"url": '{% url api_feature %}?id=' + feature_id,
-		"handleAs": "text",
-                "headers": {"Content-Type":"application/json"},
-		"failOk": true,
-		"load": function(response, ioArgs) {
-					if(djConfig.isDebug) {
-						console.log(ioArgs);
-						console.log(response);
-						console.log(response.id);
-					}
-				},
-		"error": function(response,ioArgs) {
-		            console.log(response);
-			}
-	});
-=======
+
 function remove_graphic(feature_id, callback_function) {
     console.log("DEPRACATED remove_graphic");
     var feature = {
         'type' : 'Feature',
         'id': feature_id}
     delete_feature(feature, callback_function);
->>>>>>> f197aaead9c4ff738e7d33258abd86897c2212e9:softgis_feature/templates/softgis_feature.esri.js
 }
 
 /*
@@ -278,12 +256,8 @@ function get_graphics(limiter_param, map_layer, infotemplate, callback_function)
         "url": api_full_url + '{% url api_feature %}' + limiter_param,
         "handleAs": "json",
         "sync": false,
-<<<<<<< HEAD:softgis_feature/templates/softgis_feature.js
-        "headers": {"Content-Type":"application/json"},
-=======
         "headers": {"Content-Type":"application/json",
                     "X-CSRFToken": "{{ csrf_token }}"},
->>>>>>> f197aaead9c4ff738e7d33258abd86897c2212e9:softgis_feature/templates/softgis_feature.esri.js
 
         // The LOAD function will be called on a successful response.
         "load": function(response, ioArgs) {
