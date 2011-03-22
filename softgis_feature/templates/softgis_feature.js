@@ -44,14 +44,12 @@ function save_graphic(graphic) {
         
         params += "&id=" + geojson_feature.id;
     }
-    // Testing the questionary
-    console.log(dojo.toJson(geojson_feature));
+    
     dojo.xhrPost({
         "url": "{% url api_feature %}" + params,
         "handleAs": "json",
         "postData": encodeURIComponent(dojo.toJson(geojson_feature)),
-        "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": dojo.cookie('csrftoken')},
+        "headers": {"Content-Type":"application/json"},
         "load": function(response, ioArgs) {
                     if(djConfig.isDebug) {
                         console.log(ioArgs);
@@ -81,8 +79,7 @@ function remove_graphic(feature_id) {
     dojo.xhrDelete({
 		"url": '{% url api_feature %}?id=' + feature_id,
 		"handleAs": "text",
-        "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": dojo.cookie('csrftoken')},
+                "headers": {"Content-Type":"application/json"},
 		"failOk": true,
 		"load": function(response, ioArgs) {
 					if(djConfig.isDebug) {
@@ -143,8 +140,7 @@ function get_graphics(limiter_param, map_layer, infotemplate) {
         "url": '{% url api_feature %}' + limiter_param,
         "handleAs": "json",
         "sync": false,
-        "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": dojo.cookie('csrftoken')},
+        "headers": {"Content-Type":"application/json"},
 
         // The LOAD function will be called on a successful response.
         "load": function(response, ioArgs) {

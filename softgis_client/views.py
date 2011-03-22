@@ -2,7 +2,9 @@ from django.shortcuts import render_to_response
 from django.template.loader import render_to_string
 from django.template import RequestContext
 from django.template import TemplateDoesNotExist
+from django.views.decorators.csrf import csrf_protect
 import settings
+
 
 def javascript_api(request):
     """
