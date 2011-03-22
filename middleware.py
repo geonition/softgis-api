@@ -1,32 +1,38 @@
+import re
+
+from django.utils.text import compress_string
+from django.utils.cache import patch_vary_headers
+
+from django import http
+
+import settings
+XS_SHARING_ALLOWED_ORIGINS = getattr(settings, "XS_SHARING_ALLOWED_ORIGINS", '')
+XS_SHARING_ALLOWED_METHODS = getattr(settings, "XS_SHARING_ALLOWED_METHODS", [])
+
+XS_SHARING_ALLOWED_ORIGINS = '*'
+XS_SHARING_ALLOWED_METHODS = ['POST','GET','OPTIONS', 'PUT', 'DELETE']
 
 
 class CrossSiteAccessMiddleware(object):
-    """
-    This middleware adds cross site acces headers
-    to the reponse.
-    """
-    
-    def _set_access_headers(self, response):
-        
-        response['Access-Control-Allow-Origin'] = '*'
-        response['Access-Control-Allow-Methods'] = 'POST, GET, DELETE, PUT, OPTIONS'
-        response['Access-Control-Max-Age'] = 1000
-        response['Access-Control-Allow-Headers'] = '*'
-        
-    
+
+
     def process_request(self, request):
-        if request.method == "OPTIONS":
-        
-            self._set_access_headers(response)
-        
-            return HttpResponse()
+
+        if 'HTTP_ACCESS_CONTROL_REQUEST_METHOD' in request.META:
+            response = http.HttpResponse()
+            response['Access-Control-Allow-Origin'] = XS_SHARING_ALLOWED_ORIGINS
+            response['Access-Control-Allow-Methods'] = ",".join( XS_SHARING_ALLOWED_METHODS )
             
+            return response
+
         return None
-    
-    
+
     def process_response(self, request, response):
-        
-        self._set_access_headers(response)
-        
+        # Avoid unnecessary work
+        if response.has_header('Access-Control-Allow-Origin'):
+            return response
+
+        response['Access-Control-Allow-Origin'] = XS_SHARING_ALLOWED_ORIGINS
+        response['Access-Control-Allow-Methods'] = ",".join( XS_SHARING_ALLOWED_METHODS )
+
         return response
-    
