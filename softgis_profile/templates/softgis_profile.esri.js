@@ -20,7 +20,7 @@ function save_profile_values(profile_value_pairs, callback_function) {
     {% endif %}
     
     dojo.xhrPost({
-        "url": "{% url api_profile %}" + params,
+        "url": api_full_url + "{% url api_profile %}" + params,
         "handleAs": "json",
         "postData": encodeURIComponent(dojo.toJson(profile_value_pairs)),
         "headers": {"Content-Type":"application/json",
@@ -62,7 +62,7 @@ function get_profiles(limiter_param, callback_function) {
     if(profile_values[limiter_param] === undefined) {
 
         dojo.xhrGet({
-            "url": '{% url api_profile %}' + limiter_param,
+            "url": api_full_url + '{% url api_profile %}' + limiter_param,
             "handleAs": "json",
             "failOk": true,
             "headers": {"Content-Type":"application/json",
