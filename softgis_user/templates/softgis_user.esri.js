@@ -22,13 +22,8 @@ function register(username, password, callback_function) {
         "postData": encodeURIComponent(dojo.toJson(data)),
         "failOk": true,
         "headers": {"Content-Type":"application/json",
-<<<<<<< HEAD:softgis_user/templates/softgis_user.js
                     "X-CSRFToken": dojo.cookie('csrftoken')
                     },
-=======
-                    "X-CSRFToken": "{{ csrf_token }}"},
->>>>>>> f197aaead9c4ff738e7d33258abd86897c2212e9:softgis_user/templates/softgis_user.esri.js
-        
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
                 callback_function({"status_code": ioArgs.xhr.status,
