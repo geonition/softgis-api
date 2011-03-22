@@ -22,7 +22,7 @@ function register(username, password, callback_function) {
         "postData": encodeURIComponent(dojo.toJson(data)),
         "failOk": true,
         "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": dojo.cookie('csrftoken')
+                    "X-CSRFToken": "{{ csrf_token }}"
                     },
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
