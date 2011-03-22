@@ -1,14 +1,140 @@
+/*
+get_features retrieves features according to the limiting params
 
+the limit_params is a GET string starting with a "?"
+
+reserved keys for the limiting parameter include the
+following:
+
+user_id = id of user
+time = time when the feature was valid
+
+*/
+function get_features(limit_params, callback_function) {
+    
+    if(limit_params === undefined) {
+        limit_params = "";
+    }
+    
+    dojo.xhrGet({
+        "url": api_full_url + '{% url api_feature %}' + limit_params,
+        "handleAs": "json",
+        "headers": {"Content-Type":"application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"},
+        "handle": function(response, ioArgs) {
+            if(callback_function !== undefined) {
+                callback_function({"response": response,
+                                  "ioArgs": ioArgs})
+            }
+        }
+    }); 
+}
+
+/*
+ create_feature function saves a new feature of features from a feature
+ collection to the database
+*/
+function create_feature(feature_or_feature_collection, callback_function) {
+    dojo.xhrPost({
+        "url": api_full_url + "{% url api_feature %}",
+        "handleAs": "json",
+        "postData": encodeURIComponent(dojo.toJson(feature_or_feature_collection)),
+        "headers": {"Content-Type":"application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"},
+        "handle": function(response, ioArgs) {
+            if(callback_function !== undefined) {
+                callback_function({"response": response,
+                                  "ioArgs": ioArgs})
+            }
+        }
+    });
+}
+
+/*
+ update_feature, updates a feature with and id or a set of
+ features in a featurecollection. All features in the collection
+ should already have been saved once and should contain an id.
+*/
+function update_feature(feature_or_feature_collection, callback_function) {
+    dojo.xhrPut({
+        "url": api_full_url + "{% url api_feature %}",
+        "handleAs": "text",
+        "postData": encodeURIComponent(dojo.toJson(feature_or_feature_collection)),
+        "headers": {"Content-Type":"application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"},
+        "handle": function(response, ioArgs) {
+            if(callback_function !== undefined) {
+                callback_function({"response": response,
+                                  "ioArgs": ioArgs})
+            }
+        }
+    });
+}
+
+/*
+ delete_feature(s), deletes the feature(s) with the given feature_id(s)
+*/
+function delete_feature(feature_or_feature_collection, callback_function) {
+    
+    /*
+	ensure the backwords compatibility
+	New logic expects an array of ids
+	If just one id is sent make it an array of length one
+    */
+    var feature_ids_array = [];
+    var type = feature_or_feature_collection.type;
+    
+    if (type === "Feature")
+    {
+	feature_ids_array[0] = feature_or_feature_collection.id;
+    }
+    else if (type === "FeatureCollection")
+    {
+        
+        for(var i=0; i < feature_or_feature_collection.features.length; i++)
+        {
+        
+            
+            if (feature_or_feature_collection.features[i].id !== undefined)
+            {
+                feature_ids_array.push(feature_or_feature_collection.features[i].id);
+            }
+        }
+    }
+
+
+
+    dojo.xhrDelete({
+        "url": api_full_url + '{% url api_feature %}?ids='+ dojo.toJson(feature_ids_array),
+        "handleAs": "text",
+        "headers": {"Content-Type":"application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"},
+        "handle": function(response, ioArgs) {
+            if(callback_function !== undefined) {
+                callback_function({"response": response,
+                                  "ioArgs": ioArgs})
+            }
+        }
+    });   
+}
+
+
+/*
+ THE FUNCTIONS BELOW IS DEPRACATED AND SHOULD NOT BE USED
+ THEY ARE TO BE REMOVED BUT IT IS NOT DEFINED WHEN..
+*/
 /*
 This function saves the graphic given in GeoJSON format.
 
 It takes as parameters:
 graphic - a graphic in ESRI JSON notation
- 
+
+Brings functionality to handle differences with ESRI JSON
+and GeoJSON
 */
 
-function save_graphic(graphic) {
-    
+function save_graphic(graphic, callback_function) {
+    console.log("DEPRACATED save_graphic");
     var properties = graphic.attributes;
     
     //transform to geojson format
@@ -36,14 +162,13 @@ function save_graphic(graphic) {
     // add crs to the geometry
     geojson_feature.geometry.crs = {"type": "EPSG",
                                     "properties": {"code": graphic.geometry.spatialReference.wkid}};
-
-    //add the parameters from the properties
-    var params = "?category=" + geojson_feature.properties.category;
-    if(geojson_feature.id !== undefined &&
-        geojson_feature.id !== null) {
-        
-        params += "&id=" + geojson_feature.id;
+     
+    if(graphic.id !== undefined && graphic.id !== null) {
+        update_feature(geojson_feature, callback_function);
+    } else {
+        create_feature(geojson_feature, callback_function);
     }
+<<<<<<< HEAD:softgis_feature/templates/softgis_feature.js
     
     dojo.xhrPost({
         "url": "{% url api_feature %}" + params,
@@ -66,7 +191,10 @@ function save_graphic(graphic) {
                 }
         });
     
+=======
+>>>>>>> f197aaead9c4ff738e7d33258abd86897c2212e9:softgis_feature/templates/softgis_feature.esri.js
 }
+
 
 /*
 This function removes a graphic.
@@ -75,6 +203,7 @@ It takes as parameters:
 feature_id - id of the feature to be removed.
  
 */
+<<<<<<< HEAD:softgis_feature/templates/softgis_feature.js
 function remove_graphic(feature_id) {
     dojo.xhrDelete({
 		"url": '{% url api_feature %}?id=' + feature_id,
@@ -92,6 +221,14 @@ function remove_graphic(feature_id) {
 		            console.log(response);
 			}
 	});
+=======
+function remove_graphic(feature_id, callback_function) {
+    console.log("DEPRACATED remove_graphic");
+    var feature = {
+        'type' : 'Feature',
+        'id': feature_id}
+    delete_feature(feature, callback_function);
+>>>>>>> f197aaead9c4ff738e7d33258abd86897c2212e9:softgis_feature/templates/softgis_feature.esri.js
 }
 
 /*
@@ -122,8 +259,9 @@ map_layer - the map layer where the graphics are added
 infotemplate - an ESRI infotemplate object for the graphic
 
 */
-function get_graphics(limiter_param, map_layer, infotemplate) {
-
+function get_graphics(limiter_param, map_layer, infotemplate, callback_function) {
+    console.log("DEPRACATED get_graphics");
+    
     if(limiter_param === undefined ||
         limiter_param === null) {
         limiter_param = '';
@@ -135,12 +273,17 @@ function get_graphics(limiter_param, map_layer, infotemplate) {
     } else {
         QUERIED_PARAM[limiter_param] = true;
     }
-    
+
     dojo.xhrGet({
-        "url": '{% url api_feature %}' + limiter_param,
+        "url": api_full_url + '{% url api_feature %}' + limiter_param,
         "handleAs": "json",
         "sync": false,
+<<<<<<< HEAD:softgis_feature/templates/softgis_feature.js
         "headers": {"Content-Type":"application/json"},
+=======
+        "headers": {"Content-Type":"application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"},
+>>>>>>> f197aaead9c4ff738e7d33258abd86897c2212e9:softgis_feature/templates/softgis_feature.esri.js
 
         // The LOAD function will be called on a successful response.
         "load": function(response, ioArgs) {
@@ -190,6 +333,12 @@ function get_graphics(limiter_param, map_layer, infotemplate) {
                 console.error("HTTP status code: ", ioArgs.xhr.status);
             }
             return response;
+        },
+        "handle": function(response, ioArgs) {
+            if(callback_function !== undefined) {
+                callback_function({"response": response,
+                                  "ioArgs": ioArgs})
+            }
         }
     });
 }

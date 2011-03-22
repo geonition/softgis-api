@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.db import transaction
+from django.db.models import Max
 from django.http import HttpResponse
 from django.http import HttpResponseBadRequest
 from django.http import HttpResponseForbidden
@@ -137,7 +138,7 @@ def register(request):
         except ValidationError, err:
             message = " "
             error_msg = []
-
+    
             for desc in err.message_dict.keys():
                 error_msg.append(err.message_dict[desc][0])
                 
@@ -174,6 +175,41 @@ def register(request):
         return HttpResponse(status=201)
         
 
+def session(request):
+    """
+    This function creates a user with
+    no password set. This enables the user
+    to stay anonymous but still save values
+    in other softgis apps.
+    
+    GET request returns the session
+    POST request creates a session for anonymous user
+    DELETE request ends the session
+    """
+    if request.method == "GET":
+        return HttpResponse(request.session.session_key)
+        
+    elif request.method == "POST":
+        if request.user.is_authenticated():
+            return HttpResponse(_(u"session already created"))
+            
+        new_user_id = User.objects.aggregate(Max('id'))
+        
+        if(new_user_id['id__max'] == None):
+            new_user_id['id__max'] = 1 
+        
+        User.objects.create_user(str(new_user_id),'', 'passwd')
+        user = django_authenticate(username=str(new_user_id), password='passwd')
+        django_login(request, user)
+        user.set_unusable_password()
+            
+        return HttpResponse(_(u"session created"))
+
+    elif request.method == "DELETE":
+        django_logout(request)
+        return HttpResponse(_(u"session end"))
+        
+        
 def new_password(request):
     """
     This function sends new password to the given email address.

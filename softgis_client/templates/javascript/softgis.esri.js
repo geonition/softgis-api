@@ -1,6 +1,6 @@
 /* global dojo, djConfig, console, esri  */
 
-dojo.require("dojo.cookie");
+var api_full_url = "{{ api_full_url }}";
 
 
 
