@@ -22,13 +22,34 @@ class ProfileTest(TestCase):
     This class tests the profile app REST
     """
     
-    def setUo(self):
+    def setUp(self):
         self.client = Client()
         
         user = User.objects.create_user('profileuser', '', 'passwd')
         user.save()
     
     
+    def test_profile(self):
+        user = User.objects.create_user('profiletestuser', '', 'passwd')
+        user.save() #something wrong sith setup?
+        self.client.login(username='profiletestuser', password='passwd')
+        
+        profile_dict = {
+            'age': 30
+        }
+        
+        self.client.post(reverse('api_profile'),
+                         json.dumps(profile_dict),
+                         content_type="application/json")
+        
+        response = self.client.get(reverse('api_profile'))
+        
+        response_dict = json.loads(response.content)
+        
+        self.assertEquals(response_dict[0]['age'],
+                          30,
+                          "The profile query did not return the right json")
+        
     def test_mongodb(self):
         USE_MONGODB = getattr(settings, "USE_MONGODB", False)
         

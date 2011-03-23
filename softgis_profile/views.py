@@ -146,7 +146,7 @@ def profile(request):
 
         current_profile = None
         try:
-            current_profile = Profile.objects.latest('create_time')
+            current_profile = Profile.objects.filter(user__exact = request.user).latest('create_time')
             
             current_profile.update(json.dumps(values))
             
