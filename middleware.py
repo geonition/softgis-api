@@ -22,6 +22,7 @@ class CrossSiteAccessMiddleware(object):
             response = http.HttpResponse()
             response['Access-Control-Allow-Origin'] = XS_SHARING_ALLOWED_ORIGINS
             response['Access-Control-Allow-Methods'] = ",".join( XS_SHARING_ALLOWED_METHODS )
+            response['Access-Control-Allow-Headers'] = "x-requested-with, *"
             
             return response
 
@@ -34,5 +35,6 @@ class CrossSiteAccessMiddleware(object):
 
         response['Access-Control-Allow-Origin'] = XS_SHARING_ALLOWED_ORIGINS
         response['Access-Control-Allow-Methods'] = ",".join( XS_SHARING_ALLOWED_METHODS )
+        response['Access-Control-Allow-Headers'] = "x-requested-with, *"
 
         return response
