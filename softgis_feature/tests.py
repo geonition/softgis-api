@@ -501,3 +501,26 @@ class FeatureTest(TestCase):
                         "geojson Features. It returned %i" % amount_of_features)
         
         
+        #query without parameters should have time__latest=true as default
+        response = self.client.get(reverse('api_feature'))
+        
+        response_dict = json.loads(response.content)
+        
+        amount_of_features = len(response_dict['features'])
+        self.assertTrue(amount_of_features == 0,
+                        "Query with default time__latest=true did not return 0 " + \
+                        "geojson Features. It returned %i" % amount_of_features)
+        
+        #query with time__latest=false should return all
+        response = self.client.get(reverse('api_feature') + \
+                                   "?time__latest=false")
+        
+        response_dict = json.loads(response.content)
+        
+        amount_of_features = len(response_dict['features'])
+        self.assertTrue(amount_of_features == 5,
+                        "Query with time__latest=false did not return 5  " + \
+                        "geojson Features. It returned %i" % amount_of_features)
+        
+        
+        
