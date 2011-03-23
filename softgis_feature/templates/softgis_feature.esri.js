@@ -72,7 +72,7 @@ function update_feature(feature_or_feature_collection, callback_function) {
 }
 
 /*
- delete_feature(s), deletes the feature(s) with the given feature_id(s)
+ delete_feature, deletes the feature(s) with the given feature_id(s)
 */
 function delete_feature(feature_or_feature_collection, callback_function) {
     
