@@ -8,7 +8,7 @@ from django import http
 import settings
 XS_SHARING_ALLOWED_ORIGINS = getattr(settings, "XS_SHARING_ALLOWED_ORIGINS", [])
 XS_SHARING_ALLOWED_METHODS = getattr(settings, "XS_SHARING_ALLOWED_METHODS", [])
-XS_SHARING_ALLOWED_HEADERS = getattr(settings, "XS_SHARING_ALLOWES_HEADERS", [])
+XS_SHARING_ALLOWED_HEADERS = getattr(settings, "XS_SHARING_ALLOWED_HEADERS", [])
 
 
 class CrossSiteAccessMiddleware(object):
