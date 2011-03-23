@@ -159,6 +159,7 @@ def feature(request):
         
         #filter the queries acccording to the json
         if len(mongo_query) > 0:
+            mongo_query['_id'] = {"$in": property_queryset.values_list('feature_id', flat=True)}
             qs = Property.mongodb.find(mongo_query)
             property_queryset = property_queryset.filter(id__in = qs.values_list('id', flat=True))
         
@@ -417,4 +418,3 @@ def feature(request):
         
     
         return HttpResponse(_(u"Features with ids %s deleted." % deleted_features))
-        

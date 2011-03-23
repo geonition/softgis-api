@@ -11,6 +11,11 @@ time = time when the feature was valid
 
 */
 function get_features(limit_params, callback_function) {
+    
+    if(limit_params === undefined) {
+        limit_params = "";
+    }
+    
     dojo.xhrGet({
         "url": api_full_url + '{% url api_feature %}' + limit_params,
         "handleAs": "json",
@@ -163,6 +168,28 @@ function save_graphic(graphic, callback_function) {
     } else {
         create_feature(geojson_feature, callback_function);
     }
+    
+    dojo.xhrPost({
+        "url": "{% url api_feature %}" + params,
+        "handleAs": "json",
+        "postData": encodeURIComponent(dojo.toJson(geojson_feature)),
+        "headers": {"Content-Type":"application/json"},
+        "load": function(response, ioArgs) {
+                    if(djConfig.isDebug) {
+                        console.log(ioArgs);
+                        console.log(response);
+                        console.log(response.id);
+                    }
+                    graphic.id = response.id;
+                    graphic.attributes.graphicId = response.id;
+		            
+                    return graphic;
+                },
+        "error": function(response,ioArgs) {
+                        console.log(response);
+                }
+        });
+    
 }
 
 
@@ -173,6 +200,7 @@ It takes as parameters:
 feature_id - id of the feature to be removed.
  
 */
+
 function remove_graphic(feature_id, callback_function) {
     console.log("DEPRACATED remove_graphic");
     var feature = {
