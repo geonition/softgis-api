@@ -57,6 +57,7 @@ def feature(request):
         accurate time value.
         
         returns a datetime.datetime instance
+        or None if format was wrong
         """
         time_accuracy = time_string.count('-')
         if time_accuracy == 0:
@@ -93,26 +94,48 @@ def feature(request):
             feature_queryset = Feature.objects.none()
 
         property_queryset = Property.objects.all()
-        mongo_query = {}
+        mongo_query = {}    
         
         #filter according to limiting_params
         for key, value in limiting_param:
+                
+            key = str(key)
+            if value.isnumeric():
+                value = int(value)
+            elif value == "true":
+                value = True
+            elif value == "false":
+                value = False
+                
+            key_split = key.split('__')
+            command = ""
+            if len(key_split) > 1:
+                key = key_split[0]
+                command = key_split[1]
             
             if(key == "user_id"):
                 feature_queryset = feature_queryset.filter(user__exact = value)
             
             elif(key == "time"):
-                dt = parse_time(value)
+                
+                dt = None
+                 
+                if(command == "now" and value):
+                    dt = datetime.datetime.now()
+                elif(command == "now" and not value):
+                    continue
+                else:
+                    dt = parse_time(value)
                 
                 property_qs_expired = property_queryset.filter(create_time__lte = dt)
                 property_qs_expired = property_qs_expired.filter(expire_time__gte = dt)
-                
+                    
                 property_qs_not_exp = property_queryset.filter(create_time__lte = dt)
                 property_qs_not_exp = property_qs_not_exp.filter(expire_time = None)
                 property_qs_not_exp = property_qs_not_exp.exclude(id__in = property_qs_expired)
-                
+                    
                 property_queryset = property_qs_not_exp | property_qs_expired
-                
+                    
                 #do the same for features
                 feature_ids = property_queryset.values_list('feature_id', )
                 feature_queryset = feature_queryset.filter(id__in = feature_ids)
@@ -123,19 +146,6 @@ def feature(request):
                 
             #mongodb queries should be built here
             elif USE_MONGODB:
-                key = str(key)
-                if value.isnumeric():
-                    value = int(value)
-                elif value == "true":
-                    value = True
-                elif value == "false":
-                    value = False
-                
-                key_split = key.split('__')
-                command = ""
-                if len(key_split) > 1:
-                    command = key_split[1]
-                    key = key_split[0]
                 
                 if command == "max":
 
