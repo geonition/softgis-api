@@ -5,7 +5,7 @@
         
         {% ifequal lib "esri" %}        
             <script type="text/javascript" src="https://serverapi.arcgisonline.com/jsapi/arcgis/?v=2.1"></script>
-            <script type="text/javascript" src="http://50.56.97.202/trunk/softgis_client/softgis.js?lib=esri"></script>
+            <script type="text/javascript" src="{% url api_javascript %}?lib=esri"></script>
         {% endifequal %}
         
         {% ifequal lib "jquery" %}
