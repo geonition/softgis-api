@@ -138,6 +138,7 @@ def feature(request):
         
         #filter the queries acccording to the json
         if len(mongo_query) > 0:
+            mongo_query['_id'] = {"$in": property_queryset.values_list('feature_id', flat=True)}
             qs = Property.mongodb.find(mongo_query)
         
 
