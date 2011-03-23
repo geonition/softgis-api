@@ -75,14 +75,38 @@ def profile(request):
                     Profile.objects.filter(user__exact = request.user)
         
         mongo_query = {}
-        
+
         #set up the query
         for key, value in limiting_param:
+            
+            key = str(key)
+            if value.isnumeric():
+                value = int(value)
+            elif value == "true":
+                value = True
+            elif value == "false":
+                value = False
+                
+            key_split = key.split('__')
+            command = ""
+            if len(key_split) > 1:
+                command = key_split[1]
+                key = key_split[0]
+                    
             if key == 'user_id':
                 profile_queryset = profile_queryset.filter(user_id__exact = value)
                 
             elif key == 'time':
-                dt = parse_time(value)
+                
+                dt = None
+                
+                if command == 'now' and value:
+                    dt = datetime.datetime.now()
+                elif command == 'now' and not value:
+                    continue
+                else:
+                    dt = parse_time(value)
+                
                 profile_qs_expired = profile_queryset.filter(create_time__lte = dt)
                 profile_qs_expired = profile_qs_expired.filter(expire_time__gte = dt)
                 profile_qs_not_exp = profile_queryset.filter(create_time__lte = dt)
@@ -90,19 +114,6 @@ def profile(request):
                 profile_queryset = profile_qs_not_exp | profile_qs_expired
                 
             elif USE_MONGODB:
-                key = str(key)
-                if value.isnumeric():
-                    value = int(value)
-                elif value == "true":
-                    value = True
-                elif value == "false":
-                    value = False
-                
-                key_split = key.split('__')
-                command = ""
-                if len(key_split) > 1:
-                    command = key_split[1]
-                    key = key_split[0]
                 
                 if command == "max":
 
@@ -123,16 +134,18 @@ def profile(request):
                 elif command == "":
                     mongo_query[key] = value
         
+        
         #filter the queries acccording to the json
         if len(mongo_query) > 0:
             qs = Profile.mongodb.find(mongo_query)
             profile_queryset = profile_queryset.filter(id__in = qs.values_list('id', flat=True))
             
-            
+        
+        
         profile_list = []
         for prof in profile_queryset:
             profile_list.append(prof.json())
-        
+            
         return HttpResponse(json.dumps(profile_list))
     
     elif(request.method == "POST"):
@@ -150,13 +163,12 @@ def profile(request):
             
             current_profile.update(json.dumps(values))
             
-        except ObjectDoesNotExist:
             
+        except ObjectDoesNotExist:
             new_profile_value = Profile(user = request.user,
                                        json_string = json.dumps(values))
             new_profile_value.save()
             
-        
         return HttpResponse(_("The profile has been saved"))
         
     return HttpResponseBadRequest(_("This function only support GET and POST methods"))

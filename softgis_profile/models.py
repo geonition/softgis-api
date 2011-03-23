@@ -42,7 +42,9 @@ class Profile(models.Model):
         
             
     def update(self, json_string, *args, **kwargs):
+        
         if self.json_string != json_string:
+            
             #set old feature as expired
             self.expire_time = datetime.datetime.today()
             super(Profile, self).save(*args, **kwargs)

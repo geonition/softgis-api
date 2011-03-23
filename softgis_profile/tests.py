@@ -215,3 +215,23 @@ class ProfileTest(TestCase):
         self.assertEquals(response_dict,
                           [profile_dict2],
                           "The returned dict after update was not correct")
+        
+        #query with time__now=true should only reutrn the valid profile value
+        response = self.client.get(reverse('api_profile') + \
+                                           "?time__now=true")
+                                           
+        
+        self.assertEquals(response.content,
+                          "[%s]" % json.dumps(profile_dict2),
+                          "time__now=true as parameter did not return the valid profile")
+        
+        
+        #query with time__now=false should return both profiles
+        response = self.client.get(reverse('api_profile') + \
+                                           "?time__now=false")
+                                           
+        reponse_dict = json.loads(response.content)
+        
+        self.assertEquals(response.content,
+                          "[%s, %s]" % (json.dumps(profile_dict), json.dumps(profile_dict2)),
+                          "time__now=false as parameter did not return both profiles")
