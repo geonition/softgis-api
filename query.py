@@ -70,7 +70,6 @@ class MongoDBQuerySet(QuerySet):
         mdb_cursor = self.collection.find(spec)
         ids = []
         for json_obj in mdb_cursor:
-            
             if(json_obj != None):
                 ids.append(json_obj['_id'])
         

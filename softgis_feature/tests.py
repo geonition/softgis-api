@@ -260,7 +260,7 @@ class FeatureTest(TestCase):
                     {"type": "Feature",
                     "geometry": {"type":"Point",
                                 "coordinates":[200, 200]},
-                    "properties": {"some_prop":"value"}},
+                    "properties": {"some_prop": 39}},
                     {"type": "Feature",
                     "geometry": {"type":"Point",
                                 "coordinates":[200, 200]},
@@ -268,15 +268,15 @@ class FeatureTest(TestCase):
                     {"type": "Feature",
                     "geometry": {"type":"Point",
                                 "coordinates":[200, 200]},
-                    "properties": {"some_prop": 40}},
+                    "properties": {"some_prop": 41}},
                     {"type": "Feature",
                      "geometry": {"type":"Point",
                                 "coordinates":[200, 200]},
-                     "properties": {"some_prop": True}},
+                     "properties": {"some_prop": 42}},
                     {"type": "Feature",
                      "geometry": {"type":"Point",
                                 "coordinates":[200, 200]},
-                     "properties": {"some_prop": 42}}
+                     "properties": {"some_prop": 43}}
                     ]
             }
             
@@ -285,7 +285,34 @@ class FeatureTest(TestCase):
                                      content_type='application/json')
             
             
-            #TODO write tests to test the REST
+            #retrieve object out of scope some_prop__max=30
+            response = self.client.get(reverse('api_feature') + "?some_prop__max=30")
+            response_dict = json.loads(response.content)
+            self.assertEquals(len(response_dict['features']),
+                              0,
+                              "The property query should have returned 0 features")
+            
+            #retrieve object out of scope some_prop__min=45
+            response = self.client.get(reverse('api_feature') + "?some_prop__min=45")
+            response_dict = json.loads(response.content)
+            self.assertEquals(len(response_dict['features']),
+                              0,
+                              "The property query should have returned 0 features")
+            
+            #retrieve one object some_prop=40
+            response = self.client.get(reverse('api_feature') + "?some_prop=40")
+            response_dict = json.loads(response.content)
+            self.assertEquals(len(response_dict['features']),
+                              1,
+                              "The property query should have returned 1 feature")
+            
+            #retrieve objects in scope some_prop__min=41&some_prop__max=45
+            response = self.client.get(reverse('api_feature') + "?some_prop__min=41&some_prop__max=45")
+            response_dict = json.loads(response.content)
+            self.assertEquals(len(response_dict['features']),
+                              3,
+                              "The property query should have returned 3 features")
+            
             
     
     def test_history(self):
@@ -347,14 +374,23 @@ class FeatureTest(TestCase):
                                 content_type='application/json')
         
         
-        #wait a little bit more
+        #delete one and check that the next delete does not affect it
         time.sleep(1)
         after_update = datetime.datetime.now()
         
         ids = []
         for feat in response_dict['features']:
             ids.append(feat['id'])
-            
+        
+        deleted_feature_id = ids[0]
+        response = self.client.delete(reverse('api_feature') + "?ids=[%s]" % deleted_feature_id)
+        
+        time.sleep(1)
+        after_first_delete = datetime.datetime.now()
+        
+        #wait a little bit more
+        time.sleep(1)
+        
         response = self.client.delete(reverse('api_feature') + "?ids=%s" % json.dumps(ids))
         
         
@@ -428,6 +464,25 @@ class FeatureTest(TestCase):
                         "geojson Features. It returned %i" % amount_of_features)
         
         
+        #query after first delete
+        response = self.client.get(reverse('api_feature') + \
+                                   "?time=%i-%i-%i-%i-%i-%i" % (after_first_delete.year,
+                                                            after_first_delete.month,
+                                                            after_first_delete.day,
+                                                            after_first_delete.hour,
+                                                            after_first_delete.minute,
+                                                            after_first_delete.second))
+        
+        
+        response_dict = json.loads(response.content)
+        
+        
+        #the deleted feature id should not be in the response
+        for feature in response_dict['features']:
+            self.assertNotEquals(feature['id'],
+                                deleted_feature_id,
+                                "Feature with id %i should have been deleted(expired) already" % deleted_feature_id)
+        
         #query after deletion
         response = self.client.get(reverse('api_feature') + \
                                    "?time=%i-%i-%i-%i-%i-%i" % (after_delete.year,
@@ -444,6 +499,5 @@ class FeatureTest(TestCase):
         self.assertTrue(amount_of_features == 0,
                         "Query with time after delete did not return 0 " + \
                         "geojson Features. It returned %i" % amount_of_features)
-        
         
         

@@ -183,7 +183,6 @@ class Property(models.Model):
             insert_json = json.loads(self.json_string)
             Property.mongodb.save(insert_json, self.id)
         
-        
     def delete(self, *args, **kwargs):
         self.expire_time = datetime.datetime.today()
 

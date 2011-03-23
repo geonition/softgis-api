@@ -104,10 +104,10 @@ def feature(request):
             elif(key == "time"):
                 dt = parse_time(value)
                 
-                property_qs_expired = property_queryset.filter(create_time__lt = dt)
-                property_qs_expired = property_qs_expired.filter(expire_time__gt = dt)
+                property_qs_expired = property_queryset.filter(create_time__lte = dt)
+                property_qs_expired = property_qs_expired.filter(expire_time__gte = dt)
                 
-                property_qs_not_exp = property_queryset.filter(create_time__lt = dt)
+                property_qs_not_exp = property_queryset.filter(create_time__lte = dt)
                 property_qs_not_exp = property_qs_not_exp.filter(expire_time = None)
                 property_qs_not_exp = property_qs_not_exp.exclude(id__in = property_qs_expired)
                 
@@ -130,18 +130,42 @@ def feature(request):
                     value = True
                 elif value == "false":
                     value = False
-                    
-                mongo_query[key] = value
+                
+                key_split = key.split('__')
+                command = ""
+                if len(key_split) > 1:
+                    command = key_split[1]
+                    key = key_split[0]
+                
+                if command == "max":
+
+                    if mongo_query.has_key(key):
+                        mongo_query[key]["$lte"] = value
+                    else:
+                        mongo_query[key] = {}
+                        mongo_query[key]["$lte"] = value
+                        
+                elif command == "min":
+
+                    if mongo_query.has_key(key):
+                        mongo_query[key]["$gte"] = value
+                    else:
+                        mongo_query[key] = {}
+                        mongo_query[key]["$gte"] = value
+
+                elif command == "":
+                    mongo_query[key] = value
         
-        #filter the properties not belonging to feature_queryset
-        property_queryset = property_queryset.filter(feature__in = feature_queryset)
         
         #filter the queries acccording to the json
         if len(mongo_query) > 0:
             mongo_query['_id'] = {"$in": property_queryset.values_list('feature_id', flat=True)}
             qs = Property.mongodb.find(mongo_query)
+            property_queryset = property_queryset.filter(id__in = qs.values_list('id', flat=True))
         
-
+        #filter the properties not belonging to feature_queryset
+        property_queryset = property_queryset.filter(feature__in = feature_queryset)
+        
         for prop in property_queryset:
             feature_collection['features'].append(prop.geojson())
 
@@ -151,7 +175,7 @@ def feature(request):
         if property_queryset.exists():
             srid = property_queryset[0].feature.geometry.srid
         else:
-            srid = 3067
+            srid = getattr(settings, "SPATIAL_REFERENCE_SYSTEM_ID", 4326)
 
         crs_object =  {"type": "EPSG", "properties": {"code": srid}}
         feature_collection['crs'] = crs_object
@@ -384,10 +408,13 @@ def feature(request):
                 feat.save()
                 deleted_features.append(feat.id)
                 
+        """
+        Test if there were features already deleted (with an expiration time already set)
+        and return not found
+        """
         not_deleted = [id for id in feature_ids if id not in deleted_features]
-        
         if len(not_deleted) > 0:
             return HttpResponseNotFound(_(u"Features %s not found and featured %s deleted." % (not_deleted, deleted_features)))
-            
-        return HttpResponse(_(u"Features with ids %s deleted." % deleted_features))
         
+    
+        return HttpResponse(_(u"Features with ids %s deleted." % deleted_features))

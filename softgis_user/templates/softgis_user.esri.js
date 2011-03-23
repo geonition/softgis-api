@@ -17,13 +17,13 @@ function register(username, password, callback_function) {
     data['password'] = (password !== undefined) ? password : null;
     
     dojo.xhrPost({
-        "url": '{% url api_register %}', 
+        "url": api_full_url + '{% url api_register %}', 
         "handleAs": "json",
         "postData": encodeURIComponent(dojo.toJson(data)),
         "failOk": true,
         "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"},
-        
+                    "X-CSRFToken": "{{ csrf_token }}"
+                    },
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
                 callback_function({"status_code": ioArgs.xhr.status,
@@ -52,7 +52,7 @@ function login(username, password, callback_function) {
     data['password'] = (password !== undefined) ? password : null;
     
     dojo.xhrPost({
-	    "url": '{% url api_login %}', 
+	    "url": api_full_url + '{% url api_login %}', 
 	    "handleAs": "json",
 	    "postData": encodeURIComponent(dojo.toJson(data)),
             "failOk": true,
@@ -81,7 +81,7 @@ function login(username, password, callback_function) {
 */
 function logout(callback_function) {
     dojo.xhrGet({
-	"url": '{% url api_logout %}',
+	"url": api_full_url + '{% url api_logout %}',
 	    
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
@@ -100,7 +100,7 @@ profile values to other softgis apps.
 */
 function create_session(callback_function) {
     dojo.xhrPost({
-        "url": '{% url api_session %}', 
+        "url": api_full_url + '{% url api_session %}', 
         "handleAs": "text",
         "failOk": true,
         "headers": {"Content-Type":"application/json",
@@ -121,7 +121,7 @@ This method deletes the anonymoususers session
 */
 function delete_session(callback_function) {
     dojo.xhrDelete({
-        "url": '{% url api_session %}', 
+        "url": api_full_url + '{% url api_session %}', 
         "handleAs": "text",
         "failOk": true,
         "headers": {"Content-Type":"application/json",
@@ -142,7 +142,7 @@ This method gets the session key for this user
 */
 function get_session(callback_function) {
     dojo.xhrGet({
-        "url": '{% url api_session %}', 
+        "url": api_full_url + '{% url api_session %}', 
         "handleAs": "text",
         "failOk": true,
         "headers": {"Content-Type":"application/json",
@@ -176,7 +176,7 @@ function new_password(email, callback_function) {
     data['email'] = (email !== undefined) ? email : null;
     
     dojo.xhrPost({
-        "url": '{% url api_new_password %}', 
+        "url": api_full_url + '{% url api_new_password %}', 
         "handleAs": "text",
         "postData": encodeURIComponent(dojo.toJson(data)),
         "failOk": true,
@@ -206,7 +206,7 @@ function change_password(old_password, new_password, callback_function) {
     data['new_password'] = (new_password !== undefined) ? new_password : null;
     
     dojo.xhrPost({
-	"url": '{% url api_change_password %}', 
+	"url": api_full_url + '{% url api_change_password %}', 
         "handleAs": "text",
         "postData": encodeURIComponent(dojo.toJson(data)),
         "failOk": true,

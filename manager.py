@@ -21,7 +21,9 @@ class MongoDBManager(Manager):
         self.collection_name = collection_name
         
     def get_query_set(self):
-        return MongoDBQuerySet(self.model, using=self._db)
+        return MongoDBQuerySet(self.model,
+                               using=self._db,
+                               collection_name=self.collection_name)
 
     #general connect and disconnect functions
     def _connect(self,
@@ -58,7 +60,7 @@ class MongoDBManager(Manager):
         it the given identifier.
         """
         self._connect(collection_name=self.collection_name)
-        json_dict['_id'] = identifier
+        json_dict['_id'] = int(identifier)
         self.collection.save(json_dict)
         self._disconnect()
     

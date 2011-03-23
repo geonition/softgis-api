@@ -11,8 +11,13 @@ time = time when the feature was valid
 
 */
 function get_features(limit_params, callback_function) {
+    
+    if(limit_params === undefined) {
+        limit_params = "";
+    }
+    
     dojo.xhrGet({
-        "url": '{% url api_feature %}' + limit_params,
+        "url": api_full_url + '{% url api_feature %}' + limit_params,
         "handleAs": "json",
         "headers": {"Content-Type":"application/json",
                     "X-CSRFToken": "{{ csrf_token }}"},
@@ -31,7 +36,7 @@ function get_features(limit_params, callback_function) {
 */
 function create_feature(feature_or_feature_collection, callback_function) {
     dojo.xhrPost({
-        "url": "{% url api_feature %}",
+        "url": api_full_url + "{% url api_feature %}",
         "handleAs": "json",
         "postData": encodeURIComponent(dojo.toJson(feature_or_feature_collection)),
         "headers": {"Content-Type":"application/json",
@@ -52,7 +57,7 @@ function create_feature(feature_or_feature_collection, callback_function) {
 */
 function update_feature(feature_or_feature_collection, callback_function) {
     dojo.xhrPut({
-        "url": "{% url api_feature %}",
+        "url": api_full_url + "{% url api_feature %}",
         "handleAs": "text",
         "postData": encodeURIComponent(dojo.toJson(feature_or_feature_collection)),
         "headers": {"Content-Type":"application/json",
@@ -100,7 +105,7 @@ function delete_feature(feature_or_feature_collection, callback_function) {
 
 
     dojo.xhrDelete({
-        "url": '{% url api_feature %}?ids='+ dojo.toJson(feature_ids_array),
+        "url": api_full_url + '{% url api_feature %}?ids='+ dojo.toJson(feature_ids_array),
         "handleAs": "text",
         "headers": {"Content-Type":"application/json",
                     "X-CSRFToken": "{{ csrf_token }}"},
@@ -163,6 +168,28 @@ function save_graphic(graphic, callback_function) {
     } else {
         create_feature(geojson_feature, callback_function);
     }
+    
+    dojo.xhrPost({
+        "url": "{% url api_feature %}" + params,
+        "handleAs": "json",
+        "postData": encodeURIComponent(dojo.toJson(geojson_feature)),
+        "headers": {"Content-Type":"application/json"},
+        "load": function(response, ioArgs) {
+                    if(djConfig.isDebug) {
+                        console.log(ioArgs);
+                        console.log(response);
+                        console.log(response.id);
+                    }
+                    graphic.id = response.id;
+                    graphic.attributes.graphicId = response.id;
+		            
+                    return graphic;
+                },
+        "error": function(response,ioArgs) {
+                        console.log(response);
+                }
+        });
+    
 }
 
 
@@ -173,6 +200,7 @@ It takes as parameters:
 feature_id - id of the feature to be removed.
  
 */
+
 function remove_graphic(feature_id, callback_function) {
     console.log("DEPRACATED remove_graphic");
     var feature = {
@@ -225,7 +253,7 @@ function get_graphics(limiter_param, map_layer, infotemplate, callback_function)
     }
 
     dojo.xhrGet({
-        "url": '{% url api_feature %}' + limiter_param,
+        "url": api_full_url + '{% url api_feature %}' + limiter_param,
         "handleAs": "json",
         "sync": false,
         "headers": {"Content-Type":"application/json",
