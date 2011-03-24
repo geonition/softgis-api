@@ -169,27 +169,6 @@ function save_graphic(graphic, callback_function) {
         create_feature(geojson_feature, callback_function);
     }
     
-    dojo.xhrPost({
-        "url": "{% url api_feature %}" + params,
-        "handleAs": "json",
-        "postData": encodeURIComponent(dojo.toJson(geojson_feature)),
-        "headers": {"Content-Type":"application/json"},
-        "load": function(response, ioArgs) {
-                    if(djConfig.isDebug) {
-                        console.log(ioArgs);
-                        console.log(response);
-                        console.log(response.id);
-                    }
-                    graphic.id = response.id;
-                    graphic.attributes.graphicId = response.id;
-		            
-                    return graphic;
-                },
-        "error": function(response,ioArgs) {
-                        console.log(response);
-                }
-        });
-    
 }
 
 
