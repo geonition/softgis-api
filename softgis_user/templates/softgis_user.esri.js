@@ -1,4 +1,3 @@
-
 /*
  This function registers a new user
  
@@ -22,8 +21,7 @@ function register(username, password, callback_function) {
         "postData": encodeURIComponent(dojo.toJson(data)),
         "failOk": true,
         "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": "{{ csrf_token }}",
-                    
+                    "X-CSRFToken": "{{ csrf_token }}"
                     },
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
