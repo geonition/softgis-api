@@ -11,6 +11,7 @@ from django.http import HttpResponseBadRequest
 from django.http import HttpResponseForbidden
 from django.utils import translation
 
+import sys
 
 if sys.version_info >= (2, 6):
     import json
