@@ -11,7 +11,11 @@ from django.http import HttpResponseBadRequest
 from django.http import HttpResponseForbidden
 from django.utils import translation
 
-import json
+
+if sys.version_info >= (2, 6):
+    import json
+else:
+    import simplejson as json
 
 # set the ugettext _ shortcut
 _ = translation.ugettext
