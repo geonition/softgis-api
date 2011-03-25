@@ -199,9 +199,11 @@ def session(request):
             return HttpResponse(_(u"session already created"))
             
         new_user_id = User.objects.aggregate(Max('id'))
-        
+
         if(new_user_id['id__max'] == None):
-            new_user_id['id__max'] = 1 
+            new_user_id['id__max'] = 1
+        else:
+            new_user_id['id__max'] = new_user_id['id__max'] + 1
         
         User.objects.create_user(str(new_user_id),'', 'passwd')
         user = django_authenticate(username=str(new_user_id), password='passwd')
