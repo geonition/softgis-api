@@ -45,7 +45,7 @@ class EmailAddressManager(models.Manager):
 
 class EmailAddress(models.Model):
 
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(User, related_name="email_user")
     email = models.EmailField()
     verified = models.BooleanField(default=False)
     primary = models.BooleanField(default=False)
