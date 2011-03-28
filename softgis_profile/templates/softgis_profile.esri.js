@@ -15,7 +15,7 @@ function save_profile_values(profile_value_pairs, callback_function) {
     var params = "?user_id={{ user.id }}";
     profile_value_pairs.user_id = {{ user.id }};
     {% else %}
-    var params = "?user_id=0";
+    var params = "?=0";
     profile_value_pairs.user_id = 0;
     {% endif %}
     
@@ -86,11 +86,10 @@ function get_profiles(limiter_param, callback_function) {
                     }
             });
             
-    } else {
-        if(callback_function !== undefined) {
+    } else if(callback_function !== undefined) {
             callback_function(profile_values[limiter_param]);
-        }
     }
+   
 
     return [];
 
