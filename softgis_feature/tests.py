@@ -523,5 +523,48 @@ class FeatureTest(TestCase):
                         "Query with time__now=false did not return right amount of features  " + \
                         "geojson Features. It returned %i" % amount_of_features)
         
+    def test_type_return(self):     
+        self.client.login(username='testuser', password='passwd')
+        #save some values into the database
+        geojson_feature = {
+            "type": "FeatureCollection",
+            "features": [
+                {"type": "Feature",
+                "geometry": {"type":"Point",
+                            "coordinates":[100, 200]},
+                "properties": {"float": 1.3,
+                               "id": 1,
+			       "boolean" : True,
+				"stringFloat" : "1.3",
+				"stringInt" : "1",
+				"stringBoolean" : "true"
+                              }}
+                ]
+        }
+
+        response = self.client.post(reverse('api_feature'),
+                                json.dumps(geojson_feature),
+                                content_type='application/json')	
+   
+        response_dict = json.loads(response.content)
+        id = response_dict.get('id',-1)
         
-        
+        response = self.client.get(reverse('api_feature') + "?id=%i" % id)
+        response_dict = json.loads(response.content)
+        ###print response_dict
+        floatValue = response_dict["features"][0]["properties"]["float"]
+        intValue = response_dict["features"][0]["properties"]["id"]
+        booleanValue = response_dict["features"][0]["properties"]["boolean"]
+
+        stringFloatValue = response_dict["features"][0]["properties"]["stringFloat"]
+        stringIntValue = response_dict["features"][0]["properties"]["stringInt"]
+        stringBooleanValue = response_dict["features"][0]["properties"]["stringBoolean"]
+
+
+        self.assertEquals(floatValue, 1.3, "float value not retrieved correctly")
+        self.assertEquals(intValue, 1, "int value not retrieved correctly")
+        self.assertEquals(booleanValue, True, "boolean not retrieved correctly")
+
+        self.assertEquals(stringFloatValue, "1.3", "string not retrieved correctly")
+        self.assertEquals(stringIntValue, "1", "string not retrieved correctly")
+        self.assertEquals(stringBooleanValue, "true", "string not retrieved correctly")
