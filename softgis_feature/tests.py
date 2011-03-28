@@ -537,7 +537,7 @@ class FeatureTest(TestCase):
 			       "boolean" : True,
 				"stringFloat" : "1.3",
 				"stringInt" : "1",
-				"stringBoolean" : "true"
+				"stringBoolean" : "True"
                               }}
                 ]
         }
@@ -567,4 +567,11 @@ class FeatureTest(TestCase):
 
         self.assertEquals(stringFloatValue, "1.3", "string not retrieved correctly")
         self.assertEquals(stringIntValue, "1", "string not retrieved correctly")
-        self.assertEquals(stringBooleanValue, "true", "string not retrieved correctly")
+        self.assertEquals(stringBooleanValue, "True", "string not retrieved correctly")
+        
+        """
+        Further investigation needed for querying the features against same value either
+        as a string or other type.
+        EG: some_prop = 1.4 or some_prop = "1.4"
+        How to difference between the two cases on the server?
+        """
