@@ -21,7 +21,7 @@ function register(username, password, callback_function) {
         "postData": encodeURIComponent(dojo.toJson(data)),
         "failOk": true,
         "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"
+                    "X-CSRFToken": getCookie( CSRF_Cookie_Name )
                     },
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
@@ -56,7 +56,7 @@ function login(username, password, callback_function) {
 	    "postData": encodeURIComponent(dojo.toJson(data)),
             "failOk": true,
 	    "headers": {"Content-Type":"application/json",
-                        "X-CSRFToken": "{{ csrf_token }}"},
+                        "X-CSRFToken": getCookie( CSRF_Cookie_Name )},
 	    
             "handle": function(response, ioArgs) {
                 if(callback_function !== undefined) {
@@ -103,7 +103,7 @@ function create_session(callback_function) {
         "handleAs": "text",
         "failOk": true,
         "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"},
+                    "X-CSRFToken": getCookie( CSRF_Cookie_Name )},
 	    
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
@@ -124,7 +124,7 @@ function delete_session(callback_function) {
         "handleAs": "text",
         "failOk": true,
         "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"},
+                    "X-CSRFToken": getCookie( CSRF_Cookie_Name )},
 	    
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
@@ -145,7 +145,7 @@ function get_session(callback_function) {
         "handleAs": "text",
         "failOk": true,
         "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"},
+                    "X-CSRFToken": getCookie( CSRF_Cookie_Name )},
 	    
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
@@ -180,7 +180,7 @@ function new_password(email, callback_function) {
         "postData": encodeURIComponent(dojo.toJson(data)),
         "failOk": true,
         "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"},
+                    "X-CSRFToken": getCookie( CSRF_Cookie_Name )},
 	    
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
@@ -210,7 +210,7 @@ function change_password(old_password, new_password, callback_function) {
         "postData": encodeURIComponent(dojo.toJson(data)),
         "failOk": true,
 	"headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"},
+                    "X-CSRFToken": getCookie( CSRF_Cookie_Name )},
 	    
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {

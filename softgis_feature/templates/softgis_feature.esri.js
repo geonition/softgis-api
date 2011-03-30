@@ -20,7 +20,7 @@ function get_features(limit_params, callback_function) {
         "url": api_full_url + '{% url api_feature %}' + limit_params,
         "handleAs": "json",
         "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"},
+                    "X-CSRFToken": getCookie( CSRF_Cookie_Name )},
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
                 callback_function({"response": response,
@@ -40,7 +40,7 @@ function create_feature(feature_or_feature_collection, callback_function) {
         "handleAs": "json",
         "postData": encodeURIComponent(dojo.toJson(feature_or_feature_collection)),
         "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"},
+                    "X-CSRFToken": getCookie( CSRF_Cookie_Name )},
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
                 callback_function({"response": response,
@@ -61,7 +61,7 @@ function update_feature(feature_or_feature_collection, callback_function) {
         "handleAs": "text",
         "postData": encodeURIComponent(dojo.toJson(feature_or_feature_collection)),
         "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"},
+                    "X-CSRFToken": getCookie( CSRF_Cookie_Name )},
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
                 callback_function({"response": response,
@@ -108,7 +108,7 @@ function delete_feature(feature_or_feature_collection, callback_function) {
         "url": api_full_url + '{% url api_feature %}?ids='+ dojo.toJson(feature_ids_array),
         "handleAs": "text",
         "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"},
+                    "X-CSRFToken": getCookie( CSRF_Cookie_Name )},
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
                 callback_function({"response": response,
@@ -236,7 +236,7 @@ function get_graphics(limiter_param, map_layer, infotemplate, callback_function)
         "handleAs": "json",
         "sync": false,
         "headers": {"Content-Type":"application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"},
+                    "X-CSRFToken": getCookie( CSRF_Cookie_Name ) },
 
         // The LOAD function will be called on a successful response.
         "load": function(response, ioArgs) {

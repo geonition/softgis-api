@@ -5,7 +5,7 @@ function get_email(callback)
      //alert(getCookie( CSRF_Cookie_Name  ));
 
       $.ajaxSetup({
-	      'beforeSend': function(xhr) {xhr.setRequestHeader("X-CSRFToken", getCookie( CSRF_Cookie_Name  ))}
+	      'beforeSend': function(xhr) {xhr.setRequestHeader("X-CSRFToken", getCookie( CSRF_Cookie_Name ))}
       })
       
 	$.ajax({
