@@ -1,12 +1,21 @@
 
+
 function get_email(callback)
 {
+     //alert(getCookie( CSRF_Cookie_Name  ));
+
+      $.ajaxSetup({
+	      'beforeSend': function(xhr) {xhr.setRequestHeader("X-CSRFToken", getCookie( CSRF_Cookie_Name  ))}
+      })
+      
 	$.ajax({
 	  url: '{% url api_manage_email %}',
 	  type: "GET",
 	  data: {},
 	  success: function(data){
-	    callback(data);
+			if(callback !== undefined) {
+			    callback(data);
+			}
 	    },
 	  error: function(e) { alert(e); }, 
 	  dataType: "json"
@@ -68,7 +77,9 @@ function save_email(email_address, callback)
 	  data: email_address,
 	  success: function(data)
 			{
-			    callback(data);
+				if(callback !== undefined) {
+				    callback(data);
+				}
 			},
 	  error: function(e) { alert(e); }, 
 	  dataType: "text"
@@ -90,7 +101,9 @@ function delete_email(callback)
 	  data: {},
 	  success: function(data)
 			{
-			    callback(data);
+				if(callback !== undefined) {
+				    callback(data);	
+				}	
 			},
 	  error: function(e) { alert(e); }, 
 	  dataType: "text"

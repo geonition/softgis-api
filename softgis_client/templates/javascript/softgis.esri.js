@@ -1,10 +1,8 @@
 /* global dojo, djConfig, console, esri  */
+{% extends "javascript/softgis_client.commons.js" %}
 
-
-
-var api_full_url = "{{ method }}{{ host }}";
-
-
-{% for client in softgis_clients %}
-{{ client }}
-{% endfor %}
+{% block content %}
+	{% for client in softgis_clients %}
+	{{ client }}
+	{% endfor %}
+{% endblock %}

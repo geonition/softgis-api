@@ -1,3 +1,10 @@
-{% for client in softgis_clients %}
-{{ client }}
-{% endfor %}
+
+{% extends "javascript/softgis_client.commons.js" %}
+
+{% block content %}
+
+	{% for client in softgis_clients %}
+	{{ client }}
+	{% endfor %}
+
+{% endblock %}

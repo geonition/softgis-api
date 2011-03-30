@@ -55,7 +55,8 @@ def javascript_api(request):
     return render_to_response("javascript/softgis.%s.js" % lib,
                               {'softgis_clients': softgis_clients,
                                'host': host,
-                               'method': pre_url},
+                               'method': pre_url,
+			       'CSRF_Cookie_Name' : getattr(settings, "CSRF_COOKIE_NAME","softgis_csrf_token")},
                               mimetype="application/javascript")
 
 
