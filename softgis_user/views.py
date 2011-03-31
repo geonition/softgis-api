@@ -56,7 +56,9 @@ def login(request):
             
         if(password == None):
             return HttpResponseBadRequest(_("You have to provide a password"))
-            
+	
+	#anonymous_user = request.user          
+  
         user = django_authenticate(username=username, password=password)
             
         if user is not None:
