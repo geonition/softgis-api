@@ -233,25 +233,14 @@ def new_password(request):
         request_json = json.loads(request.POST.keys()[0])
         
         email = request_json['email']
-        static_user = None
         confirmed = False
  
-        if not email == None and not email == '':
-            try:
-                static_user = \
-                    StaticProfileValue.objects.get(email__exact = email)
-            except ObjectDoesNotExist:
-                pass
 
-        if static_user == None:
-            return HttpResponseNotFound(
-                        _(u"email not found"))
-        else:
-            try:
-                confirmed = EmailAddress.objects.get(
-                                    user__exact = static_user.user).verified
-            except ObjectDoesNotExist:
-                pass
+        try:
+            confirmed = EmailAddress.objects.get(
+                                user__exact = static_user.user).verified
+        except ObjectDoesNotExist:
+            pass
             
         if confirmed == False:
             return HttpResponseBadRequest(
@@ -281,8 +270,6 @@ def new_password(request):
                         message,
                         'do_not_reply@pehmogis.fi',
                         [static_user.email])
-            static_user.user.set_password(password)
-            static_user.user.save()
             return HttpResponse(_(u"New password sent to ") + \
                                     static_user.email, 
                                     status=200, 

@@ -63,7 +63,7 @@ def email(request):
         return HttpResponse(json_data, mimetype="application/json")
                 
     elif(request.method == "POST"):
-
+        
         email = json.loads(request.POST.keys()[0]).get("email", "")
   
        
