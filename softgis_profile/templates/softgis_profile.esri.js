@@ -11,7 +11,7 @@ callback_function - a callback function that will be called when a reponse
 function save_profile_values(profile_value_pairs, callback_function) {
     
     dojo.xhrPost({
-        "url": api_full_url + "{% url api_profile %}" + params,
+        "url": api_full_url + "{% url api_profile %}",
         "handleAs": "json",
         "postData": encodeURIComponent(dojo.toJson(profile_value_pairs)),
         "headers": {"Content-Type":"application/json",
@@ -41,7 +41,6 @@ limiter_param - query string to limit the returned profiles e.g. "?latest=true&a
 callback_function - a callback function that will be called when a reponse
                     from the server is received (optional)
 */
-
 function get_profiles(limiter_param, callback_function) {
 
     
