@@ -56,7 +56,7 @@ def javascript_api(request):
                               {'softgis_clients': softgis_clients,
                                'host': host,
                                'method': pre_url,
-                               'CSRF_Cookie_Name' : getattr(settings, "CSRF_COOKIE_NAME","softgis_csrf_token")},
+                               'CSRF_Cookie_Name' : getattr(settings, "CSRF_COOKIE_NAME","csrftoken")},
                               mimetype="application/javascript")
 
 
