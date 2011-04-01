@@ -94,7 +94,7 @@ def profile(request):
                 key = key_split[0]
                     
             if key == 'user_id':
-                profile_queryset = profile_queryset.filter(user_id__exact = value)
+                profile_queryset = profile_queryset.filter(user__exact = value)
                 
             elif key == 'time':
                 
