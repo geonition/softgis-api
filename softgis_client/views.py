@@ -50,13 +50,13 @@ def javascript_api(request):
         pre_url = "http://"
 
     host = request.get_host()
-
+    
     # return the clients in one file
     return render_to_response("javascript/softgis.%s.js" % lib,
                               {'softgis_clients': softgis_clients,
                                'host': host,
                                'method': pre_url,
-			       'CSRF_Cookie_Name' : getattr(settings, "CSRF_COOKIE_NAME","softgis_csrf_token")},
+                               'CSRF_Cookie_Name' : getattr(settings, "CSRF_COOKIE_NAME","softgis_csrf_token")},
                               mimetype="application/javascript")
 
 
