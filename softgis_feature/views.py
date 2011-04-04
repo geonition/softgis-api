@@ -76,7 +76,7 @@ def feature(request):
     
     if request.method  == "GET":
         
-	print request.user
+	#print request.user
 	
         # get the definied limiting parameters
         limiting_param = request.GET.items()
