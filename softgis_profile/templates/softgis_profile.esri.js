@@ -9,7 +9,6 @@ callback_function - a callback function that will be called when a reponse
                     from the server is received (optional)
 **/
 function save_profile_values(profile_value_pairs, callback_function) {
-    
     dojo.xhrPost({
         "url": api_full_url + "{% url api_profile %}",
         "handleAs": "json",
@@ -61,7 +60,7 @@ function get_profiles(limiter_param, callback_function) {
             // The LOAD function will be called on a successful response.
             "load": function(response, ioArgs) {
                         if(callback_function !== undefined) {
-                            callback_function(response);
+                            callback_function(response, ioArgs);
                         }
                         profile_values[limiter_param] = response;
                         return response;
@@ -69,6 +68,9 @@ function get_profiles(limiter_param, callback_function) {
 
             // The ERROR function will be called in an error case.
             "error": function(response, ioArgs) {
+                        if(callback_function !== undefined) {
+                            callback_function(response, ioArgs);
+                        }
                         if (djConfig.debug) {
                             console.error("HTTP status code: ", ioArgs.xhr.status);
                         }
