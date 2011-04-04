@@ -50,19 +50,25 @@ def login(request):
              
         username = values.pop('username', None)
         password = values.pop('password', None)
+        migrate_features = values.pop('migrate_features', False)
         
         if(username == None):
             return HttpResponseBadRequest(_("You have to provide a username"))
             
         if(password == None):
             return HttpResponseBadRequest(_("You have to provide a password"))
-	
-	#anonymous_user = request.user          
+
+        anonymous_user = request.user          
   
         user = django_authenticate(username=username, password=password)
             
         if user is not None:
             django_login(request, user)
+
+            if migrate_features == "true":
+                migrate_features(anonymous_user, user)
+          
+            
             return HttpResponse(_(u"Login successfull"), status=200)
         else:
             return HttpResponse(_(u"Wrong password or username not found"),
@@ -115,7 +121,12 @@ def register(request):
 
     elif(request.method == "POST"):
 
-        if request.user.is_authenticated() == True:
+        
+        print request.user.username
+        
+        #check if anonymous user
+        
+        if request.user.is_authenticated() == True and request.user.username.find("id__max") == -1:
             return HttpResponseBadRequest(_("You cannot register a user when logged in"))
     
     
@@ -128,6 +139,8 @@ def register(request):
 
         username = values.pop('username', None)
         password = values.pop('password', None)
+        migrate_features = values.pop('migrate_features', False)
+        anonymous_user = request.user 
         
         if(username == None or username == ""):
             return HttpResponseBadRequest(_(u"You have to provide a username"))
@@ -178,7 +191,10 @@ def register(request):
         
         if user is not None and user.is_active:
             django_login(request, user)
-            
+        
+        if migrate_features == "true":
+            migrate_features(anonymous_user, user)
+        
         return HttpResponse(status=201)
         
 
@@ -207,10 +223,13 @@ def session(request):
         else:
             new_user_id['id__max'] = new_user_id['id__max'] + 1
         
-        User.objects.create_user(str(new_user_id),'', 'passwd')
+        temp_user = User.objects.create_user(str(new_user_id),'', 'passwd')
         user = django_authenticate(username=str(new_user_id), password='passwd')
+        
         django_login(request, user)
         user.set_unusable_password()
+        
+        print user.is_active
             
         return HttpResponse(_(u"session created"))
 
@@ -321,3 +340,19 @@ def change_password(request):
                                 status=200)
         
     return HttpResponseBadRequest(_(u"This URL only accepts POST requests"))   
+
+def migrate_features(anonymous_user, user):
+    """
+    Migrate features added as anonymous user to login
+    """
+    anonymous_feature_collection = Feature.objects.filter(user = anonymous_user)
+    
+    for feature in anonymous_feature_collection:
+        feature.user = user
+        feature.save()
+    """
+    Delete anonymous user
+    """
+    anonymous_user.delete()
+    
+

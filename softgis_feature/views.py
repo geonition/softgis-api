@@ -8,6 +8,7 @@ from django.utils.encoding import smart_unicode
 from django.contrib.gis.gdal import OGRGeometry
 from softgis_feature.models import Feature
 from softgis_feature.models import Property
+from extenders import HttpResponseNotAuthorized
 
 import settings
 import urllib2
@@ -75,6 +76,8 @@ def feature(request):
     
     if request.method  == "GET":
         
+	print request.user
+	
         # get the definied limiting parameters
         limiting_param = request.GET.items()
         
@@ -205,7 +208,11 @@ def feature(request):
             return HttpResponseBadRequest(_("geojson did not inclue a type." + \
                                           " Accepted types are " + \
                                           "'FeatureCollection' and 'Feature'."))
-        
+
+	#print request
+	if not request.user.is_authenticated():
+            return HttpResponseNotAuthorized()
+
         #inner function to save one feature
         if geojson_type == "Feature":
             geometry = None
