@@ -122,7 +122,7 @@ def register(request):
     elif(request.method == "POST"):
 
         
-        print request.user.username
+       
         
         #check if anonymous user
         
@@ -229,7 +229,7 @@ def session(request):
         django_login(request, user)
         user.set_unusable_password()
         
-        print user.is_active
+        
             
         return HttpResponse(_(u"session created"))
 
