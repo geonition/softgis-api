@@ -46,7 +46,7 @@ function register(username, password, migrate_features, callback_function) {
  status_code = 201/400/409
  message = message from server
 */
-function login(username, password, migrate_features, callback_function) {
+function login(username, password, callback_function, migrate_features) {
     var data = {};
     data['username'] = (username !== undefined) ? username : null;
     data['password'] = (password !== undefined) ? password : null;
@@ -54,19 +54,14 @@ function login(username, password, migrate_features, callback_function) {
 
     dojo.xhrPost({
 	    "url": api_full_url + '{% url api_login %}', 
-	    "handleAs": "json",
+	    "handleAs": "text",
 	    "postData": encodeURIComponent(dojo.toJson(data)),
             "failOk": true,
 	    "headers": {"Content-Type":"application/json",
                         "X-CSRFToken": getCookie( CSRF_Cookie_Name )},
 	    
             "handle": function(response, ioArgs) {
-                if(callback_function !== undefined) {
-                    callback_function({"status_code": ioArgs.xhr.status,
-                                      "message": ioArgs.xhr.responseText});
-                }
-            },
-            "error": function(response, ioArgs) {
+                console.log(response);
                 if(callback_function !== undefined) {
                     callback_function({"status_code": ioArgs.xhr.status,
                                       "message": ioArgs.xhr.responseText});
