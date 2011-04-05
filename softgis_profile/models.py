@@ -77,7 +77,25 @@ class Profile(models.Model):
             Profile.mongodb.save(insert_json, self.id)
             
     def json(self):
-        return json.loads(self.json_string)
+        json_dict = json.loads(self.json_string)
+        json_dict['user_id'] = self.user.id
+        json_dict['create_time'] = "%s-%s-%s-%s-%s-%s" % (self.create_time.year,
+                                                       self.create_time.month,
+                                                       self.create_time.day,
+                                                       self.create_time.hour,
+                                                       self.create_time.minute,
+                                                       self.create_time.second)
+        if self.expire_time == None:
+            json_dict['expire_time'] = None
+        else:
+            json_dict['expire_time'] = "%s-%s-%s-%s-%s-%s" % (self.expire_time.year,
+                                                           self.expire_time.month,
+                                                           self.expire_time.day,
+                                                           self.expire_time.hour,
+                                                           self.expire_time.minute,
+                                                           self.expire_time.second)
+        
+        return json_dict
         
     def __unicode__(self):
         return self.json_string

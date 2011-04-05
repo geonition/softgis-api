@@ -8,7 +8,7 @@ from django.utils.encoding import smart_unicode
 from django.contrib.gis.gdal import OGRGeometry
 from softgis_feature.models import Feature
 from softgis_feature.models import Property
-#from extenders import HttpResponseNotAuthorized
+from HttpResponseExtenders import HttpResponseNotAuthorized
 
 import settings
 import urllib2
