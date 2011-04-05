@@ -10,7 +10,7 @@ from django.http import HttpResponse
 from django.http import HttpResponseBadRequest
 from django.http import HttpResponseForbidden
 from django.utils import translation
-
+from softgis_feature.models import Feature
 import sys
 
 if sys.version_info >= (2, 6):
@@ -38,7 +38,8 @@ def login(request):
         return HttpResponseBadRequest(_("This url only accept POST requests"))
         
     elif (request.method == "POST"):
-        if request.user.is_authenticated() == True:
+
+        if request.user.is_authenticated() == True and request.user.username.find("id__max") == -1:
             return HttpResponseBadRequest(_("You have already signed in"))
             
         values = None
@@ -65,8 +66,9 @@ def login(request):
         if user is not None:
             django_login(request, user)
 
-            if migrate_features == "true":
-                migrate_features(anonymous_user, user)
+            # we expect that anonymous_user to be created using create session (see below session() fct)
+            if migrate_features and not anonymous_user.is_anonymous():
+                migrate_features_from_anonymous_user(anonymous_user, user)
           
             
             return HttpResponse(_(u"Login successfull"), status=200)
@@ -124,8 +126,7 @@ def register(request):
         
        
         
-        #check if anonymous user
-        
+        #check if anonymous user 
         if request.user.is_authenticated() == True and request.user.username.find("id__max") == -1:
             return HttpResponseBadRequest(_("You cannot register a user when logged in"))
     
@@ -192,8 +193,9 @@ def register(request):
         if user is not None and user.is_active:
             django_login(request, user)
         
-        if migrate_features == "true":
-            migrate_features(anonymous_user, user)
+        # we expect that anonymous_user to be created using create session (see below session() fct)
+        if migrate_features and not anonymous_user.is_anonymous():
+            migrate_features_from_anonymous_user(anonymous_user, user)
         
         return HttpResponse(status=201)
         
@@ -341,18 +343,21 @@ def change_password(request):
         
     return HttpResponseBadRequest(_(u"This URL only accepts POST requests"))   
 
-def migrate_features(anonymous_user, user):
+def migrate_features_from_anonymous_user(anonymous_user, user):
     """
     Migrate features added as anonymous user to login
     """
     anonymous_feature_collection = Feature.objects.filter(user = anonymous_user)
-    
+
+
     for feature in anonymous_feature_collection:
         feature.user = user
         feature.save()
+
     """
     Delete anonymous user
     """
+
     anonymous_user.delete()
     
 

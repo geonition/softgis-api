@@ -10,7 +10,7 @@
  status_code = 201/400/409
  message = message from server
 */
-function register(username, password, migrate_features, callback_function) {
+function register(username, password, callback_function, migrate_features) {
     var data = {};
     data['username'] = (username !== undefined) ? username : null;
     data['password'] = (password !== undefined) ? password : null;
