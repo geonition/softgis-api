@@ -61,7 +61,6 @@ function login(username, password, callback_function, migrate_features) {
                         "X-CSRFToken": getCookie( CSRF_Cookie_Name )},
 	    
             "handle": function(response, ioArgs) {
-                console.log(response);
                 if(callback_function !== undefined) {
                     callback_function({"status_code": ioArgs.xhr.status,
                                       "message": ioArgs.xhr.responseText});
