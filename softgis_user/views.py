@@ -59,7 +59,7 @@ def login(request):
         if(password == None):
             return HttpResponseBadRequest(_("You have to provide a password"))
 
-        anonymous_user = request.user          
+        session_user = request.user          
   
         user = django_authenticate(username=username, password=password)
             
@@ -67,8 +67,8 @@ def login(request):
             django_login(request, user)
 
             # we expect that anonymous_user to be created using create session (see below session() fct)
-            if migrate_features and not anonymous_user.is_anonymous():
-                migrate_features_from_anonymous_user(anonymous_user, user)
+            if migrate_features and not session_user.is_anonymous():
+                migrate_features_from_anonymous_user(session_user, user)
           
             
             return HttpResponse(_(u"Login successfull"), status=200)
@@ -141,7 +141,7 @@ def register(request):
         username = values.pop('username', None)
         password = values.pop('password', None)
         migrate_features = values.pop('migrate_features', False)
-        anonymous_user = request.user 
+        session_user = request.user 
         
         if(username == None or username == ""):
             return HttpResponseBadRequest(_(u"You have to provide a username"))
@@ -194,8 +194,8 @@ def register(request):
             django_login(request, user)
         
         # we expect that anonymous_user to be created using create session (see below session() fct)
-        if migrate_features and not anonymous_user.is_anonymous():
-            migrate_features_from_anonymous_user(anonymous_user, user)
+        if migrate_features and not session_user.is_anonymous():
+            migrate_features_from_anonymous_user(session_user, user)
         
         return HttpResponse(status=201)
         
@@ -343,11 +343,11 @@ def change_password(request):
         
     return HttpResponseBadRequest(_(u"This URL only accepts POST requests"))   
 
-def migrate_features_from_anonymous_user(anonymous_user, user):
+def migrate_features_from_anonymous_user(session_user, user):
     """
     Migrate features added as anonymous user to login
     """
-    anonymous_feature_collection = Feature.objects.filter(user = anonymous_user)
+    anonymous_feature_collection = Feature.objects.filter(user = session_user)
 
 
     for feature in anonymous_feature_collection:
@@ -358,6 +358,6 @@ def migrate_features_from_anonymous_user(anonymous_user, user):
     Delete anonymous user
     """
 
-    anonymous_user.delete()
+    session_user.delete()
     
 
