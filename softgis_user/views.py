@@ -122,8 +122,6 @@ def register(request):
     elif(request.method == "POST"):
 
         
-        print request.user.username
-        
         #check if anonymous user
         
         if request.user.is_authenticated() == True and request.user.username.find("id__max") == -1:
@@ -228,8 +226,6 @@ def session(request):
         
         django_login(request, user)
         user.set_unusable_password()
-        
-        print user.is_active
             
         return HttpResponse(_(u"session created"))
 
