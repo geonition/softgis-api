@@ -65,6 +65,12 @@ function login(username, password, migrate_features, callback_function) {
                     callback_function({"status_code": ioArgs.xhr.status,
                                       "message": ioArgs.xhr.responseText});
                 }
+            },
+            "error": function(response, ioArgs) {
+                if(callback_function !== undefined) {
+                    callback_function({"status_code": ioArgs.xhr.status,
+                                      "message": ioArgs.xhr.responseText});
+                }
             }
         });
 }
