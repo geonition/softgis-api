@@ -73,8 +73,7 @@ def login(request):
             
             return HttpResponse(_(u"Login successfull"), status=200)
         else:
-            return HttpResponse(_(u"Wrong password or username not found"),
-                                status=401)
+            return HttpResponseBadRequest(_(u"Wrong password or username not found"))
             
 
 def logout(request):
