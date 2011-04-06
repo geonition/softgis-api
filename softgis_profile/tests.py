@@ -197,9 +197,16 @@ class ProfileTest(TestCase):
         
         response_dict = json.loads(response.content)
         
+        self.assertEquals(response_dict[0]['age'],
+                          profile_dict['age'],
+                          "The returned dict before update was not correct")
         
-        self.assertEquals(response_dict,
-                          [profile_dict],
+        self.assertEquals(response_dict[0]['gender'],
+                          profile_dict['gender'],
+                          "The returned dict before update was not correct")
+        
+        self.assertEquals(response_dict[0]['happy'],
+                          profile_dict['happy'],
                           "The returned dict before update was not correct")
         
         response = self.client.get(reverse('api_profile') + \
@@ -212,17 +219,34 @@ class ProfileTest(TestCase):
         
         response_dict = json.loads(response.content)
         
-        self.assertEquals(response_dict,
-                          [profile_dict2],
+        self.assertEquals(response_dict[0]['age'],
+                          profile_dict2['age'],
+                          "The returned dict after update was not correct")
+        
+        self.assertEquals(response_dict[0]['gender'],
+                          profile_dict2['gender'],
+                          "The returned dict after update was not correct")
+        
+        self.assertEquals(response_dict[0]['happy'],
+                          profile_dict2['happy'],
                           "The returned dict after update was not correct")
         
         #query with time__now=true should only reutrn the valid profile value
         response = self.client.get(reverse('api_profile') + \
                                            "?time__now=true")
                                            
+        response_dict = json.loads(response.content)
         
-        self.assertEquals(response.content,
-                          "[%s]" % json.dumps(profile_dict2),
+        self.assertEquals(response_dict[0]['age'],
+                          profile_dict2['age'],
+                          "time__now=true as parameter did not return the valid profile")
+        
+        self.assertEquals(response_dict[0]['gender'],
+                          profile_dict2['gender'],
+                          "time__now=true as parameter did not return the valid profile")
+        
+        self.assertEquals(response_dict[0]['happy'],
+                          profile_dict2['happy'],
                           "time__now=true as parameter did not return the valid profile")
         
         
@@ -230,8 +254,8 @@ class ProfileTest(TestCase):
         response = self.client.get(reverse('api_profile') + \
                                            "?time__now=false")
                                            
-        reponse_dict = json.loads(response.content)
-        
-        self.assertEquals(response.content,
-                          "[%s, %s]" % (json.dumps(profile_dict), json.dumps(profile_dict2)),
+        response_dict = json.loads(response.content)
+
+        self.assertEquals(len(response_dict),
+                          2,
                           "time__now=false as parameter did not return both profiles")

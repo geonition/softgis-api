@@ -284,7 +284,6 @@ class FeatureTest(TestCase):
                                      json.dumps(geojson_feature),
                                      content_type='application/json')
             
-            
             #retrieve object out of scope some_prop__max=30
             response = self.client.get(reverse('api_feature') + "?some_prop__max=30")
             response_dict = json.loads(response.content)
@@ -309,6 +308,7 @@ class FeatureTest(TestCase):
             #retrieve objects in scope some_prop__min=41&some_prop__max=45
             response = self.client.get(reverse('api_feature') + "?some_prop__min=41&some_prop__max=45")
             response_dict = json.loads(response.content)
+            
             self.assertEquals(len(response_dict['features']),
                               3,
                               "The property query should have returned 3 features")
@@ -534,24 +534,24 @@ class FeatureTest(TestCase):
                             "coordinates":[100, 200]},
                 "properties": {"float": 1.3,
                                "id": 1,
-			       "boolean" : True,
-				"stringFloat" : "1.3",
-				"stringInt" : "1",
-				"stringBoolean" : "True"
+                               "boolean" : True,
+                               "stringFloat" : "1.3",
+                               "stringInt" : "1",
+                               "stringBoolean" : "True"
                               }}
                 ]
         }
 
         response = self.client.post(reverse('api_feature'),
                                 json.dumps(geojson_feature),
-                                content_type='application/json')	
-   
+                                content_type='application/json')
+        
         response_dict = json.loads(response.content)
-        id = response_dict.get('id',-1)
+        id = response_dict['features'][0].get(u'id',-1)
         
         response = self.client.get(reverse('api_feature') + "?id=%i" % id)
         response_dict = json.loads(response.content)
-        ###print response_dict
+        
         floatValue = response_dict["features"][0]["properties"]["float"]
         intValue = response_dict["features"][0]["properties"]["id"]
         booleanValue = response_dict["features"][0]["properties"]["boolean"]

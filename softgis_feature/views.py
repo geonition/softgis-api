@@ -96,11 +96,11 @@ def feature(request):
             feature_queryset = Feature.objects.none()
 
         property_queryset = Property.objects.all()
-        mongo_query = {}    
+        mongo_query = {}
         
         #filter according to limiting_params
         for key, value in limiting_param:
-                
+            
             key = str(key)
             if value.isnumeric():
                 value = int(value)
@@ -111,12 +111,16 @@ def feature(request):
                 
             key_split = key.split('__')
             command = ""
+            
             if len(key_split) > 1:
                 key = key_split[0]
                 command = key_split[1]
             
             if(key == "user_id"):
                 feature_queryset = feature_queryset.filter(user__exact = value)
+                
+            elif(key == "id"):
+                feature_queryset = feature_queryset.filter(id__exact = value)
             
             elif(key == "time"):
                 
@@ -168,10 +172,10 @@ def feature(request):
                 elif command == "":
                     mongo_query[key] = value
         
-        
+                
         #filter the queries acccording to the json
         if len(mongo_query) > 0:
-            mongo_query['_id'] = {"$in": list(property_queryset.values_list('feature_id', flat=True))}
+            mongo_query['_id'] = {"$in": list(property_queryset.values_list('id', flat=True))}
             qs = Property.mongodb.find(mongo_query)
             property_queryset = property_queryset.filter(id__in = qs.values_list('id', flat=True))
         
