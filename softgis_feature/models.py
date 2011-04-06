@@ -209,9 +209,12 @@ class Property(models.Model):
         """
         Returns a geojson Feature with these(this) properties.
         """
+        properties = json.loads(self.json_string)
+        properties['user_id'] = self.feature.user.id
+        
         feature_dict = {"id": self.feature.id,
                         "geometry": json.loads(self.feature.geometry.json),
-                        "properties": json.loads(self.json_string)}
+                        "properties": properties}
         
         return feature_dict
     
