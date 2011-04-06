@@ -430,9 +430,12 @@ class FeatureTest(TestCase):
         
         for feat in response_dict['features']:
             if feat['id'] == updated_feature_id:
-                self.assertEquals(feat['properties'],
-                                  {"some_prop":"history_value",
-                                   "id": 1},
+                self.assertEquals(feat['properties']['id'],
+                                   1,
+                                  "The feature retrieves does not seem to have correct properties" + \
+                                  " querying time before an update")
+                self.assertEquals(feat['properties']['some_prop'],
+                                  "history_value",
                                   "The feature retrieves does not seem to have correct properties" + \
                                   " querying time before an update")
         
