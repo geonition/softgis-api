@@ -227,7 +227,7 @@ def session(request):
         
         django_login(request, user)
         user.set_unusable_password()
-
+        
         return HttpResponse(_(u"session created"))
 
     elif request.method == "DELETE":
