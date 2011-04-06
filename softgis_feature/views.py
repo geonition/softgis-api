@@ -323,9 +323,8 @@ def feature(request):
             feature_old = None
             try:
                 feature_old = Feature.objects.get(id__exact = feature_id)
-            except DoesNotExist:
-                return HttpResponseNotFound("The feature with id %i was not " +\
-                                            "found" % feature_id)
+            except ObjectDoesNotExist:
+                return HttpResponseNotFound("The feature with id %i was not found" % feature_id)
             
             if feature_old.user != request.user:
                 return HttpResponseForbidden("You do not have permission to" + \

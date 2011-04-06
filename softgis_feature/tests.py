@@ -72,7 +72,7 @@ class FeatureTest(TestCase):
                             "The returned feature from a post did not contain an identifier(id)")
         
         #update a property of the feature
-        geojson_feature['id'] = 1
+        geojson_feature['id'] = response_dict.get('id',-1)
         geojson_feature['properties']['some_prop'] = 'new value'
         response = self.client.put(reverse('api_feature'),
                                    json.dumps(geojson_feature),
@@ -82,7 +82,7 @@ class FeatureTest(TestCase):
                           "Updating a feature did not work")
                
         #update a property of the feature
-        geojson_feature['id'] = 1
+        geojson_feature['id'] = response_dict.get('id',-1)
         geojson_feature['properties']['some_prop'] = 'new value'
         response = self.client.put(reverse('api_feature'),
                                    json.dumps(geojson_feature),
@@ -244,6 +244,7 @@ class FeatureTest(TestCase):
             self.assertTrue(feature.has_key('id'),
                             "The returned feature in FeatureCollection " + \
                             "did not have an id")
+
         
     def test_mongodb(self):
         USE_MONGODB = getattr(settings, "USE_MONGODB", False)
@@ -523,7 +524,10 @@ class FeatureTest(TestCase):
                         "Query with time__now=false did not return right amount of features  " + \
                         "geojson Features. It returned %i" % amount_of_features)
         
-    def test_type_return(self):     
+    def test_type_return(self):
+        
+
+          
         self.client.login(username='testuser', password='passwd')
         #save some values into the database
         geojson_feature = {
@@ -575,3 +579,119 @@ class FeatureTest(TestCase):
         EG: some_prop = 1.4 or some_prop = "1.4"
         How to difference between the two cases on the server?
         """
+
+    def test_check_features_migration(self):
+        
+        # logout
+        self.client.logout()
+        
+        #create session for anonymous user
+        response = self.client.post(reverse('api_session'))
+        self.assertEqual(response.status_code,
+                         200,
+                         "The session creation through the session url did not work")
+        
+        #add a feature collection for that anonymous user
+        featurecollection = {
+            "type": "FeatureCollection",
+            "features": []
+        }
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[200, 200]},
+            "properties": {"some_prop":"value"}})
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[300, 250]},
+            "properties": {"some_prop":40}})
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[100, 300]},
+            "properties": {"some_prop": True}})
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[100, 300]},
+            "properties": {"some_prop": None}})
+        
+        response = self.client.post(reverse('api_feature'),
+                                    json.dumps(featurecollection),
+                                    content_type='application/json')
+
+
+        #get the features
+        response = self.client.get(reverse('api_feature'))
+        response_dict = json.loads(response.content)
+        
+       
+        #check the feature array count
+        self.assertEquals(len(response_dict.get('features','')),
+                          4,
+                          "The featurecollection should have 4 feaures")        
+        
+        
+        
+        # register the anonymous user, at this point all the 
+        # features belonging to anonymous user have to be migrated
+        # to the new user
+
+        post_content = {'username':'testuser_checkFeatures', 'password':'testpass2', 'migrate_features' : True}
+        response = self.client.post(reverse('api_register'),
+                                    json.dumps(post_content), \
+                                    content_type='application/json')
+        self.assertEquals(response.status_code,
+                          201,
+                          'registration did not work')
+
+        #get the features
+        response = self.client.get(reverse('api_feature'))
+        response_dict = json.loads(response.content)
+
+        #check for geojson type
+        self.assertEquals(response_dict.get('type', ''),
+                          "FeatureCollection",
+                          "The geojson does not seem to be valid," + \
+                          " get feature should return FeatureCollection type")
+        #check the feature array count
+        self.assertEquals(len(response_dict.get('features','')),
+                          4,
+                          "The featurecollection should have 4 feaures")
+
+        # logout
+        self.client.logout()
+
+        #create a new session for anonymous user
+        response = self.client.post(reverse('api_session'))
+        self.assertEqual(response.status_code,
+                         200,
+                         "The session creation through the session url did not work")
+
+        # add same feature collection to new anonymous user
+        response = self.client.post(reverse('api_feature'),
+                                    json.dumps(featurecollection),
+                                    content_type='application/json')
+
+        # login
+        # after login the features of anonymous user have to migrated to 
+        # the logged in user
+        post_content = {'username':'testuser_checkFeatures', 'password':'testpass2', 'migrate_features' : True}
+        response = self.client.post(reverse('api_login'),
+                                    json.dumps(post_content), 
+                                    content_type='application/json')
+        self.assertEquals(response.status_code,
+                          200,
+                          'login with valid username and password did not work')
+
+        #get the features
+        response = self.client.get(reverse('api_feature'))
+        response_dict = json.loads(response.content)
+
+        
+        self.assertEquals(len(response_dict.get('features','')),
+                          8,
+                          "The dictionary should have 8 features: 4 old and 4 new")
+
+        self.client.logout()
