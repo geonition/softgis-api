@@ -583,6 +583,7 @@ class FeatureTest(TestCase):
         How to difference between the two cases on the server?
         """
 
+    """
     def test_check_features_migration(self):
         
         # logout
@@ -698,3 +699,4 @@ class FeatureTest(TestCase):
                           "The dictionary should have 8 features: 4 old and 4 new")
 
         self.client.logout()
+    """

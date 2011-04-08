@@ -10,7 +10,6 @@ from django.http import HttpResponse
 from django.http import HttpResponseBadRequest
 from django.http import HttpResponseForbidden
 from django.utils import translation
-from softgis_feature.models import Feature
 from HttpResponseExtenders import HttpResponseNotAuthorized
 
 import sys
@@ -41,7 +40,7 @@ def login(request):
         
     elif (request.method == "POST"):
 
-        if request.user.is_authenticated() == True and request.user.username.find("id__max") == -1:
+        if request.user.is_authenticated() == True:
             return HttpResponseBadRequest(_("You have already signed in"))
             
         values = None
@@ -61,17 +60,11 @@ def login(request):
         if(password == None):
             return HttpResponseBadRequest(_("You have to provide a password"))
 
-        session_user = request.user          
-  
+ 
         user = django_authenticate(username=username, password=password)
             
         if user is not None:
             django_login(request, user)
-
-            # we expect that anonymous_user to be created using create session (see below session() fct)
-            if migrate_features and not session_user.is_anonymous():
-                migrate_features_from_anonymous_user(session_user, user)
-          
             
             return HttpResponse(_(u"Login successfull"), status=200)
         else:
@@ -125,7 +118,7 @@ def register(request):
     elif(request.method == "POST"):
         
         #check if anonymous user 
-        if request.user.is_authenticated() == True and request.user.username.find("id__max") == -1:
+        if request.user.is_authenticated() == True:
             return HttpResponseBadRequest(_("You cannot register a user when logged in"))
     
     
@@ -139,7 +132,6 @@ def register(request):
         username = values.pop('username', None)
         password = values.pop('password', None)
         migrate_features = values.pop('migrate_features', False)
-        session_user = request.user 
         
         if(username == None or username == ""):
             return HttpResponseBadRequest(_(u"You have to provide a username"))
@@ -191,10 +183,6 @@ def register(request):
         if user is not None and user.is_active:
             django_login(request, user)
         
-        # we expect that anonymous_user to be created using create session (see below session() fct)
-        if migrate_features and not session_user.is_anonymous():
-            migrate_features_from_anonymous_user(session_user, user)
-        
         return HttpResponse(status=201)
         
 
@@ -232,7 +220,14 @@ def session(request):
         return HttpResponse(_(u"session created"))
 
     elif request.method == "DELETE":
-        django_logout(request)
+        
+        # check if it is an session anonymous user - delete it
+        # otherwise just logout
+        if request.user.is_authenticated() and request.user.username.find("id__max") > -1:
+            request.user.delete()
+        else:
+            django_logout(request)
+            
         return HttpResponse(_(u"session end"))
         
         
@@ -339,21 +334,4 @@ def change_password(request):
         
     return HttpResponseBadRequest(_(u"This URL only accepts POST requests"))   
 
-def migrate_features_from_anonymous_user(session_user, user):
-    """
-    Migrate features added as anonymous user to login
-    """
-    anonymous_feature_collection = Feature.objects.filter(user = session_user)
-
-
-    for feature in anonymous_feature_collection:
-        feature.user = user
-        feature.save()
-
-    """
-    Delete anonymous user
-    """
-
-    session_user.delete()
-    
 
