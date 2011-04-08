@@ -11,6 +11,8 @@ from django.http import HttpResponseBadRequest
 from django.http import HttpResponseForbidden
 from django.utils import translation
 from softgis_feature.models import Feature
+from HttpResponseExtenders import HttpResponseNotAuthorized
+
 import sys
 
 if sys.version_info >= (2, 6):
@@ -73,7 +75,7 @@ def login(request):
             
             return HttpResponse(_(u"Login successfull"), status=200)
         else:
-            return HttpResponseBadRequest(_(u"Wrong password or username not found"))
+            return HttpResponseNotAuthorized(_(u"Wrong password or username not found"))
             
 
 def logout(request):

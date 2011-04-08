@@ -77,17 +77,17 @@ class AuthenticationTest(TestCase):
         response = self.client.post(reverse('api_login'),
                                     json.dumps(post_content), 
                                     content_type='application/json')
-        self.assertEquals(response.status_code, 400)
+        self.assertEquals(response.status_code, 401)
         post_content = {'username':'some', 'password':'testpass'}
         response = self.client.post(reverse('api_login'),
                                     json.dumps(post_content),
                                     content_type='application/json')
-        self.assertEquals(response.status_code, 400)
+        self.assertEquals(response.status_code, 401)
         post_content = {'username':'testuser', 'password':'pass'}
         response = self.client.post(reverse('api_login'),
                                     json.dumps(post_content),
                                     content_type='application/json')
-        self.assertEquals(response.status_code, 400)
+        self.assertEquals(response.status_code, 401)
         
         #valid login
         post_content = {'username':'testuser', 'password':'testpass'}
