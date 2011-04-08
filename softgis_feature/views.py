@@ -73,7 +73,11 @@ def feature(request):
             return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H-%M")
         elif time_accuracy == 5:
             return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H-%M-%S")
-    
+
+    #print request
+    if not request.user.is_authenticated():
+        return HttpResponseNotAuthorized(_("You need to login or create a session in order to manipulate features"))    
+
     if request.method  == "GET":
         
         #print request.user
@@ -212,9 +216,7 @@ def feature(request):
                                           " Accepted types are " + \
                                           "'FeatureCollection' and 'Feature'."))
             
-        #print request
-        #if not request.user.is_authenticated():
-        #    return HttpResponseNotAuthorized()
+
 
         #inner function to save one feature
         if geojson_type == "Feature":
@@ -307,6 +309,7 @@ def feature(request):
             return HttpResponseBadRequest(_("geojson did not inclue a type." + \
                                           " Accepted types are " + \
                                           "'FeatureCollection' and 'Feature'."))
+
         if geojson_type == "Feature":
             
             try:

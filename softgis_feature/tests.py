@@ -583,6 +583,45 @@ class FeatureTest(TestCase):
         How to difference between the two cases on the server?
         """
 
+    def test_unauthorised(self):
+        # logout
+        self.client.logout()
+
+         #add a feature collection for that anonymous user
+        featurecollection = {
+            "type": "FeatureCollection",
+            "features": []
+        }
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[200, 200]},
+            "properties": {"some_prop":"value"}})
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[300, 250]},
+            "properties": {"some_prop":40}})
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[100, 300]},
+            "properties": {"some_prop": True}})
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[100, 300]},
+            "properties": {"some_prop": None}})
+        
+        response = self.client.post(reverse('api_feature'),
+                                    json.dumps(featurecollection),
+                                    content_type='application/json')
+
+        self.assertEqual(response.status_code,
+                         401,
+                         "Can not add features if not signed in or an anonymous session is created")
+        
+
     """
     def test_check_features_migration(self):
         
