@@ -61,7 +61,6 @@ def feature(request):
         returns a datetime.datetime instance
         or None if format was wrong
         """
-        
         if sys.version_info >= (2, 6): #remove this when django drops support for 2.4
             time_accuracy = time_string.count('-')
             if time_accuracy == 0:
@@ -107,6 +106,11 @@ def feature(request):
                                          int(time_split[4]),
                                          int(time_split[5]))
     
+
+    #print request
+    if not request.user.is_authenticated():
+        return HttpResponseNotAuthorized(_("You need to login or create a session in order to manipulate features"))    
+
     if request.method  == "GET":
         
         #print request.user
@@ -245,9 +249,7 @@ def feature(request):
                                           " Accepted types are " + \
                                           "'FeatureCollection' and 'Feature'."))
             
-        #print request
-        #if not request.user.is_authenticated():
-        #    return HttpResponseNotAuthorized()
+
 
         #inner function to save one feature
         if geojson_type == "Feature":
@@ -340,6 +342,7 @@ def feature(request):
             return HttpResponseBadRequest(_("geojson did not inclue a type." + \
                                           " Accepted types are " + \
                                           "'FeatureCollection' and 'Feature'."))
+
         if geojson_type == "Feature":
             
             try:
