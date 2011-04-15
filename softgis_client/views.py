@@ -6,6 +6,7 @@ from django.http import HttpResponse
 
 import settings
 import django
+import jsmin #to minify the javascript
 
 
 def javascript_api(request):
@@ -51,13 +52,20 @@ def javascript_api(request):
 
     host = request.get_host()
     
-    # return the clients in one file
-    return render_to_response("javascript/softgis.%s.js" % lib,
+    js_string = render_to_string(
+                    "javascript/softgis.%s.js" % lib,
+                    RequestContext(request,
                               {'softgis_clients': softgis_clients,
                                'host': host,
                                'method': pre_url,
-                               'CSRF_Cookie_Name' : getattr(settings, "CSRF_COOKIE_NAME","csrftoken")},
-                              mimetype="application/javascript")
+                               'CSRF_Cookie_Name' : getattr(settings, "CSRF_COOKIE_NAME","csrftoken")
+                               }
+                              ))
+
+    minified_js = jsmin.jsmin(js_string)
+    
+    # return the clients in one file
+    return HttpResponse(minified_js, mimetype="application/javascript")
 
 
 def test_api(request):
