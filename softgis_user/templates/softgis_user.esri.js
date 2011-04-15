@@ -12,9 +12,9 @@
 */
 function register(username, password, callback_function, migrate_features) {
     var data = {};
-    data['username'] = (username !== undefined) ? username : null;
-    data['password'] = (password !== undefined) ? password : null;
-    data['migrate_features'] = (migrate_features !== undefined) ? migrate_features : false; 
+    data.username = (username !== undefined) ? username : null;
+    data.password = (password !== undefined) ? password : null;
+    data.migrate_features = (migrate_features !== undefined) ? migrate_features : false; 
    
     dojo.xhrPost({
         "url": api_full_url + '{% url api_register %}', 
@@ -48,9 +48,9 @@ function register(username, password, callback_function, migrate_features) {
 */
 function login(username, password, callback_function, migrate_features) {
     var data = {};
-    data['username'] = (username !== undefined) ? username : null;
-    data['password'] = (password !== undefined) ? password : null;
-    data['migrate_features'] = (migrate_features !== undefined) ? migrate_features : false;    
+    data.username = (username !== undefined) ? username : null;
+    data.password = (password !== undefined) ? password : null;
+    data.migrate_features = (migrate_features !== undefined) ? migrate_features : false;    
 
     dojo.xhrPost({
 	    "url": api_full_url + '{% url api_login %}', 
@@ -174,7 +174,7 @@ function get_session(callback_function) {
 function new_password(email, callback_function) {
 
     var data = {};
-    data['email'] = (email !== undefined) ? email : null;
+    data.email = (email !== undefined) ? email : null;
     
     dojo.xhrPost({
         "url": api_full_url + '{% url api_new_password %}', 
@@ -203,8 +203,8 @@ function new_password(email, callback_function) {
 */
 function change_password(old_password, new_password, callback_function) { 
     var data = {};
-    data['old_password'] = (old_password !== undefined) ? old_password : null;
-    data['new_password'] = (new_password !== undefined) ? new_password : null;
+    data.old_password = (old_password !== undefined) ? old_password : null;
+    data.new_password = (new_password !== undefined) ? new_password : null;
     
     dojo.xhrPost({
 	"url": api_full_url + '{% url api_change_password %}', 

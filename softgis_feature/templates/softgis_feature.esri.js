@@ -24,7 +24,7 @@ function get_features(limit_params, callback_function) {
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
                 callback_function({"response": response,
-                                  "ioArgs": ioArgs})
+                                  "ioArgs": ioArgs});
             }
         }
     }); 
@@ -44,7 +44,7 @@ function create_feature(feature_or_feature_collection, callback_function) {
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
                 callback_function({"response": response,
-                                  "ioArgs": ioArgs})
+                                  "ioArgs": ioArgs});
             }
         }
     });
@@ -65,7 +65,7 @@ function update_feature(feature_or_feature_collection, callback_function) {
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
                 callback_function({"response": response,
-                                  "ioArgs": ioArgs})
+                                  "ioArgs": ioArgs});
             }
         }
     });
@@ -83,6 +83,7 @@ function delete_feature(feature_or_feature_collection, callback_function) {
     */
     var feature_ids_array = [];
     var type = feature_or_feature_collection.type;
+    var i = 0;
     
     if (type === "Feature")
     {
@@ -91,7 +92,7 @@ function delete_feature(feature_or_feature_collection, callback_function) {
     else if (type === "FeatureCollection")
     {
         
-        for(var i=0; i < feature_or_feature_collection.features.length; i++)
+        for(i = 0; i < feature_or_feature_collection.features.length; i++)
         {
         
             
@@ -112,7 +113,7 @@ function delete_feature(feature_or_feature_collection, callback_function) {
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
                 callback_function({"response": response,
-                                  "ioArgs": ioArgs})
+                                  "ioArgs": ioArgs});
             }
         }
     });   
@@ -184,7 +185,7 @@ function remove_graphic(feature_id, callback_function) {
     console.log("DEPRACATED remove_graphic");
     var feature = {
         'type' : 'Feature',
-        'id': feature_id}
+        'id': feature_id};
     delete_feature(feature, callback_function);
 }
 
@@ -241,11 +242,12 @@ function get_graphics(limiter_param, map_layer, infotemplate, callback_function)
         // The LOAD function will be called on a successful response.
         "load": function(response, ioArgs) {
                     var return_graphics = [];
+                    var i = 0;
 
                     LAYER_ADD_SEMAPHORES[limiter_param] = true;
 
                     var spatialReference = new esri.SpatialReference({"wkid": response.crs.properties.code});
-                    for(var i = 0; i < response.features.length; i++) {
+                    for(i = 0; i < response.features.length; i++) {
                         var geometry = response.features[i].geometry;
                         var properties = response.features[i].properties;
                         var id = response.features[i].id;
@@ -290,7 +292,7 @@ function get_graphics(limiter_param, map_layer, infotemplate, callback_function)
         "handle": function(response, ioArgs) {
             if(callback_function !== undefined) {
                 callback_function({"response": response,
-                                  "ioArgs": ioArgs})
+                                  "ioArgs": ioArgs});
             }
         }
     });
