@@ -107,13 +107,8 @@ def feature(request):
                                          int(time_split[5]))
     
 
-    #print request
-    if not request.user.is_authenticated():
-        return HttpResponseNotAuthorized(_("You need to login or create a session in order to manipulate features"))    
-
     if request.method  == "GET":
         
-        #print request.user
         # get the definied limiting parameters
         limiting_param = request.GET.items()
         
@@ -238,6 +233,10 @@ def feature(request):
         
             
     elif request.method == "POST":
+        
+        if not request.user.is_authenticated():
+            return HttpResponseNotAuthorized(_("You need to login or create a session in order to create features"))    
+
         #supports saving geojson Features
         feature_json = json.loads(request.POST.keys()[0])
         geojson_type = None
@@ -329,6 +328,9 @@ def feature(request):
             return HttpResponse(json.dumps(ret_featurecollection))
             
     elif request.method == "PUT":
+        
+        if not request.user.is_authenticated():
+            return HttpResponseNotAuthorized(_("You need to login or create a session in order to update features"))    
         
         #supports updating geojson Features
         feature_json = json.loads(urllib2.unquote(request.raw_post_data.encode('utf-8')).decode('utf-8'))
@@ -441,10 +443,12 @@ def feature(request):
             return HttpResponse(_(u"Features updated"))
                     
     elif request.method  == "DELETE":
-
         """
         Get the array with the feature ids for delete
         """
+        if not request.user.is_authenticated():
+            return HttpResponseNotAuthorized(_("You need to login or create a session in order to delete features"))
+            
         feature_ids = json.loads(request.GET.get("ids","[]"))
         
         if len(feature_ids) == 0:
