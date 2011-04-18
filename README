@@ -1,8 +1,4 @@
-The softGIS api provides django apps to set up a REST API
-for saving and retrieval of geographical information.
+The softGIS api provides a set of django apps to set up a REST API for saving and querying geographical information.
 
-The applications contain both javascript functions and
-REST functionallity implemented on top of geodjango.
+More about the usage and installation can be found in the wiki pages.
 
-At the moment this project is developing in a fast pace and
-you cannot expect it to be stable.

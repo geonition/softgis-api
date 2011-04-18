@@ -36,3 +36,13 @@ class CrossSiteAccessMiddleware(object):
         response['Access-Control-Allow-Headers'] = ",".join( XS_SHARING_ALLOWED_HEADERS )
 
         return response
+    
+class PreventCacheMiddleware(object):
+
+    def process_response(self, request, response):
+
+        response['Pragma'] = 'no-cache'
+        response['Cache-Control'] = 'max-age=0,no-cache,no-store,post-check=0,pre-check=0'
+        response['Expires'] = '0'
+
+        return response

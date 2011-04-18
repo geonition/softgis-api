@@ -43,6 +43,7 @@ def feature(request):
     On DELETE request this function removes existing feature/feature collection from 
     the database.
     """
+    
     def parse_time(time_string):
         """
         Helper function to parse a POST or GET time
@@ -62,29 +63,60 @@ def feature(request):
         returns a datetime.datetime instance
         or None if format was wrong
         """
-        time_accuracy = time_string.count('-')
-        if time_accuracy == 0:
-            return datetime.datetime.strptime(time_string, "%Y")
-        elif time_accuracy == 1:
-            return datetime.datetime.strptime(time_string, "%Y-%m")
-        elif time_accuracy == 2:
-            return datetime.datetime.strptime(time_string, "%Y-%m-%d")
-        elif time_accuracy == 3:
-            return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H")
-        elif time_accuracy == 4:
-            return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H-%M")
-        elif time_accuracy == 5:
-            return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H-%M-%S")
 
-    #print request
-    if not request.user.is_authenticated():
-        logger.warning("There was a %s request to features but the user was not authenticated" % request.method)
-        return HttpResponseNotAuthorized(_("You need to login or create a session in order to manipulate features"))    
+        
+        if sys.version_info >= (2, 6): #remove this when django drops support for 2.4
+            time_accuracy = time_string.count('-')
+            if time_accuracy == 0:
+                return datetime.datetime.strptime(time_string, "%Y")
+            elif time_accuracy == 1:
+                return datetime.datetime.strptime(time_string, "%Y-%m")
+            elif time_accuracy == 2:
+                return datetime.datetime.strptime(time_string, "%Y-%m-%d")
+            elif time_accuracy == 3:
+                return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H")
+            elif time_accuracy == 4:
+                return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H-%M")
+            elif time_accuracy == 5:
+                return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H-%M-%S")
+        else:
+            time_accuracy = time_string.count('-')
+            time_split = time_string.split('-')
+            if time_accuracy == 0:
+                return datetime.datetime(int(time_split[0]))
+            elif time_accuracy == 1:
+                return datetime.datetime(int(time_split[0]),
+                                         int(time_split[1]))
+            elif time_accuracy == 2:
+                return datetime.datetime(int(time_split[0]),
+                                         int(time_split[1]),
+                                         int(time_split[2]))
+            elif time_accuracy == 3:
+                return datetime.datetime(int(time_split[0]),
+                                         int(time_split[1]),
+                                         int(time_split[2]),
+                                         int(time_split[3]))
+            elif time_accuracy == 4:
+                return datetime.datetime(int(time_split[0]),
+                                         int(time_split[1]),
+                                         int(time_split[2]),
+                                         int(time_split[3]),
+                                         int(time_split[4]))
+            elif time_accuracy == 5:
+                return datetime.datetime(int(time_split[0]),
+                                         int(time_split[1]),
+                                         int(time_split[2]),
+                                         int(time_split[3]),
+                                         int(time_split[4]),
+                                         int(time_split[5]))
+  
 
     if request.method  == "GET":
+        #print request
+        if not request.user.is_authenticated():
+            logger.warning("There was a %s request to features but the user was not authenticated" % request.method)
+            return HttpResponseNotAuthorized(_("You need to login or create a session in order to query features"))  
         
-      
-
         # get the definied limiting parameters
         limiting_param = request.GET.items()
         
@@ -215,9 +247,19 @@ def feature(request):
     elif request.method == "POST":
 
         logger.debug("POST request to features() with params %s " %request.POST.keys()[0])
+        
+        if not request.user.is_authenticated():
+            logger.warning("There was a %s request to features but the user was not authenticated" % request.method)
+            return HttpResponseNotAuthorized(_("You need to login or create a session in order to create features"))    
 
         #supports saving geojson Features
-        feature_json = json.loads(request.POST.keys()[0])
+        feature_json = None
+        
+        try:
+            feature_json = json.loads(request.POST.keys()[0])
+        except IndexError:
+            return HttpResponseBadRequest(_("POST data was empty so could not create the feature"))
+            
         geojson_type = None
         
         try:
@@ -316,6 +358,9 @@ def feature(request):
             return HttpResponse(json.dumps(ret_featurecollection))
             
     elif request.method == "PUT":
+        
+        if not request.user.is_authenticated():
+            return HttpResponseNotAuthorized(_("You need to login or create a session in order to update features"))    
         
         #supports updating geojson Features
         feature_json = json.loads(urllib2.unquote(request.raw_post_data.encode('utf-8')).decode('utf-8'))
@@ -439,10 +484,12 @@ def feature(request):
             return HttpResponse(_(u"Features updated"))
                     
     elif request.method  == "DELETE":
-
         """
         Get the array with the feature ids for delete
         """
+        if not request.user.is_authenticated():
+            return HttpResponseNotAuthorized(_("You need to login or create a session in order to delete features"))
+            
         feature_ids = json.loads(request.GET.get("ids","[]"))
         
         logger.debug("A DELETE request was sent to features with the params %s" % feature_ids)

@@ -45,19 +45,50 @@ def profile(request):
         
         returns a datetime.datetime instance
         """
-        time_accuracy = time_string.count('-')
-        if time_accuracy == 0:
-            return datetime.datetime.strptime(time_string, "%Y")
-        elif time_accuracy == 1:
-            return datetime.datetime.strptime(time_string, "%Y-%m")
-        elif time_accuracy == 2:
-            return datetime.datetime.strptime(time_string, "%Y-%m-%d")
-        elif time_accuracy == 3:
-            return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H")
-        elif time_accuracy == 4:
-            return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H-%M")
-        elif time_accuracy == 5:
-            return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H-%M-%S")
+        if sys.version_info >= (2, 6): #remove this when django drops support for 2.4
+            time_accuracy = time_string.count('-')
+            if time_accuracy == 0:
+                return datetime.datetime.strptime(time_string, "%Y")
+            elif time_accuracy == 1:
+                return datetime.datetime.strptime(time_string, "%Y-%m")
+            elif time_accuracy == 2:
+                return datetime.datetime.strptime(time_string, "%Y-%m-%d")
+            elif time_accuracy == 3:
+                return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H")
+            elif time_accuracy == 4:
+                return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H-%M")
+            elif time_accuracy == 5:
+                return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H-%M-%S")
+        else:
+            time_accuracy = time_string.count('-')
+            time_split = time_string.split('-')
+            if time_accuracy == 0:
+                return datetime.datetime(int(time_split[0]))
+            elif time_accuracy == 1:
+                return datetime.datetime(int(time_split[0]),
+                                         int(time_split[1]))
+            elif time_accuracy == 2:
+                return datetime.datetime(int(time_split[0]),
+                                         int(time_split[1]),
+                                         int(time_split[2]))
+            elif time_accuracy == 3:
+                return datetime.datetime(int(time_split[0]),
+                                         int(time_split[1]),
+                                         int(time_split[2]),
+                                         int(time_split[3]))
+            elif time_accuracy == 4:
+                return datetime.datetime(int(time_split[0]),
+                                         int(time_split[1]),
+                                         int(time_split[2]),
+                                         int(time_split[3]),
+                                         int(time_split[4]))
+            elif time_accuracy == 5:
+                return datetime.datetime(int(time_split[0]),
+                                         int(time_split[1]),
+                                         int(time_split[2]),
+                                         int(time_split[3]),
+                                         int(time_split[4]),
+                                         int(time_split[5]))
             
             
     if not request.user.is_authenticated():
@@ -162,6 +193,8 @@ def profile(request):
         except ValueError, err:
             logger.warning("The json received via POST to profile was not valid: %s" %request.POST.keys()[0])
             return HttpResponseBadRequest("JSON error: " + str(err.args))
+        except IndexError:
+            return HttpResponseBadRequest(_("POST data was empty so could not save the profile"))
 
         current_profile = None
         try:
