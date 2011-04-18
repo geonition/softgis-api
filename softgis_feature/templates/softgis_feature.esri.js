@@ -85,19 +85,12 @@ function delete_feature(feature_or_feature_collection, callback_function) {
     var type = feature_or_feature_collection.type;
     var i = 0;
     
-    if (type === "Feature")
-    {
-	feature_ids_array[0] = feature_or_feature_collection.id;
+    if (type === "Feature"){
+        feature_ids_array[0] = feature_or_feature_collection.id;
     }
-    else if (type === "FeatureCollection")
-    {
-        
-        for(i = 0; i < feature_or_feature_collection.features.length; i++)
-        {
-        
-            
-            if (feature_or_feature_collection.features[i].id !== undefined)
-            {
+    else if (type === "FeatureCollection") {
+        for(i = 0; i < feature_or_feature_collection.features.length; i++){
+            if (feature_or_feature_collection.features[i].id !== undefined){
                 feature_ids_array.push(feature_or_feature_collection.features[i].id);
             }
         }
