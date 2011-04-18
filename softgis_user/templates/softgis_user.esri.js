@@ -10,11 +10,10 @@
  status_code = 201/400/409
  message = message from server
 */
-function register(username, password, callback_function, migrate_features) {
+function register(username, password, callback_function) {
     var data = {};
     data['username'] = (username !== undefined) ? username : null;
     data['password'] = (password !== undefined) ? password : null;
-    data['migrate_features'] = (migrate_features !== undefined) ? migrate_features : false; 
    
     dojo.xhrPost({
         "url": api_full_url + '{% url api_register %}', 
@@ -46,11 +45,11 @@ function register(username, password, callback_function, migrate_features) {
  status_code = 201/400/409
  message = message from server
 */
-function login(username, password, callback_function, migrate_features) {
+function login(username, password, callback_function) {
     var data = {};
     data['username'] = (username !== undefined) ? username : null;
     data['password'] = (password !== undefined) ? password : null;
-    data['migrate_features'] = (migrate_features !== undefined) ? migrate_features : false;    
+
 
     dojo.xhrPost({
 	    "url": api_full_url + '{% url api_login %}', 

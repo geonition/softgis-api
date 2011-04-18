@@ -11,7 +11,7 @@ from django.http import HttpResponseBadRequest
 from django.http import HttpResponseForbidden
 from django.utils import translation
 from HttpResponseExtenders import HttpResponseNotAuthorized
-
+import logging
 import sys
 
 if sys.version_info >= (2, 6):
@@ -22,6 +22,7 @@ else:
 # set the ugettext _ shortcut
 _ = translation.ugettext
 
+logger = logging.getLogger('api.user.view')
    
 def login(request):
     """
@@ -36,24 +37,29 @@ def login(request):
 
     """
     if(request.method == "GET"):
+        
+        logger.warning("There was a GET request to the url %s which accepts just POST request" % request.get_full_path())
         return HttpResponseBadRequest(_("This url only accept POST requests"))
         
     elif (request.method == "POST"):
+        
+        logger.debug("An POST request was sent to login()")
 
         if request.user.is_authenticated() == True:
+            logger.info("There was a login attempt when the user was already authenticated with username %s " % request.user.username)
             return HttpResponseBadRequest(_("You have already signed in"))
             
         values = None
         try:
             values = json.loads(request.POST.keys()[0])
         except ValueError, err:
+            logger.error("Error at login attempt. Details: %s"  % str(err.args))
             return HttpResponseBadRequest("JSON error: " + str(err.args))
     
              
         username = values.pop('username', None)
         password = values.pop('password', None)
-        migrate_features = values.pop('migrate_features', False)
-        
+                
         if(username == None):
             return HttpResponseBadRequest(_("You have to provide a username"))
             
@@ -66,10 +72,27 @@ def login(request):
         if user is not None:
             django_login(request, user)
             
-            return HttpResponse(_(u"Login successfull"), status=200)
+            response = HttpResponse(_(u"Login successfull"), status=200)
+            response['Access-Control-Allow-Origin'] = "*"
+            return response
         else:
-            return HttpResponseNotAuthorized(_(u"Wrong password or username not found"))
-            
+            logger.info("Wrong username and password: %s / %s " %(username, password))
+            response = HttpResponseNotAuthorized(_(u"Wrong password or username not found"))
+            response['Access-Control-Allow-Origin'] = "*"
+            return response
+    
+    
+    elif (request.method == "OPTIONS"):
+        
+        logger.debug("An OPTIONS request was sent to login()")
+        
+        response = HttpResponse("")
+        response['Access-Control-Allow-Origin'] = "*"
+        response['Access-Control-Allow-Methods'] = "POST, OPTIONS"
+        response['Access-Control-Allow-Headers'] = "X-Requested-With"
+        
+        return response
+    
 
 def logout(request):
     """
@@ -79,6 +102,9 @@ def logout(request):
         200 if logout successful
     """
     django_logout(request)
+    
+    logger.debug("The user successfully logged out %s" % request.user.username)
+    
     return HttpResponse(_("You have successfully signed out"))
     
         
@@ -112,13 +138,15 @@ def register(request):
         400 for Bad Request
         409 for Conflict
     """
-    if(request.method == "GET"):    
+    if(request.method == "GET"):
+        logger.warning("A GET request was sent to register() but it doesnt' accept GET requests")
         return HttpResponse("")
 
     elif(request.method == "POST"):
         
         #check if anonymous user 
         if request.user.is_authenticated() == True:
+            logger.info("There was a register attempt when the user was already authenticated with username %s " % request.user.username)
             return HttpResponseBadRequest(_("You cannot register a user when logged in"))
     
     
@@ -126,17 +154,20 @@ def register(request):
         try:
             values = json.loads(request.POST.keys()[0])
         except ValueError, err:
+            logger.error("Error at register attempt. Details: %s"  % str(err.args))
             return HttpResponseBadRequest("JSON error: " + str(err.args))
         
 
         username = values.pop('username', None)
         password = values.pop('password', None)
-        migrate_features = values.pop('migrate_features', False)
+        
         
         if(username == None or username == ""):
+            logger.warning("Register attept without providing an username")
             return HttpResponseBadRequest(_(u"You have to provide a username"))
         
         if(password == None or password == ""):
+            logger.warning("Register attept without providing a password")
             return HttpResponseBadRequest(_(u"You have to provide a password"))
         
         #create user for django auth
@@ -152,14 +183,20 @@ def register(request):
     
             for desc in err.message_dict.keys():
                 error_msg.append(err.message_dict[desc][0])
-                
-            return HttpResponse(status=409, content=message.join(error_msg))
+            
+            details=message.join(error_msg)
+            
+            logger.error("Username %s provided for register is not unique. Details: %s " %(username, details))    
+            return HttpResponse(status=409, content=details)
 
         try:
             user.full_clean()
         except ValidationError, err:
             message = " "
-            return HttpResponseBadRequest(message.join(error_msg))
+            details = message.join(error_msg)
+            
+            logger.error("full_clean() generated an error for username %s . Details: %s " %(username, details))
+            return HttpResponseBadRequest(details)
             
         try:
             sid = transaction.savepoint()
@@ -173,8 +210,10 @@ def register(request):
 
             for desc in err.message_dict.keys():
                 error_msg.append(err.message_dict[desc][0])
-                
-            return HttpResponse(status=409, content=message.join(error_msg))
+            details = message.join(error_msg)
+            logger.error("Error when trying to save user %s into database. Details: %s " %(username, details))
+            
+            return HttpResponse(status=409, content=details)
         
         #authenticate and login
         user = django_authenticate(username=username,
@@ -183,6 +222,7 @@ def register(request):
         if user is not None and user.is_active:
             django_login(request, user)
         
+        logger.debug("Registration and login was successfull for username %s " %username)
         return HttpResponse(status=201)
         
 
@@ -198,11 +238,15 @@ def session(request):
     DELETE request ends the session
     """
     if request.method == "GET":
+        logger.debug("GET was called for current session. Session key returned: %s" %request.session.session_key)
         return HttpResponse(request.session.session_key)
         
     elif request.method == "POST":
+        logger.debug("POST was called for session")
+        
         if request.user.is_authenticated():
-            return HttpResponse(_(u"session already created"))
+            logger.warning("POST attempt for session but there is a username %s already logged in" %request.user.username)    
+            return HttpResponse(_(u"session already created")) 
             
         new_user_id = User.objects.aggregate(Max('id'))
 
@@ -217,15 +261,20 @@ def session(request):
         django_login(request, user)
         user.set_unusable_password()
         
+        logger.debug("Session created. Temp session username %s" %user.username)
         return HttpResponse(_(u"session created"))
 
     elif request.method == "DELETE":
         
+        logger.debug("Delete session was called")
+        
         # check if it is an session anonymous user - delete it
         # otherwise just logout
         if request.user.is_authenticated() and request.user.username.find("id__max") > -1:
+            logger.debug("Temp session username %s deleted" %request.user.username) 
             request.user.delete()
         else:
+            logger.debug("User %s has been logged out" %request.user.username) 
             django_logout(request)
             
         return HttpResponse(_(u"session end"))
@@ -254,9 +303,11 @@ def new_password(request):
             confirmed = EmailAddress.objects.get(
                                 user__exact = static_user.user).verified
         except ObjectDoesNotExist:
+            logger.debug("getting the confirmed email address for new_password() throwed an ObjectDoesNotExist for user %s" % static_user.user) 
             pass
             
         if confirmed == False:
+            logger.warning("User %s requested a new password but didn't confirmed the email address" %static_user.user) 
             return HttpResponseBadRequest(
                         _(u"Please confirm your email address before requesting a new password"))
 
@@ -284,11 +335,14 @@ def new_password(request):
                         message,
                         'do_not_reply@pehmogis.fi',
                         [static_user.email])
+            
+            logger.debug("New password was successfully sent to email %s" %static_user.email)
             return HttpResponse(_(u"New password sent to ") + \
                                     static_user.email, 
                                     status=200, 
                                     content_type='text/plain')
         except BadHeaderError:
+            logger.error("There was an error while trying to send the email with the new password")
             return HttpResponseBadRequest(_(u'Invalid header found.'))
             
 
@@ -307,6 +361,7 @@ def change_password(request):
     """
     
     if not request.user.is_authenticated():
+        logger.warning("The change password was called by an unauthenticated user")
         return HttpResponseForbidden(_(u"The request has to be made by an signed in user"))
 
 
@@ -318,20 +373,25 @@ def change_password(request):
         old_password = request_json['old_password']
 
         if(old_password == None or old_password == ''):
+            logger.warning("The change password for user %s was called without a current password" %request.user.username)
             return HttpResponseBadRequest(_(u"You have to enter your current password"))
 
         if not request.user.check_password(old_password):
+            logger.warning("The change password for user %s was called with a wrong password" %request.user.username)
             return HttpResponse(_(u"Wrong password"), status=401)
         
         if(new_password == None or new_password == ''):
+            logger.warning("The change password for user %s was called without a new password" %request.user.username)
             return HttpResponseBadRequest(_(u"You have to provide a password"))
         
         request.user.set_password(new_password)
         request.user.save()
         
+        logger.debug("User %s changed password successfully" % request.user.username)
         return HttpResponse(_(u"Password changed succesfully"),
                                 status=200)
-        
+    
+    logger.warning("Method %s is not accepted for change_password for User %s" %request.method  % request.user.username)
     return HttpResponseBadRequest(_(u"This URL only accepts POST requests"))   
 
 

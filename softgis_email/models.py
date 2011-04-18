@@ -12,10 +12,13 @@ from django.utils.translation import gettext_lazy as _
 
 from softgis_email.signals import email_confirmed
 from softgis_email.utils import get_send_mail
+import logging 
+
 send_mail = get_send_mail()
 
-# this code based in-part on django-registration
+logger = logging.getLogger('api.email.model')
 
+# this code based in-part on django-registration
 class EmailAddressManager(models.Manager):
 
     def add_email(self, user, email):
@@ -25,6 +28,7 @@ class EmailAddressManager(models.Manager):
             EmailConfirmation.objects.send_confirmation(email_address)
             return email_address
         except IntegrityError:
+            logger.error('Email address format is invalid: %s' % email)
             return None
 
     def get_primary(self, user):

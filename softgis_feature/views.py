@@ -15,6 +15,7 @@ import urllib2
 import sys
 import time
 import datetime
+import logging
 
 if sys.version_info >= (2, 6):
     import json
@@ -22,6 +23,7 @@ else:
     import simplejson as json
 
 _ = translation.ugettext
+logger = logging.getLogger('api.feature.view')
 
 USE_MONGODB = getattr(settings, "USE_MONGODB", False)
 
@@ -76,11 +78,13 @@ def feature(request):
 
     #print request
     if not request.user.is_authenticated():
+        logger.warning("There was a %s request to features but the user was not authenticated" % request.method)
         return HttpResponseNotAuthorized(_("You need to login or create a session in order to manipulate features"))    
 
     if request.method  == "GET":
         
-        #print request.user
+      
+
         # get the definied limiting parameters
         limiting_param = request.GET.items()
         
@@ -98,6 +102,8 @@ def feature(request):
                     Feature.objects.filter(user__exact = request.user)
         else:
             feature_queryset = Feature.objects.none()
+
+        logger.debug("GET request to features() from user %s and with params %s" % (request.user.username, limiting_param))
 
         property_queryset = Property.objects.all()
         mongo_query = {}
@@ -200,11 +206,16 @@ def feature(request):
         crs_object =  {"type": "EPSG", "properties": {"code": srid}}
         feature_collection['crs'] = crs_object
         
+        logger.debug("Returned feature collection %s" %feature_collection)  
+
         return HttpResponse(json.dumps(feature_collection),
                             mimetype="application/json")
         
             
     elif request.method == "POST":
+
+        logger.debug("POST request to features() with params %s " %request.POST.keys()[0])
+
         #supports saving geojson Features
         feature_json = json.loads(request.POST.keys()[0])
         geojson_type = None
@@ -212,6 +223,7 @@ def feature(request):
         try:
             geojson_type = feature_json['type']
         except KeyError:
+            logger.warning("The geojson does not include a type")	
             return HttpResponseBadRequest(_("geojson did not inclue a type." + \
                                           " Accepted types are " + \
                                           "'FeatureCollection' and 'Feature'."))
@@ -227,6 +239,7 @@ def feature(request):
                 geometry = feature_json['geometry']
                 properties = feature_json['properties']
             except KeyError:
+                logger.warning("The geojson type Feature does not include the required properties and geometry")	
                 return HttpResponseBadRequest("geojson type 'Feature' " + \
                                             "requires properties "  + \
                                             "and geometry")
@@ -241,16 +254,20 @@ def feature(request):
             new_feature = Feature(geometry=geos,
                                 user=request.user)
             new_feature.save()
-    
+            
+
             #add the id to the feature json
             identifier = new_feature.id
+            logger.info("The feature was successfully saved with id %i" %identifier)
+
             feature_json['id'] = identifier
             
             #save the properties of the new feature
             new_property = Property(feature=new_feature,
                                     json_string=json.dumps(properties))
             new_property.save()
-                
+            logger.info("The property was successfuly saved")
+
             return HttpResponse(json.dumps(feature_json))
             
         elif geojson_type == "FeatureCollection":
@@ -267,6 +284,7 @@ def feature(request):
                     geometry = feat['geometry']
                     properties = feat['properties']
                 except KeyError:
+                    logger.warning("The geojson type Features does not include the required properties and geometry. Feature content: %s" %feat)
                     return HttpResponseBadRequest("geojson type 'Feature' " + \
                                                 "requires properties "  + \
                                                 "and geometry in " + \
@@ -292,7 +310,9 @@ def feature(request):
                                         json_string=json.dumps(properties))
                 new_property.save()
                 ret_featurecollection['features'].append(feat)
-                
+
+            logger.info("The feature collection was successfuly saved")
+
             return HttpResponse(json.dumps(ret_featurecollection))
             
     elif request.method == "PUT":
@@ -303,9 +323,12 @@ def feature(request):
         properties = None
         feature_id = None
         
+        logger.debug("A PUT request was sent to features with params %s" %feature_json)
+
         try:
             geojson_type = feature_json['type']
         except KeyError:
+            logger.warning("The geojson does not include a type")
             return HttpResponseBadRequest(_("geojson did not inclue a type." + \
                                           " Accepted types are " + \
                                           "'FeatureCollection' and 'Feature'."))
@@ -317,6 +340,7 @@ def feature(request):
                 properties = feature_json['properties']
                 feature_id = feature_json['id']
             except KeyError:
+                logger.warning("The geojson type Feature does not include the required properties, geometry and id for updating")	
                 return HttpResponseBadRequest("geojson feature requires " + \
                                             "properties, "  + \
                                             "geometry " + \
@@ -327,9 +351,11 @@ def feature(request):
             try:
                 feature_old = Feature.objects.get(id__exact = feature_id)
             except ObjectDoesNotExist:
+                logger.warning("The Feature with id %i was not found" %feature_id)
                 return HttpResponseNotFound("The feature with id %i was not found" % feature_id)
             
             if feature_old.user != request.user:
+                logger.warning("The Feature with id %i was not found was added by user %s and it can not be modified by current user %s" %(feature_id, feature_old.user.username, request.user.username))
                 return HttpResponseForbidden("You do not have permission to" + \
                                              " update feature %i" % feature_id)   
             
@@ -340,7 +366,8 @@ def feature(request):
             geos = OGRGeometry(json.dumps(geometry)).geos
             
             feature = feature_old.update(geometry = geos)
-            
+            logger.info("The Feature %i was updated successfully" % feature_id)            
+
             #save the properties of the new feature
             cur_property = Property.objects\
                             .filter(feature = feature_old)\
@@ -367,6 +394,7 @@ def feature(request):
                     properties = feat['properties']
                     feature_id = feat['id']
                 except KeyError:
+                    logger.warning("The Feature %s does not include the required properties, geometry and id for updating" % feat)
                     return HttpResponseBadRequest("geojson feature requires " + \
                                                 "properties, "  + \
                                                 "geometry " + \
@@ -377,10 +405,12 @@ def feature(request):
                 try:
                     feature_old = Feature.objects.get(id__exact = feature_id)
                 except DoesNotExist:
+                    logger.warning("The Feature with id %i was not found" %feature_id)
                     return HttpResponseNotFound("The feature with id %i was not " +\
                                                 "found" % feature_id)
                 
                 if feature_old.user != request.user:
+                    logger.warning("The Feature with id %i was not found was added by user %s and it can not be modified by current user %s" %(feature_id, feature_old.user.username, request.user.username))
                     return HttpResponseForbidden("You do not have permission to" + \
                                                  " update feature %i" % feature_id)   
                 
@@ -391,7 +421,8 @@ def feature(request):
                 geos = OGRGeometry(json.dumps(geometry)).geos
                 
                 feature = feature_old.update(geometry = geos)
-                
+                logger.info("The Feature %i was updated successfully" % feature_id)
+
                 #save the properties of the new feature
                 cur_property = Property.objects\
                                 .filter(feature = feature_old)\
@@ -414,7 +445,10 @@ def feature(request):
         """
         feature_ids = json.loads(request.GET.get("ids","[]"))
         
+        logger.debug("A DELETE request was sent to features with the params %s" % feature_ids)
+
         if len(feature_ids) == 0:
+            logger.warning("No feature id was provided to be deleted")
             return HttpResponseNotFound(_(u"You have to provide id of features to delete."))
 
         feature_queryset = Feature.objects.filter(id__in = feature_ids,
@@ -436,7 +470,8 @@ def feature(request):
         """
         not_deleted = [id for id in feature_ids if id not in deleted_features]
         if len(not_deleted) > 0:
+            logger.warning("Delete result: Features %s not found and featured %s deleted" % (not_deleted, deleted_features))
             return HttpResponseNotFound(_(u"Features %s not found and featured %s deleted." % (not_deleted, deleted_features)))
         
-    
+        logger.info("All Features were deleted successfully")
         return HttpResponse(_(u"Features with ids %s deleted." % deleted_features))

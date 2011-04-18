@@ -9,6 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 import settings
 import datetime
 import sys
+import logging
 
 if sys.version_info >= (2, 6):
     import json
@@ -17,6 +18,7 @@ else:
 
 # set the ugettext _ shortcut
 _ = translation.ugettext
+logger = logging.getLogger('api.profile.view')
 
 USE_MONGODB = getattr(settings, "USE_MONGODB", False)
 
@@ -59,6 +61,7 @@ def profile(request):
             
             
     if not request.user.is_authenticated():
+        logger.warning("A %s request was received in the profile but the user is not authenticated" % request.method)
         return HttpResponseForbidden(_("The request has to be made by an signed in user"))
         
     if(request.method == "GET"):
@@ -145,7 +148,9 @@ def profile(request):
         profile_list = []
         for prof in profile_queryset:
             profile_list.append(prof.json())
-            
+
+        logger.info("The GET request for user %s with the params %s returned successfully %s" %(request.user.username, limiting_param, profile_list))
+
         return HttpResponse(json.dumps(profile_list))
     
     elif(request.method == "POST"):
@@ -155,6 +160,7 @@ def profile(request):
         try:
             values = json.loads(request.POST.keys()[0])
         except ValueError, err:
+            logger.warning("The json received via POST to profile was not valid: %s" %request.POST.keys()[0])
             return HttpResponseBadRequest("JSON error: " + str(err.args))
 
         current_profile = None
@@ -165,10 +171,14 @@ def profile(request):
             
             
         except ObjectDoesNotExist:
+            logger.info("The user %s does not have a profile" % request.user.username)
+
             new_profile_value = Profile(user = request.user,
                                        json_string = json.dumps(values))
             new_profile_value.save()
-            
+
+            logger.info("The profile %s for user %s was saved successfully" % (values, request.user.username))
+
         return HttpResponse(_("The profile has been saved"))
         
     return HttpResponseBadRequest(_("This function only support GET and POST methods"))

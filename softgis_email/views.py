@@ -12,9 +12,12 @@ from django.core.validators import email_re
 from softgis_email.models import EmailConfirmation
 from softgis_email.models import EmailAddress
 import json
+import logging
 
 # set the ugettext _ shortcut
 _ = translation.ugettext
+
+logger = logging.getLogger('api.email.view')
 
 # View used for confirming a user email using the confirmation key
 def confirm_email(request, confirmation_key):

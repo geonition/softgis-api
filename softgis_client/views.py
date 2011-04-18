@@ -6,7 +6,9 @@ from django.http import HttpResponse
 
 import settings
 import django
+import logging
 
+logger = logging.getLogger('api.client.view')
 
 def javascript_api(request):
     """
@@ -43,7 +45,8 @@ def javascript_api(request):
                     RequestContext(request)
                 ))
         except TemplateDoesNotExist:
-            pass
+           logger.warning("Javascript client file not found: %s" % template)            
+           pass
     
     pre_url = "https://"
     if not request.is_secure():
