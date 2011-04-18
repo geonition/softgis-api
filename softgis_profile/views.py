@@ -187,6 +187,8 @@ def profile(request):
             values = json.loads(request.POST.keys()[0])
         except ValueError, err:
             return HttpResponseBadRequest("JSON error: " + str(err.args))
+        except IndexError:
+            return HttpResponseBadRequest(_("POST data was empty so could not save the profile"))
 
         current_profile = None
         try:

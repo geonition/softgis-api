@@ -238,7 +238,13 @@ def feature(request):
             return HttpResponseNotAuthorized(_("You need to login or create a session in order to create features"))    
 
         #supports saving geojson Features
-        feature_json = json.loads(request.POST.keys()[0])
+        feature_json = None
+        
+        try:
+            feature_json = json.loads(request.POST.keys()[0])
+        except IndexError:
+            return HttpResponseBadRequest(_("POST data was empty so could not create the feature"))
+            
         geojson_type = None
         
         try:
