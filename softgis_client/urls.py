@@ -20,4 +20,5 @@ urlpatterns = patterns('softgis_client.views',
             url(r'^csrf',
                 'csrf',
                 name="api_csrf"),
+            
         )

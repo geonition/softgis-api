@@ -23,7 +23,7 @@ function register(username, password, callback_function) {
     $.ajax({
       url: api_full_url + '{% url api_register %}',
       type: "POST",
-      data: $.toJSON(data),
+      data: JSON.stringify(data),
       success: function(data){
                     if(callback_function !== undefined) {
                         callback_function(data);
@@ -67,7 +67,7 @@ function login(username, password, callback_function) {
     $.ajax({
       url: api_full_url + '{% url api_login %}',
       type: "POST",
-      data: $.toJSON(data),
+      data: JSON.stringify(data),
       success: function(data){
                     if(callback_function !== undefined) {
                         callback_function(data);
@@ -239,7 +239,7 @@ function new_password(email, callback_function) {
     $.ajax({
     url: api_full_url + '{% url api_new_password %}',
     type: "POST",
-    data: $.toJSON(data),
+    data: JSON.stringify(data),
     success: function(data){
                   if(callback_function !== undefined) {
                       callback_function(data);
@@ -279,7 +279,7 @@ function change_password(old_password, new_password, callback_function) {
     $.ajax({
         url: api_full_url + '{% url api_change_password %}',
         type: "POST",
-        data: $.toJSON(data),
+        data: JSON.stringify(data),
         success: function(data){
                       if(callback_function !== undefined) {
                           callback_function(data);
