@@ -164,7 +164,17 @@ def profile(request):
                     else:
                         mongo_query[key] = {}
                         mongo_query[key]["$gte"] = value
-
+                        
+                elif command == "range":
+                    value_l = value.split('-')
+                    if mongo_query.has_key(key):
+                        mongo_query[key]["$gte"] = int(value_l[0])
+                        mongo_query[key]["$lte"] = int(value_l[1])
+                    else:
+                        mongo_query[key] = {}
+                        mongo_query[key]["$gte"] = int(value_l[0])
+                        mongo_query[key]["$lte"] = int(value_l[1])
+                        
                 elif command == "":
                     mongo_query[key] = value
         
