@@ -31,12 +31,15 @@ def javascript_api(request):
     #default lib is esri
     lib = request.GET.get("lib", "esri")
     
+    logger.debug("The client loaded library %s" %lib)
+
     # get the templates
     softgis_templates = []
     for app in settings.INSTALLED_APPS:
         ind = app.find("softgis_")
         if ind != -1:
             softgis_templates.append("%s.%s.js" % (app[ind:], lib))
+            logger.debug("%s.%s.js file was concatenated to unique js script"  % (app[ind:], lib))
     
     # render the clients to strings
     softgis_clients = []

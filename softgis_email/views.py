@@ -26,6 +26,8 @@ def confirm_email(request, confirmation_key):
     
     email_address = EmailConfirmation.objects.confirm_email(confirmation_key)
     
+    logger.debug("Email confirmation attempt for %s with key %s" %(email_address.email_address, confirmation_key) )
+
     #the template will handle the invalid confirmation key
     # if the confirmation key was invalid the email_address object is None
     return render_to_response("emailconfirmation/confirm_email.html", {
@@ -61,6 +63,8 @@ def email(request):
     user = request.user
         
     if(request.method == "GET"):
+        
+        logger.debug("Email GET request for user %s returned %s" %(user.username, user.email))
         #return user email in json format
         json_data = json.dumps({"email":user.email})
         return HttpResponse(json_data, mimetype="application/json")
@@ -69,9 +73,11 @@ def email(request):
         
         email = json.loads(request.POST.keys()[0]).get("email", "")
   
+        logger.debug("Email POST request with param %s" %email)
        
         #check if email was provided
         if (email == "" or email == None):
+            logger.warning("Email sent POST was empty or none")
             return HttpResponseBadRequest(
                     _(u"Expected argument email was not provided"))
 
@@ -82,15 +88,19 @@ def email(request):
           
             #validate email
             if not email_re.match(email):
+                 logger.warning("The email address %s is not valid" %email)
                  return HttpResponseBadRequest(
                     _(u"Email is not valid"))
                 
             """ Send confirmation email"""
             EmailAddress.objects.add_email(user, email)
 
+            logger.debug("Email %s has been added successfully for user %s and the confimation email has been sent" % (email, user.username))
             return HttpResponse(_(u"A confirmation email was sent to your new email address. Follow the intructions in the email to complete the registration."),
                             status=200)
-        
+
+        logger.debug("The user %s already had assigned email %s so the POST was ignored" % (user.username,email )) 
+
         return HttpResponse(_(u"You already have this email address assigned to you"),
                             status=200)    
        
@@ -105,6 +115,7 @@ def email(request):
         #save changes
         user.save()
         
+        logger.debug("Email was successfully deleted for user %s " %user.username)
         return HttpResponse(_(u"Email deleted succesfully"),
                             status=200)
         

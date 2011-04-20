@@ -11,7 +11,8 @@
         
         {% ifequal lib "jquery" %}
             <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
-            <script type="text/javascript" src="{% url api_javascript %}?lib=jquery"></script>
+            <script type="text/javascript" src="http://api.softgis.fi/trunk/softgis_client/softgis.js?lib=jquery"></script>             
+            <!--<script type="text/javascript" src="{% url api_javascript %}?lib=jquery"></script>-->
         {% endifequal %}
         
     </head>
