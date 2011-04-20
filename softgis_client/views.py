@@ -69,9 +69,12 @@ def javascript_api(request):
                                'CSRF_Cookie_Name' : getattr(settings, "CSRF_COOKIE_NAME","csrftoken")
                                }
                               ))
-
-    #minified_js = jsmin.jsmin(js_string)
-    minified_js = js_string
+    
+    if getattr(settings, 'DEBUG', False):
+        minified_js = js_string
+    else:
+        minified_js = jsmin.jsmin(js_string)
+    
     # return the clients in one file
     return HttpResponse(minified_js, mimetype="application/javascript")
 
