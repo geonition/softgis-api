@@ -70,8 +70,8 @@ def javascript_api(request):
                                }
                               ))
 
-    minified_js = jsmin.jsmin(js_string)
-    #minified_js = js_string
+    #minified_js = jsmin.jsmin(js_string)
+    minified_js = js_string
     # return the clients in one file
     return HttpResponse(minified_js, mimetype="application/javascript")
 
