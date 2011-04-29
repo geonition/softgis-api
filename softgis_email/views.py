@@ -11,8 +11,13 @@ from django.core.exceptions import ValidationError
 from django.core.validators import email_re
 from softgis_email.models import EmailConfirmation
 from softgis_email.models import EmailAddress
-import json
 import logging
+import sys
+
+if sys.version_info >= (2, 6):
+    import json
+else:
+    import simplejson as json
 
 # set the ugettext _ shortcut
 _ = translation.ugettext
