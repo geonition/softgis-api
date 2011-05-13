@@ -368,13 +368,13 @@ def feature(request):
         properties = None
         feature_id = None
         
-        logger.debug("A PUT request was sent to features with params %s" %feature_json)
+        logger.debug("A PUT request was sent to features with params %s" % feature_json)
 
         try:
             geojson_type = feature_json['type']
         except KeyError:
-            logger.warning("The geojson does not include a type")
-            return HttpResponseBadRequest(_("geojson did not inclue a type." + \
+            logger.debug("The geojson does not include a type")
+            return HttpResponseBadRequest(_("geojson did not include a type." + \
                                           " Accepted types are " + \
                                           "'FeatureCollection' and 'Feature'."))
 
@@ -385,7 +385,7 @@ def feature(request):
                 properties = feature_json['properties']
                 feature_id = feature_json['id']
             except KeyError:
-                logger.warning("The geojson type Feature does not include the required properties, geometry and id for updating")	
+                logger.debug("The geojson type Feature does not include the required properties, geometry and id for updating")	
                 return HttpResponseBadRequest("geojson feature requires " + \
                                             "properties, "  + \
                                             "geometry " + \
@@ -396,11 +396,11 @@ def feature(request):
             try:
                 feature_old = Feature.objects.get(id__exact = feature_id)
             except ObjectDoesNotExist:
-                logger.warning("The Feature with id %i was not found" %feature_id)
+                logger.debug("The Feature with id %i was not found" %feature_id)
                 return HttpResponseNotFound("The feature with id %i was not found" % feature_id)
             
             if feature_old.user != request.user:
-                logger.warning("The Feature with id %i was not found was added by user %s and it can not be modified by current user %s" %(feature_id, feature_old.user.username, request.user.username))
+                logger.debug("The Feature with id %i was not found was added by user %s and it can not be modified by current user %s" %(feature_id, feature_old.user.username, request.user.username))
                 return HttpResponseForbidden("You do not have permission to" + \
                                              " update feature %i" % feature_id)   
             

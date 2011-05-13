@@ -315,7 +315,6 @@ class FeatureTest(TestCase):
                               "The property query should have returned 3 features")
             
             
-    
     def test_history(self):
         #features to save
         
@@ -363,6 +362,28 @@ class FeatureTest(TestCase):
         
         response_dict = json.loads(response.content)
         
+        #QUERY time__now=true and check that five features are returned
+        response = self.client.get(reverse('api_feature') + \
+                                   "?time__now=true")
+        
+        response_dict = json.loads(response.content)
+        amount_of_features = len(response_dict['features'])
+        
+        self.assertTrue(amount_of_features == 5,
+                        "Query with time__now after first post did not return 5 " + \
+                        "geojson Features. It returned %i" % amount_of_features)
+        
+        #query with time__now and prop
+        response = self.client.get(reverse('api_feature') + \
+                                   "?time__now=true&some_prop=40")
+        
+        response_dict = json.loads(response.content)
+        amount_of_features = len(response_dict['features'])
+        
+        self.assertTrue(amount_of_features == 2,
+                        "Query with time__now and prop = 40 after first " + \
+                        "post did not return 2 geojson Features. It returned %i" \
+                        % amount_of_features)
         
         #wait a little bit to get difference
         time.sleep(1)
@@ -370,15 +391,16 @@ class FeatureTest(TestCase):
         time.sleep(1)
         response_dict['features'][0]['properties']['good'] = 33
         updated_feature_id = response_dict['features'][0]['id']
-                
         response = self.client.put(reverse('api_feature'),
                                 json.dumps(response_dict['features'][0]),
                                 content_type='application/json')
-        
-        
+         
         #delete one and check that the next delete does not affect it
         time.sleep(1)
         after_update = datetime.datetime.now()
+    
+        response = self.client.get(reverse('api_feature') + "?time__now=true")
+        response_dict = json.loads(response.content)
         
         ids = []
         for feat in response_dict['features']:
@@ -392,7 +414,6 @@ class FeatureTest(TestCase):
         
         #wait a little bit more
         time.sleep(1)
-        
         response = self.client.delete(reverse('api_feature') + "?ids=%s" % json.dumps(ids))
         
         
@@ -431,13 +452,9 @@ class FeatureTest(TestCase):
         
         for feat in response_dict['features']:
             if feat['id'] == updated_feature_id:
-                self.assertEquals(feat['properties']['id'],
-                                   1,
-                                  "The feature retrieves does not seem to have correct properties" + \
-                                  " querying time before an update")
-                self.assertEquals(feat['properties']['some_prop'],
-                                  "history_value",
-                                  "The feature retrieves does not seem to have correct properties" + \
+                self.assertEquals(feat['properties'].has_key('good'),
+                                  False,
+                                  "The feature retrieved does not seem to have correct properties" + \
                                   " querying time before an update")
         
         
@@ -458,6 +475,10 @@ class FeatureTest(TestCase):
         response_dict = json.loads(response.content)
         for feat in response_dict['features']:
             if feat['id'] == updated_feature_id:
+                self.assertEquals(feat['properties'].has_key('good'),
+                                  True,
+                                  "The feature retrieved does not seem to have correct properties" + \
+                                  " querying time before an update")
                 self.assertEquals(feat['properties']['good'],
                                   33,
                                   "The feature updated does not seem to have correct properties" + \
@@ -498,7 +519,6 @@ class FeatureTest(TestCase):
                                                             after_delete.second))
         
         response_dict = json.loads(response.content)
-        
         
         amount_of_features = len(response_dict['features'])
         self.assertTrue(amount_of_features == 0,

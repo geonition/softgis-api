@@ -213,6 +213,7 @@ class Property(models.Model):
         properties['user_id'] = self.feature.user.id
         
         feature_dict = {"id": self.feature.id,
+                        "type": "Feature",
                         "geometry": json.loads(self.feature.geometry.json),
                         "properties": properties}
         
