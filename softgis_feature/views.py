@@ -26,6 +26,7 @@ _ = translation.ugettext
 logger = logging.getLogger('api.feature.view')
 
 USE_MONGODB = getattr(settings, "USE_MONGODB", False)
+SEPARATOR = getattr(settings, "SEPARATOR_FOR_CSV_FILE", ";")
 
 #Views for the geometry API
 def feature(request):
@@ -139,12 +140,27 @@ def feature(request):
 
         property_queryset = Property.objects.all()
         mongo_query = {}
-        
+
+        format = "geojson"
+	csv_header = []
+
+
+
         #filter according to limiting_params
         for key, value in limiting_param:
             
             key = str(key)
-            if value.isnumeric():
+
+            # get the export format
+	    if key == "format":
+		format = str(value)
+		continue
+
+	    if key == "csv_header":
+		csv_header = json.loads(value)
+		continue
+
+	    if value.isnumeric():
                 value = int(value)
             elif value == "true":
                 value = True
@@ -224,8 +240,38 @@ def feature(request):
         #filter the properties not belonging to feature_queryset
         property_queryset = property_queryset.filter(feature__in = feature_queryset)
         
+	#if output format is csv prepare the file header
+	csv_string = ""
+
+	if format == "csv":	
+	   csv_string = "Geometry" + SEPARATOR + "Coordinates" 
+	   for key in csv_header:
+	       csv_string += SEPARATOR + key
+
+	csv_string += '\n'
+
         for prop in property_queryset:
-            feature_collection['features'].append(prop.geojson())
+	    if format == "geojson": 
+	        feature_collection['features'].append(prop.geojson())
+	    elif format == "csv":
+		csv_collection += "%s" % prop.feature.geometry.type
+		csv_collection += SEPARATOR
+		csv_collection += "%s" % prop.feature.geometry.coordinates
+
+		#insert value for that property
+		for key in csv_header:
+		    csv_string += SEPARATOR
+		    properties = json.loads(prop.json_string)
+		    try:
+		        csv_string += str(properties[key]).replace(SEPARATOR, ' ')
+		    except KeyError:
+			csv_string += ""
+		
+		csv_string += '\n'   
+	    else: 
+		logger.warning("The format requested %s is not supported" % format)
+		return HttpResponseBadRequest(_("Data output format is not supported"))
+
 
         # According to GeoJSON specification crs member
         # should be on the top-level GeoJSON object
@@ -240,10 +286,16 @@ def feature(request):
         
         logger.debug("Returned feature collection %s" %feature_collection)  
 
-        return HttpResponse(json.dumps(feature_collection),
+	if format == "geojson":
+            return HttpResponse(json.dumps(feature_collection),
                             mimetype="application/json")
-        
-            
+	elif format == "cvs":
+            return HttpResponse(cvs_string,
+                            mimetype="text/csv")
+	else:
+            return HttpResponseBadRequest(_("Data output format is not supported"))
+
+
     elif request.method == "POST":
 
         logger.debug("POST request to features() with params %s " %request.POST.keys()[0])
@@ -522,3 +574,6 @@ def feature(request):
         
         logger.info("All Features were deleted successfully")
         return HttpResponse(_(u"Features with ids %s deleted." % deleted_features))
+
+
+
