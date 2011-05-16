@@ -8,5 +8,4 @@ urlpatterns = patterns('softgis_profile.views',
             url(r'^',
                 'profile',
                 name="api_profile"),
-
         )
