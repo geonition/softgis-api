@@ -2,3 +2,6 @@ The softGIS api provides a set of django apps to set up a REST API for saving an
 
 More about the usage and installation can be found in the wiki pages.
 
+A test server can be found at http://api.softgis.fi, with DEBUG=true and documentation attached.
+
+
