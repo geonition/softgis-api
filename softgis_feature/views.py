@@ -113,7 +113,7 @@ def feature(request):
   
 
     if request.method  == "GET":
-        #print request
+        
         if not request.user.is_authenticated():
             logger.warning("There was a %s request to features but the user was not authenticated" % request.method)
             return HttpResponseNotAuthorized(_("You need to login or create a session in order to query features"))  
@@ -244,20 +244,17 @@ def feature(request):
 	csv_string = ""
 
 	if format == "csv":	
-	   csv_string = "Geometry" + SEPARATOR + "Coordinates" 
+	   csv_string = "Geometry_WKT"  
 	   for key in csv_header:
 	       csv_string += SEPARATOR + key
 
-	csv_string += '\n'
 
         for prop in property_queryset:
 	    if format == "geojson": 
 	        feature_collection['features'].append(prop.geojson())
 	    elif format == "csv":
-		csv_collection += "%s" % prop.feature.geometry.type
-		csv_collection += SEPARATOR
-		csv_collection += "%s" % prop.feature.geometry.coordinates
-
+		csv_string += '\n'
+		csv_string += "%s" % str(prop.feature.geometry.wkt)
 		#insert value for that property
 		for key in csv_header:
 		    csv_string += SEPARATOR
@@ -267,11 +264,10 @@ def feature(request):
 		    except KeyError:
 			csv_string += ""
 		
-		csv_string += '\n'   
+		   
 	    else: 
 		logger.warning("The format requested %s is not supported" % format)
 		return HttpResponseBadRequest(_("Data output format is not supported"))
-
 
         # According to GeoJSON specification crs member
         # should be on the top-level GeoJSON object
@@ -284,21 +280,20 @@ def feature(request):
         crs_object =  {"type": "EPSG", "properties": {"code": srid}}
         feature_collection['crs'] = crs_object
         
-        logger.debug("Returned feature collection %s" %feature_collection)  
+        logger.debug("Returned feature collection %s" % feature_collection)  
 
 	if format == "geojson":
             return HttpResponse(json.dumps(feature_collection),
                             mimetype="application/json")
-	elif format == "cvs":
-            return HttpResponse(cvs_string,
-                            mimetype="text/csv")
+	elif format == "csv":
+            return HttpResponse(csv_string, mimetype="text/csv")
 	else:
             return HttpResponseBadRequest(_("Data output format is not supported"))
 
 
     elif request.method == "POST":
-
-        logger.debug("POST request to features() with params %s " %request.POST.keys()[0])
+        request.POST.keys()[0]
+        logger.debug("POST request to features() with params %s " % request.POST.keys()[0])
         
         if not request.user.is_authenticated():
             logger.warning("There was a %s request to features but the user was not authenticated" % request.method)
