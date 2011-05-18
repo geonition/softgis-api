@@ -679,6 +679,9 @@ class FeatureTest(TestCase):
                                     urllib.quote_plus(json.dumps(featurecollection)),
                                     content_type='application/json')
         
+        self.assertEquals(response.status_code,
+                          200,
+                          "Feaurecollection POST was not valid")
 
         response = self.client.get(reverse('api_feature') + "?format=csv&csv_header=[\"some_prop\",\"Gender\",\"Age\"]" )
 
@@ -690,5 +693,55 @@ class FeatureTest(TestCase):
                         "POINT (100.0000000000000000 300.0000000000000000);None;Male;28",
                         "The CSV export is not ok")
 
+    def test_GeoException(self):
+        self.client.login(username='testuser', password='passwd')
 
+        
+        #add a feature collection for that anonymous user
+        featurecollection = {
+            "type": "FeatureCollection",
+            "features": []
+        }
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[200]},
+            "properties": {"some_prop":"value;anyting;", "Gender" : "Male", "Age" : "20"}})
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[300, 250]},
+            "properties": {"some_prop": 40, "Gender" : "Female", "Age" : "21"}})
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[100, 300]},
+            "properties": {"some_prop": True , "Gender" : "Male", "Age" : "25"}})
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[100, 300]},
+            "properties": {"some_prop": None, "Gender" : "Male", "Age" : "28"}})
+        
+
+        response = self.client.post(reverse('api_feature'),
+                                    urllib.quote_plus(json.dumps(featurecollection)),
+                                    content_type='application/json')
+        
+        self.assertEquals(response.status_code,
+                          400,
+                          "Feaurecollection POST was ok for an invalid geometry")
+
+        geojson_feature = {"type": "Feature",
+                            "geometry": {"type":"Point",
+                                        "coordinates":[]},
+                            "properties": {"some_prop":"value"}}
+        
+        response = self.client.post(reverse('api_feature'),
+                                    json.dumps(geojson_feature),
+                                    content_type='application/json')
+
+        self.assertEquals(response.status_code,
+                          400,
+                          "Feautre POST was ok for an invalid geometry")
 

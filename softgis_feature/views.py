@@ -9,6 +9,8 @@ from django.contrib.gis.gdal import OGRGeometry
 from softgis_feature.models import Feature
 from softgis_feature.models import Property
 from HttpResponseExtenders import HttpResponseNotAuthorized
+from django.contrib.gis.gdal.error import OGRException
+
 
 import settings
 import urllib2
@@ -111,6 +113,48 @@ def feature(request):
                                          int(time_split[4]),
                                          int(time_split[5]))
   
+    def save_feature(feature_json):
+        geometry = None
+        properties = None
+        
+        try:
+            geometry = feature_json['geometry']
+            properties = feature_json['properties']
+        except KeyError as keyError:
+            logger.warning("The geojson type Feature does not include the required properties and geometry")	
+            raise keyError            
+
+        
+        
+        #geos = GEOSGeometry(json.dumps(geometry))
+        # Have to make OGRGeometry as GEOSGeometry
+        # does not support spatial reference systems
+        try:
+            
+            geos = OGRGeometry(json.dumps(geometry)).geos
+        except OGRException as ogrException:            
+            logger.warning("The submited geometry is invalid: %s " % ogrException)	
+            raise ogrException
+
+        #save the feature
+        new_feature = Feature(geometry=geos,
+                            user=request.user)
+        new_feature.save()
+        
+
+        #add the id to the feature json
+        identifier = new_feature.id
+        logger.info("The feature was successfully saved with id %i" %identifier)
+
+        feature_json['id'] = identifier
+        
+        #save the properties of the new feature
+        new_property = Property(feature=new_feature,
+                                json_string=json.dumps(properties))
+        new_property.save()
+        logger.info("The property was successfuly saved")
+
+        return identifier
 
     if request.method  == "GET":
         
@@ -142,9 +186,7 @@ def feature(request):
         mongo_query = {}
 
         format = "geojson"
-	csv_header = []
-
-
+        csv_header = []
 
         #filter according to limiting_params
         for key, value in limiting_param:
@@ -152,15 +194,15 @@ def feature(request):
             key = str(key)
 
             # get the export format
-	    if key == "format":
-		format = str(value)
-		continue
+            if key == "format":
+    	        format = str(value)
+    	        continue
 
-	    if key == "csv_header":
-		csv_header = json.loads(value)
-		continue
+            if key == "csv_header":
+    	        csv_header = json.loads(value)
+    	        continue
 
-	    if value.isnumeric():
+            if value.isnumeric():
                 value = int(value)
             elif value == "true":
                 value = True
@@ -321,44 +363,20 @@ def feature(request):
 
         #inner function to save one feature
         if geojson_type == "Feature":
-            geometry = None
-            properties = None
             
             try:
-                geometry = feature_json['geometry']
-                properties = feature_json['properties']
+                identifier = save_feature(feature_json)
+                feature_json['id'] = identifier
             except KeyError:
-                logger.warning("The geojson type Feature does not include the required properties and geometry")	
                 return HttpResponseBadRequest("geojson type 'Feature' " + \
-                                            "requires properties "  + \
-                                            "and geometry")
-                
-                
-            #geos = GEOSGeometry(json.dumps(geometry))
-            # Have to make OGRGeometry as GEOSGeometry
-            # does not support spatial reference systems
-            geos = OGRGeometry(json.dumps(geometry)).geos
-            
-            #save the feature
-            new_feature = Feature(geometry=geos,
-                                user=request.user)
-            new_feature.save()
-            
+                                        "requires properties "  + \
+                                        "and geometry")
+            except OGRException as ogrException:
+                return HttpResponseBadRequest("The submited geometry is invalid: %s" % ogrException)
+               
 
-            #add the id to the feature json
-            identifier = new_feature.id
-            logger.info("The feature was successfully saved with id %i" %identifier)
+            return HttpResponse(json.dumps(feature_json))         
 
-            feature_json['id'] = identifier
-            
-            #save the properties of the new feature
-            new_property = Property(feature=new_feature,
-                                    json_string=json.dumps(properties))
-            new_property.save()
-            logger.info("The property was successfuly saved")
-
-            return HttpResponse(json.dumps(feature_json))
-            
         elif geojson_type == "FeatureCollection":
             features = feature_json['features']
             ret_featurecollection = {
@@ -367,38 +385,17 @@ def feature(request):
             }
             
             for feat in features:
-                geometry = None
-                properties = None
+
                 try:
-                    geometry = feat['geometry']
-                    properties = feat['properties']
+                    identifier = save_feature(feat)
+                    feat['id'] = identifier
                 except KeyError:
-                    logger.warning("The geojson type Features does not include the required properties and geometry. Feature content: %s" %feat)
                     return HttpResponseBadRequest("geojson type 'Feature' " + \
-                                                "requires properties "  + \
-                                                "and geometry in " + \
-                                                "FeatureCollection")
-                
-                
-                #geos = GEOSGeometry(json.dumps(geometry))
-                # Have to make OGRGeometry as GEOSGeometry
-                # does not support spatial reference systems
-                geos = OGRGeometry(json.dumps(geometry)).geos
-            
-                #save the feature
-                new_feature = Feature(geometry=geos,
-                                    user=request.user)
-                new_feature.save()
-    
-                #add the id to the feature json
-                identifier = new_feature.id
-                feat['id'] = int(identifier)
-                
-                #save the properties of the new feature
-                new_property = Property(feature=new_feature,
-                                        json_string=json.dumps(properties))
-                new_property.save()
-                ret_featurecollection['features'].append(feat)
+                                            "requires properties "  + \
+                                            "and geometry")
+                except OGRException as ogrException:
+                    return HttpResponseBadRequest("The submited geometry is invalid: %s" % ogrException)
+            ret_featurecollection['features'].append(feat)
 
             logger.info("The feature collection was successfuly saved")
 
