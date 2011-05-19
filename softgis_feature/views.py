@@ -282,34 +282,35 @@ def feature(request):
         #filter the properties not belonging to feature_queryset
         property_queryset = property_queryset.filter(feature__in = feature_queryset)
         
-	#if output format is csv prepare the file header
-	csv_string = ""
+	    #if output format is csv prepare the file header
+        csv_string = ""
 
-	if format == "csv":	
-	   csv_string = "Geometry_WKT"  
-	   for key in csv_header:
-	       csv_string += SEPARATOR + key
+        if format == "csv":	
+	       csv_string = "Geometry_WKT"  
+	       for key in csv_header:
+	           csv_string += SEPARATOR + key
 
 
         for prop in property_queryset:
-	    if format == "geojson": 
-	        feature_collection['features'].append(prop.geojson())
-	    elif format == "csv":
-		csv_string += '\n'
-		csv_string += "%s" % str(prop.feature.geometry.wkt)
-		#insert value for that property
-		for key in csv_header:
-		    csv_string += SEPARATOR
-		    properties = json.loads(prop.json_string)
-		    try:
-		        csv_string += str(properties[key]).replace(SEPARATOR, ' ')
-		    except KeyError:
-			csv_string += ""
+	        if format == "geojson": 
+	            feature_collection['features'].append(prop.geojson())
+	        elif format == "csv":
+		        csv_string += '\n'
+		        csv_string += "%s" % str(prop.feature.geometry.wkt)
+
+		        #insert value for that property
+		        for key in csv_header:
+		            csv_string += SEPARATOR
+		            properties = json.loads(prop.json_string)
+		            try:
+		                csv_string += str(properties[key]).replace(SEPARATOR, ' ')
+		            except KeyError:
+			            csv_string += ""
 		
-		   
-	    else: 
-		logger.warning("The format requested %s is not supported" % format)
-		return HttpResponseBadRequest(_("Data output format is not supported"))
+		       
+	        else: 
+		        logger.warning("The format requested %s is not supported" % format)
+		        return HttpResponseBadRequest(_("Data output format is not supported"))
 
         # According to GeoJSON specification crs member
         # should be on the top-level GeoJSON object
@@ -324,12 +325,12 @@ def feature(request):
         
         logger.debug("Returned feature collection %s" % feature_collection)  
 
-	if format == "geojson":
+        if format == "geojson":
             return HttpResponse(json.dumps(feature_collection),
-                            mimetype="application/json")
-	elif format == "csv":
+                                mimetype="application/json")
+        elif format == "csv":
             return HttpResponse(csv_string, mimetype="text/csv")
-	else:
+        else:
             return HttpResponseBadRequest(_("Data output format is not supported"))
 
 

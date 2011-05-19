@@ -259,3 +259,35 @@ class ProfileTest(TestCase):
         self.assertEquals(len(response_dict),
                           2,
                           "time__now=false as parameter did not return both profiles")
+"""    
+    def test_empty_profile(self):
+        user = User.objects.create_user('profiletestuser', '', 'passwd')
+        user.save() #something wrong sith setup?
+        self.client.login(username='profiletestuser', password='passwd')
+        
+        profile_dict = {}
+        
+
+        self.client.post(reverse('api_profile'),
+                         json.dumps(profile_dict),
+                         content_type="application/json")
+        
+        response = self.client.get(reverse('api_profile'))
+        
+        self.assertEquals(response.status_code,
+                          400,
+                          "The profile application can save empty profiles")
+
+
+        profile_dict = ""
+        self.client.post(reverse('api_profile'),
+                         profile_dict,
+                         content_type="application/json")
+       
+        response = self.client.get(reverse('api_profile'))
+        
+        self.assertEquals(response.status_code,
+                          400,
+                          "The profile application can save empty profiles")
+"""
+
