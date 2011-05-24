@@ -195,12 +195,12 @@ def feature(request):
 
             # get the export format
             if key == "format":
-    	        format = str(value)
-    	        continue
+                format = str(value)
+                continue
 
             if key == "csv_header":
-    	        csv_header = json.loads(value)
-    	        continue
+                csv_header = json.loads(value)
+                continue
 
             if value.isnumeric():
                 value = int(value)
@@ -282,35 +282,42 @@ def feature(request):
         #filter the properties not belonging to feature_queryset
         property_queryset = property_queryset.filter(feature__in = feature_queryset)
         
-	    #if output format is csv prepare the file header
+        #if output format is csv prepare the file header
         csv_string = ""
 
-        if format == "csv":	
-	       csv_string = "Geometry_WKT"  
-	       for key in csv_header:
-	           csv_string += SEPARATOR + key
+        if format == "csv":
+            #csv_string = "Geometry_WKT"  
+            for i, key in enumerate(csv_header):
+                #check index and put separator
+                if i > 0:
+                    csv_string += SEPARATOR
+                csv_string += key 
 
 
         for prop in property_queryset:
-	        if format == "geojson": 
-	            feature_collection['features'].append(prop.geojson())
-	        elif format == "csv":
-		        csv_string += '\n'
-		        csv_string += "%s" % str(prop.feature.geometry.wkt)
+            if format == "geojson":
+                feature_collection['features'].append(prop.geojson())
+            elif format == "csv":
+                csv_string += '\n'
+                #insert value for that property
+                j=0
+                for j, key in enumerate(csv_header):
+                    if j > 0:
+                        csv_string += SEPARATOR
+                    if key == "user_id":
+                        csv_string += "%s" % prop.feature.user.id
 
-		        #insert value for that property
-		        for key in csv_header:
-		            csv_string += SEPARATOR
-		            properties = json.loads(prop.json_string)
-		            try:
-		                csv_string += str(properties[key]).replace(SEPARATOR, ' ')
-		            except KeyError:
-			            csv_string += ""
-		
-		       
-	        else: 
-		        logger.warning("The format requested %s is not supported" % format)
-		        return HttpResponseBadRequest(_("Data output format is not supported"))
+                    elif key == "Geometry_WKT":
+                        csv_string += "%s" % str(prop.feature.geometry.wkt)
+                    else:
+                        properties = json.loads(prop.json_string)
+                        try:
+                            csv_string += str(properties[key]).replace(SEPARATOR, ' ')
+                        except KeyError:
+                            csv_string += ""
+            else:
+                logger.warning("The format requested %s is not supported" % format)
+                return HttpResponseBadRequest(_("Data output format is not supported"))
 
         # According to GeoJSON specification crs member
         # should be on the top-level GeoJSON object

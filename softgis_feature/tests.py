@@ -646,7 +646,7 @@ class FeatureTest(TestCase):
 
     def test_csv_export(self):
         self.client.login(username='testuser', password='passwd')
-
+        userid = str(self.client.session.get('_auth_user_id'))
         
         #add a feature collection for that anonymous user
         featurecollection = {
@@ -672,7 +672,7 @@ class FeatureTest(TestCase):
             {"type": "Feature",
             "geometry": {"type":"Point",
                         "coordinates":[100, 300]},
-            "properties": {"some_prop": None, "Gender" : "Male", "Age" : "28"}})
+            "properties": {"some_prop": None, "Gender" : "Male", "Age" : "28", "user_id": 2}})
         
 
         response = self.client.post(reverse('api_feature'),
@@ -683,14 +683,13 @@ class FeatureTest(TestCase):
                           200,
                           "Feaurecollection POST was not valid")
 
-        response = self.client.get(reverse('api_feature') + "?format=csv&csv_header=[\"some_prop\",\"Gender\",\"Age\"]" )
-
+        response = self.client.get(reverse('api_feature') + "?format=csv&csv_header=[\"user_id\",\"Geometry_WKT\",\"some_prop\",\"Gender\",\"Age\"]" )
         self.assertEqual(response.content,
-                        "Geometry_WKT;some_prop;Gender;Age\n" + \
-                        "POINT (200.0000000000000000 200.0000000000000000);value anyting ;Male;20\n" + \
-                        "POINT (300.0000000000000000 250.0000000000000000);40;Female;21\n" + \
-                        "POINT (100.0000000000000000 300.0000000000000000);True;Male;25\n" + \
-                        "POINT (100.0000000000000000 300.0000000000000000);None;Male;28",
+                        "user_id;Geometry_WKT;some_prop;Gender;Age\n" + \
+                        userid + ";POINT (200.0000000000000000 200.0000000000000000);value anyting ;Male;20\n" + \
+                        userid + ";POINT (300.0000000000000000 250.0000000000000000);40;Female;21\n" + \
+                        userid + ";POINT (100.0000000000000000 300.0000000000000000);True;Male;25\n" + \
+                        userid + ";POINT (100.0000000000000000 300.0000000000000000);None;Male;28",
                         "The CSV export is not ok")
 
     def test_GeoException(self):
