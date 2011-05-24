@@ -190,7 +190,12 @@ def feature(request):
                 continue
 
             if key == "csv_header":
-                csv_header = json.loads(value)
+                try:
+                    csv_header = json.loads(value)
+                except ValueError as exc:
+                    message = 'JSON decode error: %s' % unicode(exc)
+                    logger.warning(message)
+                    return HttpResponseBadRequest(message)
                 continue
 
             if value.isnumeric():
@@ -301,7 +306,12 @@ def feature(request):
                     elif key == "Geometry_WKT":
                         csv_string += "%s" % str(prop.feature.geometry.wkt)
                     else:
-                        properties = json.loads(prop.json_string)
+                        try:
+                            properties = json.loads(prop.json_string)
+                        except ValueError as exc:
+                            message = 'JSON decode error: %s' % unicode(exc)
+                            logger.warning(message)
+                            return HttpResponseBadRequest(message)
                         try:
                             csv_string += str(properties[key]).replace(SEPARATOR, ' ')
                         except KeyError:
@@ -347,6 +357,11 @@ def feature(request):
             feature_json = json.loads(request.POST.keys()[0])
         except IndexError:
             return HttpResponseBadRequest(_("POST data was empty so could not create the feature"))
+        except ValueError as exc:
+            message = 'JSON decode error: %s' % unicode(exc)
+            logger.warning(message)
+            return HttpResponseBadRequest(message)
+            
             
         geojson_type = None
         

@@ -55,6 +55,9 @@ def login(request):
         except ValueError, err:
             logger.error("Error at login attempt. Details: %s"  % str(err.args))
             return HttpResponseBadRequest("JSON error: " + str(err.args))
+        except IndexError:
+            return HttpResponseBadRequest(_("POST data was empty so no login values could be retrieven from it"))
+
     
              
         username = values.pop('username', None)
@@ -156,6 +159,9 @@ def register(request):
         except ValueError, err:
             logger.error("Error at register attempt. Details: %s"  % str(err.args))
             return HttpResponseBadRequest("JSON error: " + str(err.args))
+        except IndexError:
+            return HttpResponseBadRequest(_("POST data was empty so no register values could be retrieven from it"))
+
         
 
         username = values.pop('username', None)
@@ -292,8 +298,13 @@ def new_password(request):
     """
     
     if(request.method == "POST"):
-    
-        request_json = json.loads(request.POST.keys()[0])
+        try:
+            request_json = json.loads(request.POST.keys()[0])
+        except ValueError, err:
+            logger.error("Error at new_password request. Details: %s"  % str(err.args))
+            return HttpResponseBadRequest("JSON error: " + str(err.args))
+        except IndexError:
+            return HttpResponseBadRequest(_("POST data was empty so no new_password value could be retrieven from it"))
         
         email = request_json['email']
         confirmed = False
@@ -367,7 +378,14 @@ def change_password(request):
 
     if(request.method == "POST"):
         
-        request_json = json.loads(request.POST.keys()[0])
+        try: 
+            request_json = json.loads(request.POST.keys()[0])
+        except ValueError, err:
+            logger.error("Error at change_password request. Details: %s"  % str(err.args))
+            return HttpResponseBadRequest("JSON error: " + str(err.args))
+        except IndexError:
+            return HttpResponseBadRequest(_("POST data was empty so no change_password value could be retrieven from it"))
+    
         
         new_password = request_json['new_password']
         old_password = request_json['old_password']
