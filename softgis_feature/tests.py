@@ -686,7 +686,7 @@ class FeatureTest(TestCase):
         response = self.client.get(reverse('api_feature') + "?format=csv&csv_header=[\"user_id\",\"Geometry_WKT\",\"some_prop\",\"Gender\",\"Age\"]" )
         self.assertEqual(response.content,
                         "user_id;Geometry_WKT;some_prop;Gender;Age\n" + \
-                        userid + ";POINT (200.0000000000000000 200.0000000000000000);value anyting ;Male;20\n" + \
+                        userid  + ";POINT (200.0000000000000000 200.0000000000000000);value anyting ;Male;20\n" + \
                         userid + ";POINT (300.0000000000000000 250.0000000000000000);40;Female;21\n" + \
                         userid + ";POINT (100.0000000000000000 300.0000000000000000);True;Male;25\n" + \
                         userid + ";POINT (100.0000000000000000 300.0000000000000000);None;Male;28",
