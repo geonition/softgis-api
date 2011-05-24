@@ -5,11 +5,12 @@ from django.http import HttpResponseForbidden
 from django.utils import translation
 from softgis_profile.models import Profile
 from django.core.exceptions import ObjectDoesNotExist
+from Commons import SoftGISFormatUtils
 
 import settings
-import datetime
-import sys
 import logging
+import sys
+import datetime
 
 if sys.version_info >= (2, 6):
     import json
@@ -27,69 +28,7 @@ def profile(request):
     This method handles the profile part of the
     REST api.
     """
-    def parse_time(time_string):
-        """
-        Helper function to parse a POST or GET time
-        from the following format:
-        yyyy-mm-dd-HH-MM-SS
-        
-        yyyy - year
-        mm - month
-        dd - day
-        HH - hour
-        MM - minute
-        SS - second
-        
-        The less accurate time value have to be given before any less
-        accurate time value.
-        
-        returns a datetime.datetime instance
-        """
-        if sys.version_info >= (2, 6): #remove this when django drops support for 2.4
-            time_accuracy = time_string.count('-')
-            if time_accuracy == 0:
-                return datetime.datetime.strptime(time_string, "%Y")
-            elif time_accuracy == 1:
-                return datetime.datetime.strptime(time_string, "%Y-%m")
-            elif time_accuracy == 2:
-                return datetime.datetime.strptime(time_string, "%Y-%m-%d")
-            elif time_accuracy == 3:
-                return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H")
-            elif time_accuracy == 4:
-                return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H-%M")
-            elif time_accuracy == 5:
-                return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H-%M-%S")
-        else:
-            time_accuracy = time_string.count('-')
-            time_split = time_string.split('-')
-            if time_accuracy == 0:
-                return datetime.datetime(int(time_split[0]))
-            elif time_accuracy == 1:
-                return datetime.datetime(int(time_split[0]),
-                                         int(time_split[1]))
-            elif time_accuracy == 2:
-                return datetime.datetime(int(time_split[0]),
-                                         int(time_split[1]),
-                                         int(time_split[2]))
-            elif time_accuracy == 3:
-                return datetime.datetime(int(time_split[0]),
-                                         int(time_split[1]),
-                                         int(time_split[2]),
-                                         int(time_split[3]))
-            elif time_accuracy == 4:
-                return datetime.datetime(int(time_split[0]),
-                                         int(time_split[1]),
-                                         int(time_split[2]),
-                                         int(time_split[3]),
-                                         int(time_split[4]))
-            elif time_accuracy == 5:
-                return datetime.datetime(int(time_split[0]),
-                                         int(time_split[1]),
-                                         int(time_split[2]),
-                                         int(time_split[3]),
-                                         int(time_split[4]),
-                                         int(time_split[5]))
-            
+   
             
     if not request.user.is_authenticated():
         logger.warning("A %s request was received in the profile but the user is not authenticated" % request.method)
@@ -139,7 +78,7 @@ def profile(request):
                 elif command == 'now' and not value:
                     continue
                 else:
-                    dt = parse_time(value)
+                    dt = SoftGISFormatUtils.parse_time(value)
                 
                 profile_qs_expired = profile_queryset.filter(create_time__lte = dt)
                 profile_qs_expired = profile_qs_expired.filter(expire_time__gte = dt)

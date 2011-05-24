@@ -10,14 +10,13 @@ from softgis_feature.models import Feature
 from softgis_feature.models import Property
 from HttpResponseExtenders import HttpResponseNotAuthorized
 from django.contrib.gis.gdal.error import OGRException
-
+from Commons import CustomError, SoftGISFormatUtils
 
 import settings
 import urllib2
-import sys
-import time
-import datetime
 import logging
+import sys
+import datetime
 
 if sys.version_info >= (2, 6):
     import json
@@ -47,71 +46,7 @@ def feature(request):
     the database.
     """
     
-    def parse_time(time_string):
-        """
-        Helper function to parse a POST or GET time
-        from the following format:
-        yyyy-mm-dd-HH-MM-SS
-        
-        yyyy - year
-        mm - month
-        dd - day
-        HH - hour
-        MM - minute
-        SS - second
-        
-        The less accurate time value have to be given before any less
-        accurate time value.
-        
-        returns a datetime.datetime instance
-        or None if format was wrong
-        """
-
-        
-        if sys.version_info >= (2, 6): #remove this when django drops support for 2.4
-            time_accuracy = time_string.count('-')
-            if time_accuracy == 0:
-                return datetime.datetime.strptime(time_string, "%Y")
-            elif time_accuracy == 1:
-                return datetime.datetime.strptime(time_string, "%Y-%m")
-            elif time_accuracy == 2:
-                return datetime.datetime.strptime(time_string, "%Y-%m-%d")
-            elif time_accuracy == 3:
-                return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H")
-            elif time_accuracy == 4:
-                return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H-%M")
-            elif time_accuracy == 5:
-                return datetime.datetime.strptime(time_string, "%Y-%m-%d-%H-%M-%S")
-        else:
-            time_accuracy = time_string.count('-')
-            time_split = time_string.split('-')
-            if time_accuracy == 0:
-                return datetime.datetime(int(time_split[0]))
-            elif time_accuracy == 1:
-                return datetime.datetime(int(time_split[0]),
-                                         int(time_split[1]))
-            elif time_accuracy == 2:
-                return datetime.datetime(int(time_split[0]),
-                                         int(time_split[1]),
-                                         int(time_split[2]))
-            elif time_accuracy == 3:
-                return datetime.datetime(int(time_split[0]),
-                                         int(time_split[1]),
-                                         int(time_split[2]),
-                                         int(time_split[3]))
-            elif time_accuracy == 4:
-                return datetime.datetime(int(time_split[0]),
-                                         int(time_split[1]),
-                                         int(time_split[2]),
-                                         int(time_split[3]),
-                                         int(time_split[4]))
-            elif time_accuracy == 5:
-                return datetime.datetime(int(time_split[0]),
-                                         int(time_split[1]),
-                                         int(time_split[2]),
-                                         int(time_split[3]),
-                                         int(time_split[4]),
-                                         int(time_split[5]))
+    
   
     def save_feature(feature_json):
         geometry = None
@@ -155,6 +90,62 @@ def feature(request):
         logger.info("The property was successfuly saved")
 
         return identifier
+
+    def update_feature(feature_json):
+        geometry = None
+        properties = None
+        feature_id = None
+        
+        try:
+            geometry = feature_json['geometry']
+            properties = feature_json['properties']
+            feature_id = feature_json['id']
+        except KeyError as keyError:
+            logger.debug("The geojson type Feature does not include the required properties, geometry and id for updating")	
+            raise keyError
+         
+        #get the feature to be updated
+        feature_old = None
+        try:
+            feature_old = Feature.objects.get(id__exact = feature_id)
+        except ObjectDoesNotExist as objectDoesNotExist:
+            logger.debug("The Feature with id %i was not found" %feature_id)
+            raise CustomError("The feature with id %i was not found. Details %s" % (feature_id, str(objectDoesNotExist)), 400, str(objectDoesNotExist))
+            
+        
+        if feature_old.user != request.user:
+            logger.debug("The Feature with id %i was not found was added by user %s and it can not be modified by current user %s" %(feature_id, feature_old.user.username, request.user.username))
+            raise CustomError( "You do not have permission to update feature %i" % feature_id, 403)
+        
+        
+        #geos = GEOSGeometry(json.dumps(geometry))
+        # Have to make OGRGeometry as GEOSGeometry
+        # does not support spatial reference systems
+        try:
+            
+            geos = OGRGeometry(json.dumps(geometry)).geos
+        except OGRException as ogrException:            
+            logger.warning("The submited geometry is invalid: %s " % ogrException)
+            raise CustomError("The submited geometry is invalid: %s " % ogrException, 400, str(ogrException))
+            
+        
+        feature = feature_old.update(geometry = geos)
+        logger.info("The Feature %i was updated successfully" % feature_id)            
+
+        #save the properties of the new feature
+        cur_property = Property.objects\
+                        .filter(feature = feature_old)\
+                        .latest('create_time')
+        
+        if feature_old.id == feature.id: #if there was nothing updated
+            new_property = cur_property.update(json.dumps(properties))
+        else: #feature was updated so new property created
+            cur_property.delete()
+            new_property = Property(feature=feature,
+                                json_string=json.dumps(properties))
+            new_property.save()
+        
+        return feature_id        
 
     if request.method  == "GET":
         
@@ -231,7 +222,7 @@ def feature(request):
                 elif(command == "now" and not value):
                     continue
                 else:
-                    dt = parse_time(value)
+                    dt = SoftGISFormatUtils.parse_time(value)
                 
                 property_qs_expired = property_queryset.filter(create_time__lte = dt)
                 property_qs_expired = property_qs_expired.filter(expire_time__gte = dt)
@@ -414,11 +405,14 @@ def feature(request):
         if not request.user.is_authenticated():
             return HttpResponseNotAuthorized(_("You need to login or create a session in order to update features"))    
         
-        #supports updating geojson Features
-        feature_json = json.loads(urllib2.unquote(request.raw_post_data.encode('utf-8')).decode('utf-8'))
-        geometry = None
-        properties = None
-        feature_id = None
+        try:
+            #supports updating geojson Features
+            feature_json = json.loads(urllib2.unquote(request.raw_post_data.encode('utf-8')).decode('utf-8'))
+        except Exception as exc:
+            message = 'JSON decode error: %s' % unicode(exc)
+            logger.warning(message)
+            return HttpResponseBadRequest(message)
+
         
         logger.debug("A PUT request was sent to features with params %s" % feature_json)
 
@@ -431,52 +425,18 @@ def feature(request):
                                           "'FeatureCollection' and 'Feature'."))
 
         if geojson_type == "Feature":
-            
             try:
-                geometry = feature_json['geometry']
-                properties = feature_json['properties']
-                feature_id = feature_json['id']
-            except KeyError:
-                logger.debug("The geojson type Feature does not include the required properties, geometry and id for updating")	
+                feature_id = update_feature(feature_json)
+            except keyError:
                 return HttpResponseBadRequest("geojson feature requires " + \
-                                            "properties, "  + \
-                                            "geometry " + \
-                                            "and id for updating")
-             
-            #get the feature to be updated
-            feature_old = None
-            try:
-                feature_old = Feature.objects.get(id__exact = feature_id)
-            except ObjectDoesNotExist:
-                logger.debug("The Feature with id %i was not found" %feature_id)
-                return HttpResponseNotFound("The feature with id %i was not found" % feature_id)
-            
-            if feature_old.user != request.user:
-                logger.debug("The Feature with id %i was not found was added by user %s and it can not be modified by current user %s" %(feature_id, feature_old.user.username, request.user.username))
-                return HttpResponseForbidden("You do not have permission to" + \
-                                             " update feature %i" % feature_id)   
-            
-            
-            #geos = GEOSGeometry(json.dumps(geometry))
-            # Have to make OGRGeometry as GEOSGeometry
-            # does not support spatial reference systems
-            geos = OGRGeometry(json.dumps(geometry)).geos
-            
-            feature = feature_old.update(geometry = geos)
-            logger.info("The Feature %i was updated successfully" % feature_id)            
-
-            #save the properties of the new feature
-            cur_property = Property.objects\
-                            .filter(feature = feature_old)\
-                            .latest('create_time')
-            
-            if feature_old.id == feature.id: #if there was nothing updated
-                new_property = cur_property.update(json.dumps(properties))
-            else: #feature was updated so new property created
-                cur_property.delete()
-                new_property = Property(feature=feature,
-                                    json_string=json.dumps(properties))
-                new_property.save()
+                                        "properties, "  + \
+                                        "geometry " + \
+                                        "and id for updating")
+                
+            except CustomError as err:
+                return HttpResponse(content = err.customMessage, status = err.statusCode)
+                
+                
             
             return HttpResponse(_(u"Feature with id %s was updated" % feature_id))
     
@@ -485,53 +445,17 @@ def feature(request):
             features = feature_json['features']
             
             for feat in features:  
-            
                 try:
-                    geometry = feat['geometry']
-                    properties = feat['properties']
-                    feature_id = feat['id']
-                except KeyError:
-                    logger.warning("The Feature %s does not include the required properties, geometry and id for updating" % feat)
+                    feature_id = update_feature(feat)
+                except keyError:
                     return HttpResponseBadRequest("geojson feature requires " + \
-                                                "properties, "  + \
-                                                "geometry " + \
-                                                "and id for updating")
-             
-                #get the feature to be updated
-                feature_old = None
-                try:
-                    feature_old = Feature.objects.get(id__exact = feature_id)
-                except DoesNotExist:
-                    logger.warning("The Feature with id %i was not found" %feature_id)
-                    return HttpResponseNotFound("The feature with id %i was not " +\
-                                                "found" % feature_id)
-                
-                if feature_old.user != request.user:
-                    logger.warning("The Feature with id %i was not found was added by user %s and it can not be modified by current user %s" %(feature_id, feature_old.user.username, request.user.username))
-                    return HttpResponseForbidden("You do not have permission to" + \
-                                                 " update feature %i" % feature_id)   
-                
-                
-                #geos = GEOSGeometry(json.dumps(geometry))
-                # Have to make OGRGeometry as GEOSGeometry
-                # does not support spatial reference systems
-                geos = OGRGeometry(json.dumps(geometry)).geos
-                
-                feature = feature_old.update(geometry = geos)
-                logger.info("The Feature %i was updated successfully" % feature_id)
+                                            "properties, "  + \
+                                            "geometry " + \
+                                            "and id for updating")
+                    
+                except CustomError as err:
+                    return HttpResponse(content = err.customMessage, status = err.statusCode)
 
-                #save the properties of the new feature
-                cur_property = Property.objects\
-                                .filter(feature = feature_old)\
-                                .latest('create_time')
-                
-                if feature_old.id == feature.id: #if there was nothing updated
-                    new_property = cur_property.update(json.dumps(properties))
-                else: #feature was updated so new property created
-                    cur_property.delete()
-                    new_property = Property(feature=feature,
-                                        json_string=json.dumps(properties))
-                    new_property.save()
             
             return HttpResponse(_(u"Features updated"))
                     
