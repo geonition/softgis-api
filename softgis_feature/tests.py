@@ -100,6 +100,21 @@ class FeatureTest(TestCase):
         ids = []
         ids.append(id)
         
+        #bad request - no ids
+        response = self.client.delete(reverse('api_feature')+"?ids=")
+        
+        self.assertEquals(response.status_code,
+                          400,
+                          "deletion of unspecified feature ids worked")
+        
+        #bad request - invalid json
+        response = self.client.delete(reverse('api_feature')+"?ids=a")
+        
+        self.assertEquals(response.status_code,
+                          400,
+                          "deletion of unspecified feature ids worked")
+        
+        
         response = self.client.delete(reverse('api_feature')+"?ids="+json.dumps(ids))
         
         self.assertEquals(response.status_code,

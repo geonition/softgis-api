@@ -108,9 +108,9 @@ def feature(request):
         feature_old = None
         try:
             feature_old = Feature.objects.get(id__exact = feature_id)
-        except ObjectDoesNotExist as objectDoesNotExist:
+        except DoesNotExist as doesNotExist:
             logger.debug("The Feature with id %i was not found" %feature_id)
-            raise CustomError("The feature with id %i was not found. Details %s" % (feature_id, str(objectDoesNotExist)), 400, str(objectDoesNotExist))
+            raise CustomError("The feature with id %i was not found. Details %s" % (feature_id, str(doesNotExist)), 400, str(doesNotExist))
             
         
         if feature_old.user != request.user:
@@ -408,7 +408,7 @@ def feature(request):
         try:
             #supports updating geojson Features
             feature_json = json.loads(urllib2.unquote(request.raw_post_data.encode('utf-8')).decode('utf-8'))
-        except Exception as exc:
+        except ValueError as exc:
             message = 'JSON decode error: %s' % unicode(exc)
             logger.warning(message)
             return HttpResponseBadRequest(message)
@@ -466,7 +466,12 @@ def feature(request):
         if not request.user.is_authenticated():
             return HttpResponseNotAuthorized(_("You need to login or create a session in order to delete features"))
             
-        feature_ids = json.loads(request.GET.get("ids","[]"))
+        try:
+            feature_ids = json.loads(request.GET.get("ids","[]"))
+        except ValueError as exc:
+            message = 'JSON decode error: %s' % unicode(exc)
+            logger.warning(message)
+            return HttpResponseBadRequest(message)
         
         logger.debug("A DELETE request was sent to features with the params %s" % feature_ids)
 
