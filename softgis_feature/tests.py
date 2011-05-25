@@ -777,6 +777,7 @@ class FeatureTest(TestCase):
         response = self.client.post(reverse('api_feature'),
                                urllib.quote_plus(json.dumps(feature)),
                                content_type='application/json')
+        
         self.assertEquals(response.status_code,
                   400,
-                  "Feaurecollection POST was ok for an invalid geometry")
+                  "Invalid  GEOS Geometry")

@@ -31,7 +31,7 @@ def confirm_email(request, confirmation_key):
     
     email_address = EmailConfirmation.objects.confirm_email(confirmation_key)
     
-    logger.debug("Email confirmation attempt for %s with key %s" %(email_address, confirmation_key) )
+    logger.debug(u"Email confirmation attempt for %s with key %s" % (email_address, confirmation_key) )
 
     #the template will handle the invalid confirmation key
     # if the confirmation key was invalid the email_address object is None
