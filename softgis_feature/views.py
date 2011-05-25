@@ -329,7 +329,11 @@ def feature(request):
             srid = getattr(settings, "SPATIAL_REFERENCE_SYSTEM_ID", 4326)
 
         crs_object =  {"type": "EPSG", "properties": {"code": srid}}
-        feature_collection['crs'] = crs_object
+        
+        # If the coordinate system is wgs84(4326) don't include 'crs'
+        # see geojson specifications
+        if srid != 4326 :
+            feature_collection['crs'] = crs_object
         
         logger.debug("Returned feature collection %s" % feature_collection)  
 
