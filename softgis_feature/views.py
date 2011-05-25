@@ -282,7 +282,6 @@ def feature(request):
         csv_string = ""
 
         if format == "csv":
-            #csv_string = "Geometry_WKT"  
             for i, key in enumerate(csv_header):
                 #check index and put separator
                 if i > 0:
@@ -302,7 +301,6 @@ def feature(request):
                         csv_string += SEPARATOR
                     if key == "user_id":
                         csv_string += "%s" % prop.feature.user.id
-
                     elif key == "Geometry_WKT":
                         csv_string += "%s" % str(prop.feature.geometry.wkt)
                     elif key == "Geometry_geojson":

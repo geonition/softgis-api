@@ -131,7 +131,7 @@ def profile(request):
 
         logger.info("The GET request for user %s with the params %s returned successfully %s" %(request.user.username, limiting_param, profile_list))
 
-        return HttpResponse(json.dumps(profile_list))
+        return HttpResponse(json.dumps(profile_list),  mimetype="application/json")
     
     elif(request.method == "POST"):
         #mime type should be application/json    
