@@ -768,3 +768,15 @@ class FeatureTest(TestCase):
                           400,
                           "Feautre POST was ok for an invalid geometry")
 
+    def test_exception(self):
+        
+        self.client.login(username='testuser', password='passwd')
+        
+        feature = {"type":"Feature","properties":{"category":"improve_area","graphicId":0,"comments":"Varvsomr"},"geometry":{"type":"Polygon","coordinates":[[[226717.9802302938,7008996.833164],[226726.44691389383,7008996.833164],[226717.9802302938,7008996.833164]]],"crs":{"type":"EPSG","properties":{"code":3067}}}}
+        
+        response = self.client.post(reverse('api_feature'),
+                               urllib.quote_plus(json.dumps(feature)),
+                               content_type='application/json')
+        self.assertEquals(response.status_code,
+                  400,
+                  "Feaurecollection POST was ok for an invalid geometry")

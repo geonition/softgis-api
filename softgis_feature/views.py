@@ -6,6 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils import translation
 from django.utils.encoding import smart_unicode
 from django.contrib.gis.gdal import OGRGeometry
+from django.contrib.gis.geos.error import GEOSException
 from softgis_feature.models import Feature
 from softgis_feature.models import Property
 from HttpResponseExtenders import HttpResponseNotAuthorized
@@ -70,6 +71,9 @@ def feature(request):
         except OGRException as ogrException:            
             logger.warning("The submited geometry is invalid: %s " % ogrException)	
             raise ogrException
+        except GEOSException as geosEx:
+            logger.warning("Error encountered checking Geometry: %s " % geosEx)
+            raise geosEx
 
         #save the feature
         new_feature = Feature(geometry=geos,
@@ -127,7 +131,9 @@ def feature(request):
         except OGRException as ogrException:            
             logger.warning("The submited geometry is invalid: %s " % ogrException)
             raise CustomError("The submited geometry is invalid: %s " % ogrException, 400, str(ogrException))
-            
+        except GEOSException as geosEx:
+            logger.warning("Error encountered checking Geometry: %s " % geosEx)
+            raise geosEx    
         
         feature = feature_old.update(geometry = geos)
         logger.info("The Feature %i was updated successfully" % feature_id)            
@@ -390,8 +396,10 @@ def feature(request):
                                         "requires properties "  + \
                                         "and geometry")
             except OGRException as ogrException:
-                return HttpResponseBadRequest("The submited geometry is invalid: %s" % ogrException)
-               
+                return HttpResponseBadRequest("The submited geometry is invalid")
+            except GEOSException as geosEx:
+                return HttpResponseBadRequest("Error encountered checking Geometry")
+                
 
             return HttpResponse(json.dumps(feature_json))         
 
@@ -413,6 +421,9 @@ def feature(request):
                                             "and geometry")
                 except OGRException as ogrException:
                     return HttpResponseBadRequest("The submited geometry is invalid: %s" % ogrException)
+                except GEOSException as geosEx:
+                    return HttpResponseBadRequest("Error encountered checking Geometry")
+                
             ret_featurecollection['features'].append(feat)
 
             logger.info("The feature collection was successfuly saved")
@@ -451,7 +462,8 @@ def feature(request):
                                         "properties, "  + \
                                         "geometry " + \
                                         "and id for updating")
-                
+            except GEOSException as geosEx:
+                return HttpResponseBadRequest("Error encountered checking Geometry")    
             except CustomError as err:
                 return HttpResponse(content = err.customMessage, status = err.statusCode)
                 
@@ -471,7 +483,8 @@ def feature(request):
                                             "properties, "  + \
                                             "geometry " + \
                                             "and id for updating")
-                    
+                except GEOSException as geosEx:
+                    return HttpResponseBadRequest("Error encountered checking Geometry")    
                 except CustomError as err:
                     return HttpResponse(content = err.customMessage, status = err.statusCode)
 
