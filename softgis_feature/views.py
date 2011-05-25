@@ -305,6 +305,8 @@ def feature(request):
 
                     elif key == "Geometry_WKT":
                         csv_string += "%s" % str(prop.feature.geometry.wkt)
+                    elif key == "Geometry_geojson":
+                        csv_string += "%s" % str(prop.feature.geometry.json)
                     else:
                         try:
                             properties = json.loads(prop.json_string)

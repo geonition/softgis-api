@@ -706,6 +706,15 @@ class FeatureTest(TestCase):
                         userid + ";POINT (100.0000000000000000 300.0000000000000000);True;Male;25\n" + \
                         userid + ";POINT (100.0000000000000000 300.0000000000000000);None;Male;28",
                         "The CSV export is not ok")
+        
+        response = self.client.get(reverse('api_feature') + "?format=csv&csv_header=[\"user_id\",\"Geometry_geojson\",\"some_prop\",\"Gender\",\"Age\"]" )
+        self.assertEqual(response.content,
+                        "user_id;Geometry_geojson;some_prop;Gender;Age\n" + \
+                        userid + ";{ \"type\": \"Point\", \"coordinates\": [ 200.000000, 200.000000 ] };value anyting ;Male;20\n" + \
+                        userid + ";{ \"type\": \"Point\", \"coordinates\": [ 300.000000, 250.000000 ] };40;Female;21\n" + \
+                        userid + ";{ \"type\": \"Point\", \"coordinates\": [ 100.000000, 300.000000 ] };True;Male;25\n" + \
+                        userid + ";{ \"type\": \"Point\", \"coordinates\": [ 100.000000, 300.000000 ] };None;Male;28",
+                        "The export is not ok for Geometry_geojson format")
 
     def test_GeoException(self):
         self.client.login(username='testuser', password='passwd')
