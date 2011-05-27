@@ -1,6 +1,8 @@
 from django.test import TestCase
 from django.test.client import Client
 from django.core.urlresolvers import reverse
+from softgis_email.models import EmailConfirmation, EmailAddress
+from django.core import mail
 
 import sys
 
@@ -151,4 +153,44 @@ class AuthenticationTest(TestCase):
         self.assertEqual(response.status_code,
                          200,
                          "The session creation through the session url did not work second time")
+    
+    def test_new_password(self):
         
+        post_content = {'username':'testuser', 'password':'testpass'}
+        response = self.client.post(reverse('api_register'),
+                                    json.dumps(post_content), \
+                                    content_type='application/json')
+        self.assertEquals(response.status_code,
+                          201,
+                          'registration did not work')
+        
+        #confirm the email
+
+        post_content = {"email" : "test@aalto.fi"}
+        response = self.client.post(reverse('api_manage_email'),
+                                    json.dumps(post_content),
+                                    content_type='application/json')
+
+        #Test if confirmation email is sent
+        self.assertEquals(len(mail.outbox), 1, "Confirmation email not sent")
+
+        #confirm the email
+
+        emailAddress = EmailAddress.objects.get(email = "test@aalto.fi")
+        emailConfirmation = EmailConfirmation.objects.get(email_address = emailAddress)
+
+        response = self.client.get(reverse('api_emailconfirmation', args=[emailConfirmation.confirmation_key]))	
+        self.assertEquals(response.status_code,
+                200,
+                "the email address confirmation url is not working")
+        
+        response = self.client.post(reverse('api_new_password'),
+                            json.dumps(post_content), \
+                            content_type='application/json')
+        
+        #Test if confirmation email is sent
+        self.assertEquals(len(mail.outbox), 2, "New password not sent")
+        
+        #Test if confirmation email is sent
+        passwd = emailAddress.user.password
+        self.assertNotEqual(passwd,"testpass", "New password hasn't been saved")
