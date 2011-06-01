@@ -396,11 +396,17 @@ class FeatureTest(TestCase):
         
         response_dict = json.loads(response.content)
         amount_of_features = len(response_dict['features'])
+        if getattr(settings, "USE_MONGODB", False):
+            self.assertTrue(amount_of_features == 2,
+                            "Query with time__now and prop = 40 after first " + \
+                            "post did not return 2 geojson Features. It returned %i" \
+                            % amount_of_features)
+        else:
+            self.assertTrue(amount_of_features == 5,
+                            "Query with time__now and prop = 40 after first " + \
+                            "post did not return 5 geojson Features. It returned %i" \
+                            % amount_of_features)
         
-        self.assertTrue(amount_of_features == 2,
-                        "Query with time__now and prop = 40 after first " + \
-                        "post did not return 2 geojson Features. It returned %i" \
-                        % amount_of_features)
         
         #wait a little bit to get difference
         time.sleep(1)
