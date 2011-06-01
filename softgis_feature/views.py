@@ -353,8 +353,6 @@ def feature(request):
 
 
     elif request.method == "POST":
-        request.POST.keys()[0]
-        logger.debug("POST request to features() with params %s " % request.POST.keys()[0])
         
         if not request.user.is_authenticated():
             logger.warning("There was a %s request to features but the user was not authenticated" % request.method)
@@ -364,6 +362,7 @@ def feature(request):
         feature_json = None
         
         try:
+            logger.debug("POST request to features() with params %s " % request.POST.keys()[0])
             feature_json = json.loads(request.POST.keys()[0])
         except IndexError:
             return HttpResponseBadRequest(_("POST data was empty so could not create the feature"))

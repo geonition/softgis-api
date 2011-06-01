@@ -13,7 +13,6 @@ from django.http import HttpResponseBadRequest
 from django.http import HttpResponseForbidden
 from django.utils import translation
 from HttpResponseExtenders import HttpResponseNotAuthorized
-from softgis_email.models import EmailConfirmation, EmailAddress
 from django.contrib.auth.models import User, UserManager
 import logging
 import sys
@@ -311,17 +310,10 @@ def new_password(request):
             return HttpResponseBadRequest(_("POST data was empty so no new_password value could be retrieven from it"))
         
         email = request_json['email']
-        confirmed = False
-        
 
-        try:
-            confirmed = EmailAddress.objects.get(
-                                user__exact = request.user).verified
-        except ObjectDoesNotExist:
-            logger.debug("getting the confirmed email address for new_password() throwed an ObjectDoesNotExist for user %s" % request.user) 
-            pass
-            
-        if confirmed == False:
+        current_user = request.user
+        
+        if current_user.email == "":
             logger.warning("User %s requested a new password but didn't confirmed the email address" %request.user) 
             return HttpResponseBadRequest(
                         _(u"Please confirm your email address before requesting a new password"))
@@ -338,7 +330,7 @@ def new_password(request):
             send_mail(subject,
                         message,
                         'do_not_reply@pehmogis.fi',
-                        [request.user.email])
+                        [current_user.email])
             
             request.user.set_password(password)
             request.user.save()
