@@ -353,8 +353,6 @@ def feature(request):
 
 
     elif request.method == "POST":
-        request.POST.keys()[0]
-        logger.debug("POST request to features() with params %s " % request.POST.keys()[0])
         
         if not request.user.is_authenticated():
             logger.warning("There was a %s request to features but the user was not authenticated" % request.method)
@@ -364,6 +362,7 @@ def feature(request):
         feature_json = None
         
         try:
+            logger.debug("POST request to features() with params %s " % request.POST.keys()[0])
             feature_json = json.loads(request.POST.keys()[0])
         except IndexError:
             return HttpResponseBadRequest(_("POST data was empty so could not create the feature"))
@@ -531,7 +530,7 @@ def feature(request):
         not_deleted = [id for id in feature_ids if id not in deleted_features]
         if len(not_deleted) > 0:
             logger.warning("Delete result: Features %s not found and featured %s deleted" % (not_deleted, deleted_features))
-            return HttpResponseNotFound(_(u"Features %s not found and featured %s deleted." % (not_deleted, deleted_features)))
+            return HttpResponseNotFound(_(u"Features %(not_deleted)s not found and featured %(deleted_features)s deleted." % {'not_deleted' : not_deleted, 'deleted_features' : deleted_features}))
         
         logger.info("All Features were deleted successfully")
         return HttpResponse(_(u"Features with ids %s deleted." % deleted_features))
