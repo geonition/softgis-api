@@ -56,7 +56,7 @@ def feature(request):
         try:
             geometry = feature_json['geometry']
             properties = feature_json['properties']
-        except KeyError as keyError:
+        except KeyError, keyError:
             logger.warning("The geojson type Feature does not include the required properties and geometry")	
             raise keyError            
 
@@ -68,10 +68,10 @@ def feature(request):
         try:
             
             geos = OGRGeometry(json.dumps(geometry)).geos
-        except OGRException as ogrException:            
+        except OGRException, ogrException:            
             logger.warning("The submited geometry is invalid: %s " % ogrException)	
             raise ogrException
-        except GEOSException as geosEx:
+        except GEOSException, geosEx:
             logger.warning("Error encountered checking Geometry: %s " % geosEx)
             raise geosEx
 
@@ -104,7 +104,7 @@ def feature(request):
             geometry = feature_json['geometry']
             properties = feature_json['properties']
             feature_id = feature_json['id']
-        except KeyError as keyError:
+        except KeyError, keyError:
             logger.debug("The geojson type Feature does not include the required properties, geometry and id for updating")	
             raise keyError
          
@@ -112,7 +112,7 @@ def feature(request):
         feature_old = None
         try:
             feature_old = Feature.objects.get(id__exact = feature_id)
-        except DoesNotExist as doesNotExist:
+        except DoesNotExist, doesNotExist:
             logger.debug("The Feature with id %i was not found" %feature_id)
             raise CustomError("The feature with id %i was not found. Details %s" % (feature_id, str(doesNotExist)), 400, str(doesNotExist))
             
@@ -128,10 +128,10 @@ def feature(request):
         try:
             
             geos = OGRGeometry(json.dumps(geometry)).geos
-        except OGRException as ogrException:            
+        except OGRException, ogrException:            
             logger.warning("The submited geometry is invalid: %s " % ogrException)
             raise CustomError("The submited geometry is invalid: %s " % ogrException, 400, str(ogrException))
-        except GEOSException as geosEx:
+        except GEOSException, geosEx:
             logger.warning("Error encountered checking Geometry: %s " % geosEx)
             raise geosEx    
         
@@ -198,7 +198,7 @@ def feature(request):
             if key == "csv_header":
                 try:
                     csv_header = json.loads(value)
-                except ValueError as exc:
+                except ValueError, exc:
                     message = 'JSON decode error: %s' % unicode(exc)
                     logger.warning(message)
                     return HttpResponseBadRequest(message)
@@ -314,7 +314,7 @@ def feature(request):
                     else:
                         try:
                             properties = json.loads(prop.json_string)
-                        except ValueError as exc:
+                        except ValueError, exc:
                             message = 'JSON decode error: %s' % unicode(exc)
                             logger.warning(message)
                             return HttpResponseBadRequest(message)
@@ -366,7 +366,7 @@ def feature(request):
             feature_json = json.loads(request.POST.keys()[0])
         except IndexError:
             return HttpResponseBadRequest(_("POST data was empty so could not create the feature"))
-        except ValueError as exc:
+        except ValueError, exc:
             message = 'JSON decode error: %s' % unicode(exc)
             logger.warning(message)
             return HttpResponseBadRequest(message)
@@ -394,9 +394,9 @@ def feature(request):
                 return HttpResponseBadRequest("geojson type 'Feature' " + \
                                         "requires properties "  + \
                                         "and geometry")
-            except OGRException as ogrException:
+            except OGRException, ogrException:
                 return HttpResponseBadRequest("The submited geometry is invalid")
-            except GEOSException as geosEx:
+            except GEOSException, geosEx:
                 return HttpResponseBadRequest("Error encountered checking Geometry")
                 
 
@@ -418,9 +418,9 @@ def feature(request):
                     return HttpResponseBadRequest("geojson type 'Feature' " + \
                                             "requires properties "  + \
                                             "and geometry")
-                except OGRException as ogrException:
+                except OGRException, ogrException:
                     return HttpResponseBadRequest("The submited geometry is invalid: %s" % ogrException)
-                except GEOSException as geosEx:
+                except GEOSException, geosEx:
                     return HttpResponseBadRequest("Error encountered checking Geometry")
                 
             ret_featurecollection['features'].append(feat)
@@ -437,7 +437,7 @@ def feature(request):
         try:
             #supports updating geojson Features
             feature_json = json.loads(urllib2.unquote(request.raw_post_data.encode('utf-8')).decode('utf-8'))
-        except ValueError as exc:
+        except ValueError, exc:
             message = 'JSON decode error: %s' % unicode(exc)
             logger.warning(message)
             return HttpResponseBadRequest(message)
@@ -461,9 +461,9 @@ def feature(request):
                                         "properties, "  + \
                                         "geometry " + \
                                         "and id for updating")
-            except GEOSException as geosEx:
+            except GEOSException, geosEx:
                 return HttpResponseBadRequest("Error encountered checking Geometry")    
-            except CustomError as err:
+            except CustomError, err:
                 return HttpResponse(content = err.customMessage, status = err.statusCode)
                 
                 
@@ -482,9 +482,9 @@ def feature(request):
                                             "properties, "  + \
                                             "geometry " + \
                                             "and id for updating")
-                except GEOSException as geosEx:
+                except GEOSException, geosEx:
                     return HttpResponseBadRequest("Error encountered checking Geometry")    
-                except CustomError as err:
+                except CustomError, err:
                     return HttpResponse(content = err.customMessage, status = err.statusCode)
 
             
@@ -499,7 +499,7 @@ def feature(request):
             
         try:
             feature_ids = json.loads(request.GET.get("ids","[]"))
-        except ValueError as exc:
+        except ValueError, exc:
             message = 'JSON decode error: %s' % unicode(exc)
             logger.warning(message)
             return HttpResponseBadRequest(message)
