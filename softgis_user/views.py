@@ -14,6 +14,7 @@ from django.http import HttpResponseForbidden
 from django.utils import translation
 from HttpResponseExtenders import HttpResponseNotAuthorized
 from django.contrib.auth.models import User, UserManager
+from threading import Lock
 import logging
 import sys
 
@@ -26,7 +27,7 @@ else:
 _ = translation.ugettext
 
 logger = logging.getLogger('api.user.view')
-   
+lock = Lock()   
 def login(request):
     """
     This function does the login procedure and returns
@@ -256,15 +257,25 @@ def session(request):
         if request.user.is_authenticated():
             logger.warning("POST attempt for session but there is a username %s already logged in" %request.user.username)    
             return HttpResponse(_(u"session already created")) 
-            
-        new_user_id = User.objects.aggregate(Max('id'))
-
-        if(new_user_id['id__max'] == None):
-            new_user_id['id__max'] = 1
-        else:
-            new_user_id['id__max'] = new_user_id['id__max'] + 1
         
-        temp_user = User.objects.create_user(str(new_user_id),'', 'passwd')
+        
+        #put lock to create critical section
+        lock.acquire() 
+        try:
+            new_user_id = User.objects.aggregate(Max('id'))
+    
+            if(new_user_id['id__max'] == None):
+                new_user_id['id__max'] = 1
+            else:
+                new_user_id['id__max'] = new_user_id['id__max'] + 1
+            
+            temp_user = User.objects.create_user(str(new_user_id),'', 'passwd')
+        except Exception, e:
+            logger.error("Error in the section critical of session creation. Details: %s" %e)
+
+        #release lock
+        lock.release()
+        
         user = django_authenticate(username=str(new_user_id), password='passwd')
         
         django_login(request, user)

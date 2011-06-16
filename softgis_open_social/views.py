@@ -36,10 +36,9 @@ def groups(request, user_id, group_id):
 
     """
    
-
     if (user_id == ""):
         logger.warning("The user_id can not be empty")
-        return HttpResponseBadRequest("Specify the user_id for the")
+        return HttpResponseBadRequest("Specify the user_id for the group request")
         
     #check if authenticated
     if not request.user.is_authenticated():
@@ -50,15 +49,17 @@ def groups(request, user_id, group_id):
     if(request.method == "GET"):
     
         if group_id == None:
-            groups = User.objects.filter(pk=user_id).groups
+           
+            groups = User.objects.get(pk=user_id).groups.all()
             group_collection = {"result" : { "entry" : []} }
             for g in groups:
-                group_collection["entry"].append({"id" : g.id, "title" : g.name})
-            
+                group_collection.get("result").get("entry").append({"id" : g.id, "title" : g.name})
+
             return HttpResponse(json.dumps(group_collection),
                         mimetype="application/json")    
         else:    
-            group = User.objects.filter(pk=user_id).groups.filter(pk=group_id)
+            group = User.objects.get(pk=user_id).groups.all().get(pk=group_id)
+            
             group_details  = {"id" : group.id, "title" : group.name}
 
             return HttpResponse(json.dumps(group_details),
