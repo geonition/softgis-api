@@ -233,7 +233,7 @@ def register(request):
             django_login(request, user)
         
         logger.debug("Registration and login was successfull for username %s " %username)
-        return HttpResponse(status=201)
+        return HttpResponse(status=201, content=(_(u"User was successfully created")))
         
 
 def session(request):
