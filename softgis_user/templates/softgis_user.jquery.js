@@ -11,6 +11,7 @@
  message = message from server
 */
 function register(username, password, callback_function) {
+
     var data = {};
     data['username'] = (username !== undefined) ? username : null;
     data['password'] = (password !== undefined) ? password : null;
