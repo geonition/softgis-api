@@ -16,11 +16,13 @@ function register(username, password, callback_function) {
     data['username'] = (username !== undefined) ? username : null;
     data['password'] = (password !== undefined) ? password : null;
    
-    
-    $.ajaxSetup({
-        'beforeSend': function(xhr) {xhr.setRequestHeader("X-CSRFToken", getCookie( CSRF_Cookie_Name ))}
-    })
-      
+    $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
+            var CSRFverificationToken = getCookie( CSRF_Cookie_Name );
+            if (CSRFverificationToken) {
+                jqXHR.setRequestHeader("X-CSRFToken", CSRFverificationToken);
+            }
+    });
+
     $.ajax({
       url: api_full_url + '{% url api_register %}',
       type: "POST",
