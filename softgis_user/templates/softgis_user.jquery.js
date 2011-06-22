@@ -15,12 +15,7 @@ function register(username, password, callback_function) {
     data['username'] = (username !== undefined) ? username : null;
     data['password'] = (password !== undefined) ? password : null;
    
-    $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
-            var CSRFverificationToken = getCookie( CSRF_Cookie_Name );
-            if (CSRFverificationToken) {
-                jqXHR.setRequestHeader("X-CSRFToken", CSRFverificationToken);
-            }
-    });
+    add_CSRF_token_in_request_header();
 
     $.ajax({
       url: api_full_url + '{% url api_register %}',
@@ -62,9 +57,7 @@ function login(username, password, callback_function) {
     data['username'] = (username !== undefined) ? username : null;
     data['password'] = (password !== undefined) ? password : null;
 
-    $.ajaxSetup({
-    'beforeSend': function(xhr) {xhr.setRequestHeader("X-CSRFToken", getCookie( CSRF_Cookie_Name ))}
-    })
+    add_CSRF_token_in_request_header();
       
     $.ajax({
       url: api_full_url + '{% url api_login %}',
@@ -128,9 +121,7 @@ profile values to other softgis apps.
 */
 function create_session(callback_function) {
 
-    $.ajaxSetup({
-    'beforeSend': function(xhr) {xhr.setRequestHeader("X-CSRFToken", getCookie( CSRF_Cookie_Name ))}
-    })
+    add_CSRF_token_in_request_header();
       
     $.ajax({
       url: api_full_url + '{% url api_session %}',
@@ -160,9 +151,7 @@ This method deletes the anonymoususers session
 */
 function delete_session(callback_function) {
     
-    $.ajaxSetup({
-    'beforeSend': function(xhr) {xhr.setRequestHeader("X-CSRFToken", getCookie( CSRF_Cookie_Name ))}
-    })
+    add_CSRF_token_in_request_header();
       
     $.ajax({
       url: api_full_url + '{% url api_session %}',
@@ -233,9 +222,7 @@ function new_password(email, callback_function) {
     var data = {};
     data['email'] = (email !== undefined) ? email : null;
     
-    $.ajaxSetup({
-        'beforeSend': function(xhr) {xhr.setRequestHeader("X-CSRFToken", getCookie( CSRF_Cookie_Name ))}
-    })
+    add_CSRF_token_in_request_header();
       
       
     $.ajax({
@@ -273,9 +260,7 @@ function change_password(old_password, new_password, callback_function) {
     data['old_password'] = (old_password !== undefined) ? old_password : null;
     data['new_password'] = (new_password !== undefined) ? new_password : null;
     
-    $.ajaxSetup({
-        'beforeSend': function(xhr) {xhr.setRequestHeader("X-CSRFToken", getCookie( CSRF_Cookie_Name ))}
-    })
+    add_CSRF_token_in_request_header();
       
       
     $.ajax({
