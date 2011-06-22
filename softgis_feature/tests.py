@@ -7,6 +7,8 @@ from django.contrib.auth import login as django_login
 from django.contrib.auth import authenticate as django_authenticate
 from models import Feature
 from models import Property
+import urllib
+
 
 import sys
 import settings
@@ -33,7 +35,7 @@ class FeatureTest(TestCase):
         User.objects.create_user('testuser','', 'passwd')
         User.objects.create_user('testuser2','', 'passwd')
         
-        
+       
     def test_feature(self):
         """
         Black box testing for REST urls
@@ -97,6 +99,21 @@ class FeatureTest(TestCase):
                            "id": id}
         ids = []
         ids.append(id)
+        
+        #bad request - no ids
+        response = self.client.delete(reverse('api_feature')+"?ids=")
+        
+        self.assertEquals(response.status_code,
+                          400,
+                          "deletion of unspecified feature ids worked")
+        
+        #bad request - invalid json
+        response = self.client.delete(reverse('api_feature')+"?ids=a")
+        
+        self.assertEquals(response.status_code,
+                          400,
+                          "deletion of unspecified feature ids worked")
+        
         
         response = self.client.delete(reverse('api_feature')+"?ids="+json.dumps(ids))
         
@@ -315,7 +332,6 @@ class FeatureTest(TestCase):
                               "The property query should have returned 3 features")
             
             
-    
     def test_history(self):
         #features to save
         
@@ -363,6 +379,34 @@ class FeatureTest(TestCase):
         
         response_dict = json.loads(response.content)
         
+        #QUERY time__now=true and check that five features are returned
+        response = self.client.get(reverse('api_feature') + \
+                                   "?time__now=true")
+        
+        response_dict = json.loads(response.content)
+        amount_of_features = len(response_dict['features'])
+        
+        self.assertTrue(amount_of_features == 5,
+                        "Query with time__now after first post did not return 5 " + \
+                        "geojson Features. It returned %i" % amount_of_features)
+        
+        #query with time__now and prop
+        response = self.client.get(reverse('api_feature') + \
+                                   "?time__now=true&some_prop=40")
+        
+        response_dict = json.loads(response.content)
+        amount_of_features = len(response_dict['features'])
+        if getattr(settings, "USE_MONGODB", False):
+            self.assertTrue(amount_of_features == 2,
+                            "Query with time__now and prop = 40 after first " + \
+                            "post did not return 2 geojson Features. It returned %i" \
+                            % amount_of_features)
+        else:
+            self.assertTrue(amount_of_features == 5,
+                            "Query with time__now and prop = 40 after first " + \
+                            "post did not return 5 geojson Features. It returned %i" \
+                            % amount_of_features)
+        
         
         #wait a little bit to get difference
         time.sleep(1)
@@ -370,15 +414,16 @@ class FeatureTest(TestCase):
         time.sleep(1)
         response_dict['features'][0]['properties']['good'] = 33
         updated_feature_id = response_dict['features'][0]['id']
-                
         response = self.client.put(reverse('api_feature'),
                                 json.dumps(response_dict['features'][0]),
                                 content_type='application/json')
-        
-        
+         
         #delete one and check that the next delete does not affect it
         time.sleep(1)
         after_update = datetime.datetime.now()
+    
+        response = self.client.get(reverse('api_feature') + "?time__now=true")
+        response_dict = json.loads(response.content)
         
         ids = []
         for feat in response_dict['features']:
@@ -392,7 +437,6 @@ class FeatureTest(TestCase):
         
         #wait a little bit more
         time.sleep(1)
-        
         response = self.client.delete(reverse('api_feature') + "?ids=%s" % json.dumps(ids))
         
         
@@ -431,13 +475,9 @@ class FeatureTest(TestCase):
         
         for feat in response_dict['features']:
             if feat['id'] == updated_feature_id:
-                self.assertEquals(feat['properties']['id'],
-                                   1,
-                                  "The feature retrieves does not seem to have correct properties" + \
-                                  " querying time before an update")
-                self.assertEquals(feat['properties']['some_prop'],
-                                  "history_value",
-                                  "The feature retrieves does not seem to have correct properties" + \
+                self.assertEquals(feat['properties'].has_key('good'),
+                                  False,
+                                  "The feature retrieved does not seem to have correct properties" + \
                                   " querying time before an update")
         
         
@@ -458,6 +498,10 @@ class FeatureTest(TestCase):
         response_dict = json.loads(response.content)
         for feat in response_dict['features']:
             if feat['id'] == updated_feature_id:
+                self.assertEquals(feat['properties'].has_key('good'),
+                                  True,
+                                  "The feature retrieved does not seem to have correct properties" + \
+                                  " querying time before an update")
                 self.assertEquals(feat['properties']['good'],
                                   33,
                                   "The feature updated does not seem to have correct properties" + \
@@ -498,7 +542,6 @@ class FeatureTest(TestCase):
                                                             after_delete.second))
         
         response_dict = json.loads(response.content)
-        
         
         amount_of_features = len(response_dict['features'])
         self.assertTrue(amount_of_features == 0,
@@ -620,19 +663,11 @@ class FeatureTest(TestCase):
         self.assertEqual(response.status_code,
                          401,
                          "Can not add features if not signed in or an anonymous session is created")
-        
 
-    """
-    def test_check_features_migration(self):
-        
-        # logout
-        self.client.logout()
-        
-        #create session for anonymous user
-        response = self.client.post(reverse('api_session'))
-        self.assertEqual(response.status_code,
-                         200,
-                         "The session creation through the session url did not work")
+
+    def test_csv_export(self):
+        self.client.login(username='testuser', password='passwd')
+        userid = str(self.client.session.get('_auth_user_id'))
         
         #add a feature collection for that anonymous user
         featurecollection = {
@@ -643,99 +678,112 @@ class FeatureTest(TestCase):
             {"type": "Feature",
             "geometry": {"type":"Point",
                         "coordinates":[200, 200]},
-            "properties": {"some_prop":"value"}})
+            "properties": {"some_prop":"value;anyting;", "Gender" : "Male", "Age" : "20"}})
         featurecollection['features'].append(
             {"type": "Feature",
             "geometry": {"type":"Point",
                         "coordinates":[300, 250]},
-            "properties": {"some_prop":40}})
+            "properties": {"some_prop": 40, "Gender" : "Female", "Age" : "21"}})
         featurecollection['features'].append(
             {"type": "Feature",
             "geometry": {"type":"Point",
                         "coordinates":[100, 300]},
-            "properties": {"some_prop": True}})
+            "properties": {"some_prop": True , "Gender" : "Male", "Age" : "25"}})
         featurecollection['features'].append(
             {"type": "Feature",
             "geometry": {"type":"Point",
                         "coordinates":[100, 300]},
-            "properties": {"some_prop": None}})
+            "properties": {"some_prop": None, "Gender" : "Male", "Age" : "28", "user_id": 2}})
         
+
         response = self.client.post(reverse('api_feature'),
-                                    json.dumps(featurecollection),
+                                    urllib.quote_plus(json.dumps(featurecollection)),
                                     content_type='application/json')
-
-
-        #get the features
-        response = self.client.get(reverse('api_feature'))
-        response_dict = json.loads(response.content)
         
-       
-        #check the feature array count
-        self.assertEquals(len(response_dict.get('features','')),
-                          4,
-                          "The featurecollection should have 4 feaures")        
-        
-        
-        
-        # register the anonymous user, at this point all the 
-        # features belonging to anonymous user have to be migrated
-        # to the new user
-
-        post_content = {'username':'testuser_checkFeatures', 'password':'testpass2', 'migrate_features' : True}
-        response = self.client.post(reverse('api_register'),
-                                    json.dumps(post_content), \
-                                    content_type='application/json')
-        self.assertEquals(response.status_code,
-                          201,
-                          'registration did not work')
-
-        #get the features
-        response = self.client.get(reverse('api_feature'))
-        response_dict = json.loads(response.content)
-
-        #check for geojson type
-        self.assertEquals(response_dict.get('type', ''),
-                          "FeatureCollection",
-                          "The geojson does not seem to be valid," + \
-                          " get feature should return FeatureCollection type")
-        #check the feature array count
-        self.assertEquals(len(response_dict.get('features','')),
-                          4,
-                          "The featurecollection should have 4 feaures")
-
-        # logout
-        self.client.logout()
-
-        #create a new session for anonymous user
-        response = self.client.post(reverse('api_session'))
-        self.assertEqual(response.status_code,
-                         200,
-                         "The session creation through the session url did not work")
-
-        # add same feature collection to new anonymous user
-        response = self.client.post(reverse('api_feature'),
-                                    json.dumps(featurecollection),
-                                    content_type='application/json')
-
-        # login
-        # after login the features of anonymous user have to migrated to 
-        # the logged in user
-        post_content = {'username':'testuser_checkFeatures', 'password':'testpass2', 'migrate_features' : True}
-        response = self.client.post(reverse('api_login'),
-                                    json.dumps(post_content), 
-                                    content_type='application/json')
         self.assertEquals(response.status_code,
                           200,
-                          'login with valid username and password did not work')
+                          "Feaurecollection POST was not valid")
 
-        #get the features
-        response = self.client.get(reverse('api_feature'))
-        response_dict = json.loads(response.content)
+        response = self.client.get(reverse('api_feature') + "?format=csv&csv_header=[\"user_id\",\"Geometry_WKT\",\"some_prop\",\"Gender\",\"Age\"]" )
+        self.assertEqual(response.content,
+                        "user_id;Geometry_WKT;some_prop;Gender;Age\n" + \
+                        userid + ";POINT (200.0000000000000000 200.0000000000000000);value anyting ;Male;20\n" + \
+                        userid + ";POINT (300.0000000000000000 250.0000000000000000);40;Female;21\n" + \
+                        userid + ";POINT (100.0000000000000000 300.0000000000000000);True;Male;25\n" + \
+                        userid + ";POINT (100.0000000000000000 300.0000000000000000);None;Male;28",
+                        "The CSV export is not ok")
+        
+        response = self.client.get(reverse('api_feature') + "?format=csv&csv_header=[\"user_id\",\"Geometry_geojson\",\"some_prop\",\"Gender\",\"Age\"]" )
+        self.assertEqual(response.content,
+                        "user_id;Geometry_geojson;some_prop;Gender;Age\n" + \
+                        userid + ";{ \"type\": \"Point\", \"coordinates\": [ 200.000000, 200.000000 ] };value anyting ;Male;20\n" + \
+                        userid + ";{ \"type\": \"Point\", \"coordinates\": [ 300.000000, 250.000000 ] };40;Female;21\n" + \
+                        userid + ";{ \"type\": \"Point\", \"coordinates\": [ 100.000000, 300.000000 ] };True;Male;25\n" + \
+                        userid + ";{ \"type\": \"Point\", \"coordinates\": [ 100.000000, 300.000000 ] };None;Male;28",
+                        "The export is not ok for Geometry_geojson format")
+
+    def test_GeoException(self):
+        self.client.login(username='testuser', password='passwd')
 
         
-        self.assertEquals(len(response_dict.get('features','')),
-                          8,
-                          "The dictionary should have 8 features: 4 old and 4 new")
+        #add a feature collection for that anonymous user
+        featurecollection = {
+            "type": "FeatureCollection",
+            "features": []
+        }
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[200]},
+            "properties": {"some_prop":"value;anyting;", "Gender" : "Male", "Age" : "20"}})
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[300, 250]},
+            "properties": {"some_prop": 40, "Gender" : "Female", "Age" : "21"}})
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[100, 300]},
+            "properties": {"some_prop": True , "Gender" : "Male", "Age" : "25"}})
+        featurecollection['features'].append(
+            {"type": "Feature",
+            "geometry": {"type":"Point",
+                        "coordinates":[100, 300]},
+            "properties": {"some_prop": None, "Gender" : "Male", "Age" : "28"}})
+        
 
-        self.client.logout()
-    """
+        response = self.client.post(reverse('api_feature'),
+                                    urllib.quote_plus(json.dumps(featurecollection)),
+                                    content_type='application/json')
+        
+        self.assertEquals(response.status_code,
+                          400,
+                          "Feaurecollection POST was ok for an invalid geometry")
+
+        geojson_feature = {"type": "Feature",
+                            "geometry": {"type":"Point",
+                                        "coordinates":[]},
+                            "properties": {"some_prop":"value"}}
+        
+        response = self.client.post(reverse('api_feature'),
+                                    json.dumps(geojson_feature),
+                                    content_type='application/json')
+
+        self.assertEquals(response.status_code,
+                          400,
+                          "Feautre POST was ok for an invalid geometry")
+
+    def test_exception(self):
+        
+        self.client.login(username='testuser', password='passwd')
+        
+        feature = {"type":"Feature","properties":{"category":"improve_area","graphicId":0,"comments":"Varvsomr"},"geometry":{"type":"Polygon","coordinates":[[[226717.9802302938,7008996.833164],[226726.44691389383,7008996.833164],[226717.9802302938,7008996.833164]]],"crs":{"type":"EPSG","properties":{"code":3067}}}}
+        
+        response = self.client.post(reverse('api_feature'),
+                               urllib.quote_plus(json.dumps(feature)),
+                               content_type='application/json')
+        
+        self.assertEquals(response.status_code,
+                  400,
+                  "Invalid  GEOS Geometry")

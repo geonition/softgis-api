@@ -1,6 +1,8 @@
 from django.test import TestCase
 from django.test.client import Client
 from django.core.urlresolvers import reverse
+from django.contrib.auth.models import User
+from django.core import mail
 
 import sys
 
@@ -151,4 +153,34 @@ class AuthenticationTest(TestCase):
         self.assertEqual(response.status_code,
                          200,
                          "The session creation through the session url did not work second time")
+    
+    def test_new_password(self):
         
+        post_content = {'username':'testuser', 'password':'testpass'}
+        response = self.client.post(reverse('api_register'),
+                                    json.dumps(post_content), \
+                                    content_type='application/json')
+        self.assertEquals(response.status_code,
+                          201,
+                          'registration did not work')
+        
+        
+        
+        user = User.objects.get(username = "testuser")
+        user.email = "test@aalto.fi"
+        user.save()
+        
+        #confirm the email
+
+        post_content = {"email" : "test@aalto.fi"}
+            
+        response = self.client.post(reverse('api_new_password'),
+                            json.dumps(post_content), \
+                            content_type='application/json')
+        
+        #Test if confirmation email is sent
+        self.assertEquals(len(mail.outbox), 1, "New password not sent")
+        
+        
+        passwd = user.password
+        self.assertNotEqual(passwd,"testpass", "New password hasn't been saved")

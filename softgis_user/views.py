@@ -3,6 +3,8 @@ from django.contrib.auth import login as django_login
 from django.contrib.auth import authenticate as django_authenticate
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.mail import BadHeaderError, send_mail
 from django.db import IntegrityError
 from django.db import transaction
 from django.db.models import Max
@@ -11,6 +13,7 @@ from django.http import HttpResponseBadRequest
 from django.http import HttpResponseForbidden
 from django.utils import translation
 from HttpResponseExtenders import HttpResponseNotAuthorized
+from django.contrib.auth.models import User, UserManager
 import logging
 import sys
 
@@ -55,6 +58,9 @@ def login(request):
         except ValueError, err:
             logger.error("Error at login attempt. Details: %s"  % str(err.args))
             return HttpResponseBadRequest("JSON error: " + str(err.args))
+        except IndexError:
+            return HttpResponseBadRequest(_("POST data was empty so no login values could be retrieven from it"))
+
     
              
         username = values.pop('username', None)
@@ -156,6 +162,9 @@ def register(request):
         except ValueError, err:
             logger.error("Error at register attempt. Details: %s"  % str(err.args))
             return HttpResponseBadRequest("JSON error: " + str(err.args))
+        except IndexError:
+            return HttpResponseBadRequest(_("POST data was empty so no register values could be retrieven from it"))
+
         
 
         username = values.pop('username', None)
@@ -292,53 +301,44 @@ def new_password(request):
     """
     
     if(request.method == "POST"):
-    
-        request_json = json.loads(request.POST.keys()[0])
+        try:
+            request_json = json.loads(request.POST.keys()[0])
+        except ValueError, err:
+            logger.error("Error at new_password request. Details: %s"  % str(err.args))
+            return HttpResponseBadRequest("JSON error: " + str(err.args))
+        except IndexError:
+            return HttpResponseBadRequest(_("POST data was empty so no new_password value could be retrieven from it"))
         
         email = request_json['email']
-        confirmed = False
- 
 
-        try:
-            confirmed = EmailAddress.objects.get(
-                                user__exact = static_user.user).verified
-        except ObjectDoesNotExist:
-            logger.debug("getting the confirmed email address for new_password() throwed an ObjectDoesNotExist for user %s" % static_user.user) 
-            pass
-            
-        if confirmed == False:
-            logger.warning("User %s requested a new password but didn't confirmed the email address" %static_user.user) 
+        current_user = request.user
+        
+        if current_user.email == "":
+            logger.warning("User %s requested a new password but didn't confirmed the email address" %request.user) 
             return HttpResponseBadRequest(
                         _(u"Please confirm your email address before requesting a new password"))
 
-        rnd = Random()
-        
-        righthand = '23456qwertasdfgzxcvbQWERTASDFGZXCVB'
-        lefthand = '789yuiophjknmYUIPHJKLNM'
-        
-        passwordlength = 8
-        
-        password = ""
-        
-        for i in range(passwordlength):
-            if i % 2:
-                password += rnd.choice(righthand)
-            else:
-                password += rnd.choice(lefthand)
+        um = UserManager()
+        password = um.make_random_password(length=10, allowed_chars='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789')
+             
         
         subject = _('Uusi salasana pehmogis sivustolle')
-        message = static_user.user.username + \
+        message = request.user.username + \
                         _(' uusi salasana on: ') + password
         
         try:
             send_mail(subject,
                         message,
                         'do_not_reply@pehmogis.fi',
-                        [static_user.email])
+                        [current_user.email])
             
-            logger.debug("New password was successfully sent to email %s" %static_user.email)
+            request.user.set_password(password)
+            request.user.save()
+            
+            
+            logger.debug("New password was successfully sent to email %s" %request.user.email)
             return HttpResponse(_(u"New password sent to ") + \
-                                    static_user.email, 
+                                    request.user.email, 
                                     status=200, 
                                     content_type='text/plain')
         except BadHeaderError:
@@ -367,7 +367,14 @@ def change_password(request):
 
     if(request.method == "POST"):
         
-        request_json = json.loads(request.POST.keys()[0])
+        try: 
+            request_json = json.loads(request.POST.keys()[0])
+        except ValueError, err:
+            logger.error("Error at change_password request. Details: %s"  % str(err.args))
+            return HttpResponseBadRequest("JSON error: " + str(err.args))
+        except IndexError:
+            return HttpResponseBadRequest(_("POST data was empty so no change_password value could be retrieven from it"))
+    
         
         new_password = request_json['new_password']
         old_password = request_json['old_password']

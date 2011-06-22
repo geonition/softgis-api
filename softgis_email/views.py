@@ -31,7 +31,7 @@ def confirm_email(request, confirmation_key):
     
     email_address = EmailConfirmation.objects.confirm_email(confirmation_key)
     
-    logger.debug("Email confirmation attempt for %s with key %s" %(email_address, confirmation_key) )
+    logger.debug(u"Email confirmation attempt for %s with key %s" % (email_address, confirmation_key) )
 
     #the template will handle the invalid confirmation key
     # if the confirmation key was invalid the email_address object is None
@@ -75,9 +75,16 @@ def email(request):
         return HttpResponse(json_data, mimetype="application/json")
                 
     elif(request.method == "POST"):
-        
-        email = json.loads(request.POST.keys()[0]).get("email", "")
-  
+        try:
+            email = json.loads(request.POST.keys()[0]).get("email", "")
+        except ValueError as exc:
+            message = 'JSON decode error: %s' % unicode(exc)
+            logger.warning(message)
+            return HttpResponseBadRequest(message)
+        except IndexError:
+            return HttpResponseBadRequest(_("POST data was empty so no email address could be retrieven from it"))
+    
+            
         logger.debug("Email POST request with param %s" %email)
        
         #check if email was provided
