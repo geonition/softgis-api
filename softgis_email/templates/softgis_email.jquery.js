@@ -1,11 +1,6 @@
-
-
 function get_email(callback){
-     //alert(getCookie( CSRF_Cookie_Name  ));
-
-      $.ajaxSetup({
-	      'beforeSend': function(xhr) {xhr.setRequestHeader("X-CSRFToken", getCookie( CSRF_Cookie_Name ))}
-      })
+     
+     add_CSRF_token_in_request_header();
       
 	$.ajax({
 	  url: '{% url api_manage_email %}',
