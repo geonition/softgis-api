@@ -84,6 +84,10 @@ def email(request):
         except IndexError:
             return HttpResponseBadRequest(_("POST data was empty so no email address could be retrieven from it"))
     
+        try:
+            is_registration = json.loads(request.POST.keys()[0]).get("registration", False)
+        except ValueError as exc:
+            is_registration = False
             
         logger.debug("Email POST request with param %s" %email)
        
@@ -104,12 +108,25 @@ def email(request):
                  return HttpResponseBadRequest(
                     _(u"Email is not valid"))
                 
+            
             """ Send confirmation email"""
-            EmailAddress.objects.add_email(user, email)
+            email_address = EmailAddress.objects.add_email(user, email)
 
-            logger.debug("Email %s has been added successfully for user %s and the confimation email has been sent" % (email, user.username))
-            return HttpResponse(_(u"A confirmation email was sent to your new email address. Follow the intructions in the email to complete the registration."),
-                            status=200)
+            if email_address == None:
+                logger.warning("The email address %s is invalid or not unique" %email)
+                
+                #check if user is just created and delete it as the email registration failed
+                three_mins_ago = datetime.datetime.now() + datetime.timedelta(minutes=-3)
+                if user.date_joined > three_mins_ago and is_registration:
+                    #delete the user
+                    user.delete()
+                
+                return HttpResponseBadRequest(
+                    _(u"Email is either invalid or not unique"))    
+            else:
+                logger.debug("Email %s has been added successfully for user %s and the confimation email has been sent" % (email, user.username))
+                return HttpResponse(_(u"A confirmation email was sent to your new email address. Follow the intructions in the email to complete the registration."),
+                                status=200)
 
         logger.debug("The user %s already had assigned email %s so the POST was ignored" % (user.username,email )) 
 

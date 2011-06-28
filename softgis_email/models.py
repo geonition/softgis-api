@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from random import random
-
+from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.db import models, IntegrityError
 from django.template.loader import render_to_string
@@ -50,7 +50,7 @@ class EmailAddressManager(models.Manager):
 class EmailAddress(models.Model):
 
     user = models.ForeignKey(User, related_name="email_user")
-    email = models.EmailField()
+    email = models.EmailField(unique=True)
     verified = models.BooleanField(default=False)
     primary = models.BooleanField(default=False)
 

@@ -113,8 +113,8 @@ def logout(request):
     logger.debug("The user successfully logged out %s" % request.user.username)
     
     return HttpResponse(_("You have successfully signed out"))
-    
-        
+
+       
 #registering for an softGIS API account
 def register(request):
     """
@@ -321,14 +321,14 @@ def new_password(request):
             return HttpResponseBadRequest(_("POST data was empty so no new_password value could be retrieven from it"))
         
         email = request_json['email']
-
-        current_user = request.user
+        try:
+            current_user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            logger.warning("The user could not be found or the email address hasn't been confirmed")
+            return HttpResponseBadRequest(_(u"The user could not be found or the email address hasn't been confirmed")) 
         
-        if current_user.email == "":
-            logger.warning("User %s requested a new password but didn't confirmed the email address" %request.user) 
-            return HttpResponseBadRequest(
-                        _(u"Please confirm your email address before requesting a new password"))
-
+        print current_user.username
+        
         um = UserManager()
         password = um.make_random_password(length=10, allowed_chars='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789')
              
