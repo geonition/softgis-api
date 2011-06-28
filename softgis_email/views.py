@@ -11,6 +11,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import email_re
 from softgis_email.models import EmailConfirmation
 from softgis_email.models import EmailAddress
+from datetime import datetime, timedelta
 import logging
 import sys
 
@@ -116,10 +117,10 @@ def email(request):
                 logger.warning("The email address %s is invalid or not unique" %email)
                 
                 #check if user is just created and delete it as the email registration failed
-                three_mins_ago = datetime.datetime.now() + datetime.timedelta(minutes=-3)
+                three_mins_ago = datetime.now() + timedelta(minutes=-3)
                 if user.date_joined > three_mins_ago and is_registration:
                     #delete the user
-                    user.delete()
+                    request.user.delete()
                 
                 return HttpResponseBadRequest(
                     _(u"Email is either invalid or not unique"))    

@@ -22,9 +22,19 @@ logger = logging.getLogger('api.email.model')
 class EmailAddressManager(models.Manager):
 
     def add_email(self, user, email):
+
+        #check that email is unique
+        
+        existing_email = self.filter(email=email)
+        
+        if len(existing_email) > 0: 
+            logger.error('Email address is not unique: %s' % email)
+            return None
+        
         try:
             #creates an object EmailAddress and sends the confirmation key
             email_address = self.create(user=user, email=email)
+                        
             EmailConfirmation.objects.send_confirmation(email_address)
             return email_address
         except IntegrityError:

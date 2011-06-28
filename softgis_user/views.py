@@ -327,8 +327,7 @@ def new_password(request):
             logger.warning("The user could not be found or the email address hasn't been confirmed")
             return HttpResponseBadRequest(_(u"The user could not be found or the email address hasn't been confirmed")) 
         
-        print current_user.username
-        
+               
         um = UserManager()
         password = um.make_random_password(length=10, allowed_chars='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789')
              
