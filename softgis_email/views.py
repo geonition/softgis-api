@@ -126,8 +126,8 @@ def email(request):
                     _(u"Email is either invalid or not unique"))    
             else:
                 logger.debug("Email %s has been added successfully for user %s and the confimation email has been sent" % (email, user.username))
-                return HttpResponse(_(u"A confirmation email was sent to your new email address. Follow the intructions in the email to complete the registration."),
-                                status=200)
+                return HttpResponse(content = _(u"A confirmation email was sent to your new email address. Follow the intructions in the email to complete the registration."),
+                                status = 200)
 
         logger.debug("The user %s already had assigned email %s so the POST was ignored" % (user.username,email )) 
 

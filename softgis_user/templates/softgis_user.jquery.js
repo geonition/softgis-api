@@ -232,6 +232,7 @@ function new_password(email, callback_function) {
     data: JSON.stringify(data),
     success: function(data){
                   if(callback_function !== undefined) {
+                      console.debug(data);
                       callback_function(data);
                   }
       },

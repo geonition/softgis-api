@@ -327,7 +327,7 @@ def new_password(request):
             logger.warning("The user could not be found or the email address hasn't been confirmed")
             return HttpResponseBadRequest(_(u"The user could not be found or the email address hasn't been confirmed")) 
         
-               
+       
         um = UserManager()
         password = um.make_random_password(length=10, allowed_chars='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789')
              
@@ -335,22 +335,19 @@ def new_password(request):
         subject = _('Uusi salasana pehmogis sivustolle')
         message = request.user.username + \
                         _(' uusi salasana on: ') + password
-        
+       
         try:
             send_mail(subject,
                         message,
                         'do_not_reply@pehmogis.fi',
                         [current_user.email])
             
-            request.user.set_password(password)
-            request.user.save()
+            current_user.set_password(password)
+            current_user.save()
+                        
+            logger.debug("New password was successfully sent to email %s" %current_user.email)
+            return HttpResponse(status=200, content=(_(u"New password was sent to %s" %current_user.email)), mimetype="application/json")
             
-            
-            logger.debug("New password was successfully sent to email %s" %request.user.email)
-            return HttpResponse(_(u"New password sent to ") + \
-                                    request.user.email, 
-                                    status=200, 
-                                    content_type='text/plain')
         except BadHeaderError:
             logger.error("There was an error while trying to send the email with the new password")
             return HttpResponseBadRequest(_(u'Invalid header found.'))
