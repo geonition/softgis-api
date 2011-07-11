@@ -14,6 +14,8 @@ from django.http import HttpResponseForbidden
 from django.utils import translation
 from HttpResponseExtenders import HttpResponseNotAuthorized
 from django.contrib.auth.models import User, UserManager
+from django.contrib.sites.models import Site
+from django.template.loader import render_to_string
 from threading import Lock
 import logging
 import sys
@@ -330,12 +332,20 @@ def new_password(request):
        
         um = UserManager()
         password = um.make_random_password(length=10, allowed_chars='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789')
-             
+        current_site = Site.objects.get_current()     
+        context = {
+            "current_user": current_user,
+            "password": password,
+            "current_site": current_site
+        }
+        subject = render_to_string(
+            "email_templates/new_password_email_subject.txt", context)
+        # remove superfluous line breaks
+        subject = "".join(subject.splitlines())
+        message = render_to_string(
+            "email_templates/new_password_email_content.txt", context)
         
-        subject = _('Uusi salasana pehmogis sivustolle')
-        message = request.user.username + \
-                        _(' uusi salasana on: ') + password
-       
+      
         try:
             send_mail(subject,
                         message,

@@ -1,6 +1,11 @@
-{% extends "email_base.html" %}
+{% extends "competition.html" %}
 
-{% block head_title %}Confirm Email{% endblock %}
+{% load i18n %}
+{% load webdesign %}
+
+{% comment %}
+{% extends "email_base.html" %}
+{% block head_title %}Email confirmed{% endblock %}
 
 {% block body_content %}
 {% if email_address %}
@@ -8,5 +13,20 @@
 {% else %}
     <p>Invalid confirmation key.</p>
 {% endif %}
-<p>Go to <a href="/">homepage</a>.</p>
+<p>Go to <a href="{% url idea_main %}">homepage</a>.</p>
 {% endblock %}
+{% endcomment %}
+
+
+{% block text_content %}
+
+    {% if email_address %}
+        <h2>{% trans "Sähköpostiosoite on rekisteröity." %} </h2>
+        <br />
+        <p>{% trans "Olet vahvistanut sähköpostiosoitteen"%} <b>{{ email_address.email }}</b> {% trans "käyttäjänimelle"%} <b>{{ email_address.user }}</b>.</p>
+    {% else %}
+        <h2>{% trans "Sähköpostiosoitetta ei voitu rekisteröidä." %} </h2>
+        <br />
+        <p>{% trans "Linkki on väärä tai vanhentunut."%}</p>
+    {% endif %}
+{% endblock text_content %}   

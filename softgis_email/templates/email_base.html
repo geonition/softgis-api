@@ -27,7 +27,10 @@
         </style>
     </head>
     <body>
-        <h1>Email Confirmation Test</h1>
+        <h1>
+            {% block head_title %}
+            {% endblock %}
+        </h1>
         
         {% block body_content %}
         {% endblock %}

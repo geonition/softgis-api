@@ -1,4 +1,9 @@
-{% load i18n %}{% blocktrans with current_site.name as site_name %}User '{{ user }}' at {{ site_name }} has given this as an email address.
+{% load i18n %}{% blocktrans with current_site.name as site_name %}Hei!
 
-To confirm this is correct, go to {{ activate_url }}
+Olet rekisteröinyt tämän sähköpostiosoitteen {{ user }}-käyttäjänimellä {{ site_name }} -verkkopalvelussa.
+
+Vahvistaaksesi rekisteröinnin, klikkaa oheista linkkiä: {{ activate_url }}
+
+Terveisin pehmoGIS-tiimi
+
 {% endblocktrans %}
